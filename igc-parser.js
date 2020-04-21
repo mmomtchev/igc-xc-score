@@ -57,6 +57,7 @@ var IGCParser = /** @class */ (function () {
                     errors.push(error);
                 }
                 else {
+                    continue;
                     throw error;
                 }
             }
