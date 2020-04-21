@@ -31,10 +31,13 @@ const best = solver(flight, scoring.defaultScoringTypes, config);
 if (config.out)
     fs.writeFileSync(config.out, JSON.stringify(best.geojson(config)));
 
-console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset }`
-    + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
-    + ` ${util.consoleColors.fg.green}${best.score} points,`
-    + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
-    + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
-    + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
-    + util.consoleColors.reset);
+if (best.scoreInfo !== undefined) {
+    console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
+        + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
+        + ` ${util.consoleColors.fg.green}${best.score} points,`
+        + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
+        + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
+        + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
+        + util.consoleColors.reset);
+} else
+    console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);

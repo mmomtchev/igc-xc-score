@@ -75,9 +75,11 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
     if (best.optimal === undefined)
         best.optimal = true;
     best.score = best.opt.scoring.rounding(best.score);
-    best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-    if (best.scoreInfo.cp.d)
-        best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
+    if (best.scoreInfo) {
+        best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
+        if (best.scoreInfo.cp.d)
+            best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
+    }
     return best;
 }
 
