@@ -1,0 +1,204 @@
+let id = 0;
+
+const util = require('./util');
+const Box = util.Box;
+const Point = util.Point;
+const Range = util.Range;
+
+class Solution {
+    constructor(ranges, opt, parent) {
+        if (ranges.length > opt.scoring.cardinality)
+            this.ranges = ranges.slice(0, opt.scoring.cardinality);
+        else
+            this.ranges = ranges;
+        this.score = undefined;
+        this.bound = undefined;
+        this.id = id++;
+        this.opt = opt;
+        if (parent !== undefined)
+            this.parent = parent + '-' + this.id;
+        else
+            this.parent = this.id;
+    }
+
+    do_branch() {
+        let div = 0;
+        for (let r in this.ranges)
+            if (this.ranges[r].count() > this.ranges[div].count())
+                div = parseInt(r);
+        
+        if (this.ranges[div].count() == 1)
+            return [];
+        
+        let subsolutions = [];
+        for (let i of [this.ranges[div].left(), this.ranges[div].right()]) {
+            if (div > 0 && i.a < this.ranges[div - 1].a)
+                continue;
+            if (div > 0 && i.b < this.ranges[div - 1].b)
+                continue;
+            let subranges = [];
+            for (let r in this.ranges)
+                if (r != div)
+                    subranges[r] = this.ranges[r];
+                else
+                    subranges[r] = i;
+            subsolutions.push(new Solution(subranges, this.opt, this.parent));
+        }
+        return subsolutions;
+    }
+
+    do_bound() {
+        this.bound = this.opt.scoring.bound(this.ranges, this.opt);
+    }
+
+    do_score() {
+        for (let r in this.ranges)
+            if (r < this.ranges.length - 1 && this.ranges[r].center() >= this.ranges[parseInt(r) + 1].center()) {
+                this.score = 0;
+                return;
+            }
+    
+        let tp = [];
+        for (let r in this.ranges)
+            tp[r] = new Point(this.opt.flight, this.ranges[r].center());
+        
+        this.scoreInfo = this.opt.scoring.score(tp, this.opt);
+        this.score = this.scoreInfo.score;
+    }
+
+    contentEquals(self, other) {
+        return self.id === other.id;
+    }
+
+    contentCompare(self, other) {
+        if (self.bound < other.bound)
+            return -1;
+        if (self.bound > other.bound)
+            return 1;
+        if (self.id < other.id)
+            return -1;
+        if (self.id > other.id)
+            return 1;
+        return 0;
+    }
+
+    geojson(config) {
+        let features = [];
+        if (!config.quiet) {
+            for (let r in this.ranges)
+                features.push((new Box(this.ranges[r], this.opt.flight))
+                    .geojson('box' + r, {
+                        a: this.ranges[r].a,
+                        b: this.ranges[r].b
+                    }));
+        }
+        try {
+            const tp = this.scoreInfo.tp;
+            for (let r of [0, 1, 2]) {
+                features.push(tp[r]
+                    .geojson('tp' + r, {
+                        id: 'tp' + r,
+                        r: tp[r].r,
+                        timestamp: this.opt.flight.fixes[tp[r].r].timestamp
+                    }));
+                if (r < 2 || this.opt.scoring.closingDistance)
+                    features.push({
+                        type: 'Feature',
+                        id: 'seg' + r,
+                        properties: { id: 'seg' + r, 'stroke': 'yellow', 'stroke-width': 4 },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % 3].x, tp[(r + 1) % 3].y]],
+                            style: { 'stroke': 'yellow', 'stroke-width': 4 }
+                        }
+                    });
+            }
+        } catch (e) {
+            console.error('no turnpoints');
+        }
+        try {
+            if (this.scoreInfo.cp !== undefined) {
+                const cp = this.scoreInfo.cp;
+                const tp = this.scoreInfo.tp;
+                for (let r of ['in', 'out'])
+                    features.push(cp[r]
+                        .geojson('cp_' + r, {
+                            id: 'cp_' + r,
+                            r: cp[r].r,
+                            timestamp: this.opt.flight.fixes[cp[r].r].timestamp
+                        }));
+                if (this.opt.scoring.closingDistance)
+                    features.push({
+                        type: 'Feature',
+                        id: 'closing',
+                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[cp['in'].x, cp['in'].y], [cp['out'].x, cp['out'].y]],
+                            style: { 'stroke': 'green', 'stroke-width': 3 }
+                        }
+                    });
+                else {
+                    features.push({
+                        type: 'Feature',
+                        id: 'closing',
+                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[cp['in'].x, cp['in'].y], [tp[0].x, tp[0].y]],
+                            style: { 'stroke': 'green', 'stroke-width': 3 }
+                        }
+                    });
+                    features.push({
+                        type: 'Feature',
+                        id: 'closing',
+                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[cp['out'].x, cp['out'].y], [tp[2].x, tp[2].y]],
+                            style: { 'stroke': 'green', 'stroke-width': 3 }
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('no closing points');
+        }
+        if (!config.noflight) {
+            let flightData = [];
+            for (let r of this.opt.flight.fixes) {
+                flightData.push([r.longitude, r.latitude]);
+            }
+            features.push({
+                type: 'Feature',
+                properties: { id: 'flight' },
+                geometry: {
+                    type: 'LineString',
+                    coordinates: flightData
+                }
+            });
+        }
+        let collection = {
+            type: 'FeatureCollection',
+            properties: {
+                id: this.id,
+                score: this.score !== undefined ? this.score : undefined,
+                bound: this.bound !== undefined ? this.bound : undefined,
+                optimal: this.optimal,
+                processedTime: this.time / 1000,
+                processedSolutions: this.processed,
+                type: this.opt.scoring.name
+            },
+            features
+        };
+        return collection;
+    }
+
+    toString() {
+        return JSON.stringify(this.geojson());
+    }
+}
+
+module.exports = {
+    Solution
+}

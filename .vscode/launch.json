@@ -1,0 +1,69 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "TRI",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/20268357.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "D3P",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/20269833.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "BIGFLAT",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/20267711.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "FAI",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/20269304.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "LINE",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/20228755.igc",
+                "maxtime=5"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "CRASH",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/crash.igc",
+                "out=out.json",
+                "verbose=true"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
