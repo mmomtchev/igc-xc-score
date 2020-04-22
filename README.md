@@ -76,6 +76,29 @@ There is no progress callback and the solver will block your main event loop unt
 
 I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
 
+## Program Output
+
+The GeoJSON returned by the solver contains what should be the highest scoring solution. It contains the turnpoints (tp0, tp1...) elements,
+the closing points of the triangle for triangle flights (cp.in and cp.out), the distances lines (yellow/green) and the flight path itself.
+Every tp/cp element also contains an **r** and a **timestamp** field. These are the number and the timestamp of the corresponding GPS fix and can be used to easily verify the correctness of the output of the program.
+
+```json
+"type": "Feature",
+"id": "tp0",
+"properties": {
+    "id": "tp0",
+    "r": 3799,
+    "timestamp": 1546866868000
+},
+"geometry": {
+    "type": "Point",
+    "coordinates": [
+        6.641583333333333,
+        43.73506666666667
+    ]
+}
+```
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
