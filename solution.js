@@ -202,7 +202,7 @@ class Solution {
     }
 
     trace() {
-        if (!this.opt.trace || !this.opt.writeFileSync)
+        if (!this.opt.trace || !this.opt.env || !this.opt.env.fs)
             return;
         for (let i in this.ranges)
             if (!this.ranges[i].contains(this.opt.trace[i]))
@@ -215,7 +215,7 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        this.opt.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        this.opt.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
     }
 }
 

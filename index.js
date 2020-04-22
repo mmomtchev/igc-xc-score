@@ -30,6 +30,7 @@ const best = solver(flight, scoring.defaultScoringTypes, config);
 
 if (config.out)
     fs.writeFileSync(config.out, JSON.stringify(best.geojson(config)));
+config.env = { fs };
 
 if (best.scoreInfo !== undefined) {
     console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`

@@ -15,7 +15,8 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
     for (let scoringType of scoringTypes) {
         const opt = {
             flight,
-            scoring: scoringType
+            scoring: scoringType,
+            env: config.env
         };
         let solutionRoot = new Solution([
             new Range(0, flight.fixes.length - 1),
