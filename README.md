@@ -69,6 +69,11 @@ if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
 
+Calling the solver from the browser is possible but it is still an ugly hack.
+
+There is no progress callback and the solver will block your main event loop until a solution is found.
+**I will gladly accept a PR for a more browser-friendly interface. The ES2016 compatiblity also needs more work.**
+
 I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
 
 ## Contributing
