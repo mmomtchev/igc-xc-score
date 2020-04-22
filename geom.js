@@ -185,10 +185,10 @@ function findClosestPairIn2Segments(p1, p2, opt) {
 
     let min = { d: Infinity };
     for (let i = p2; i < opt.flight.fixes.length; i++) {
-        const pout = new Point(opt.flight, i);
+        const pout = flightPoints[i];
         const n = rtree.neighbors(pout.x, pout.y, 1)[0];
         if (n !== undefined) {
-            const pin = new Point(opt.flight, n);
+            const pin = flightPoints[n];
             const d = pout.distanceEarth(pin);
             if (d < min.d) {
                 min.d = d;
@@ -218,12 +218,12 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
         const precomputed = furthestPoints.search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y });
         for (let pc of precomputed) {
             if (sega <= pc.o && pc.o <= segb) {
-                fpoint = new Point(opt.flight, pc.o);
+                fpoint = flightPoints[pc.o];
                 return fpoint;
             }
         }
         for (let p = sega; p <= segb; p++) {
-            const f = new Point(opt.flight, p);
+            const f = flightPoints[p];
             if (target instanceof Box && target.intersects(f))
                 continue;
             const d = v.distanceEarth(f);
@@ -257,6 +257,9 @@ function isTriangleClosed(p1, p2, distance, opt) {
 function init(opt) {
     closestPairs = new RBush();
     furthestPoints = new RBush();
+    flightPoints = [];
+    for (let r in opt.flight.fixes)
+        flightPoints[r] = new Point(opt.flight, r);
 }
 
 module.exports = {

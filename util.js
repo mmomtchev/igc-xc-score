@@ -114,8 +114,7 @@ class Box {
 
     intersects(other) {
         if (other instanceof Point)
-            return this.intersects(new Box(other.x, other.y, other.x, other.y));
-        
+            return (this.x1 >= other.x && this.y1 >= other.y && this.x2 <= other.x && this.y2 <= other.x2);
         if (this.x1 > other.x2 || this.x2 < other.x1 || this.y1 > other.y2 || this.y2 < other.y1)
             return false;
         return true;    
@@ -145,7 +144,7 @@ class Box {
             y1 = this.y1;
             y2 = this.y1;
         }
-        return distance_earth(new Point(x1, y1), new Point(x2, y2))       
+        return new Point(x1, y1).distanceEarth(new Point(x2, y2));    
     }
 
     geojson(id, properties) {
