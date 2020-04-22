@@ -22,7 +22,7 @@ To further complicate matters, all calculations happen in a non-euclidean space 
 Luckily, even if an absolutely universal solution remains impossible, there is usually some internal structure of the solution space.
 
 The worst case of this algorithm remains a O(n⁵), but the average complexity is only O(n²log³(n)).
-It uses a classical branch and bounding approach with a n³ branching for triangles with a O(n log(n)) cost function and n⁵ branching for 3 turnpoints distance flights with a O(1) cost function. Different scoring types run in parallel until they are bounded.
+It uses a classical branch and bounding approach with a n³ branching for triangles with a O(n log(n)) cost function and n³ branching for 3 turnpoints distance flights with a O(n) cost function. Different scoring types run in parallel until they are bounded.
 It has really good performance for triangles, but tends to be a little bit slow for long straight flights.
 **There is an alternative approach for distance over 3 turnpoints flights which uses dynamic programming and which could be faster for very long straight line flights**. If there is interest, I could eventually implement it. Or if there is anyone in the paragliding community who wants to learn dynamic programming or JS, he is more than welcome to do so.
 

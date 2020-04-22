@@ -4,19 +4,19 @@ const solution = require('./solution');
 const Solution = solution.Solution;
 const util = require('./util');
 const Range = util.Range;
+const geom = require('./geom');
 const scoring = require('./scoring');
 
 function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {}) {
     flight.fixes = flight.fixes.filter(x => x.valid);
     let solutionRoots = [];
+    geom.init({ flight });
     for (let scoringType of scoringTypes) {
         const opt = {
             flight,
             scoring: scoringType
         };
         let solutionRoot = new Solution([
-            new Range(0, flight.fixes.length - 1),
-            new Range(0, flight.fixes.length - 1),
             new Range(0, flight.fixes.length - 1),
             new Range(0, flight.fixes.length - 1),
             new Range(0, flight.fixes.length - 1)
@@ -63,12 +63,22 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
                     process.stdout.write(`best so far : ${s.opt.scoring.name}, ${s.score.toFixed(5)} points, id:${s.id}`
                         + (config.debug ? (` ${s.ranges[0].a}:${s.ranges[0].b} ${s.ranges[1].a}:${s.ranges[1].b} ${s.ranges[2].a}:${s.ranges[2].b} ${s.parent}`) : '')
                         + '                                                                        \n');
+                
+                if (solutionQueue.length > 10000 && solutionQueue.findLeast().value.bound <= best.score) {
+                    const garbageBest = solutionQueue.findGreatestLessThanOrEqual({ bound: best.score });
+                    if (garbageBest !== undefined) {
+                        const cutoff = solutionQueue.indexOf(garbageBest.value);
+                        const garbageSize = solutionQueue.splice(0, cutoff + 1).length;
+                        if (!config.quiet && process.stdout.write)
+                            process.stdout.write(`throwing out the shit....  ${garbageSize} solutions zapped                                \n`);
+                    }
+                }
             }
             solutionQueue.push(s);
         }
     }
     if (!config.quiet && process.stdout.write)
-        process.stdout.write(`processed ${processed} candidates       \n`);
+        process.stdout.write(`processed ${processed} candidates                                                           \n`);
 
     best.processed = processed;
     best.time = Date.now() - tstart;

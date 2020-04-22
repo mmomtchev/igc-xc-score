@@ -31,7 +31,7 @@ const scoringFFVL = [
         bound: boundDistance3Points,
         score: scoreDistance3Points,
         rounding: round2,
-        cardinality: 5
+        cardinality: 3
     }
 ];
 
@@ -73,17 +73,22 @@ function isClosedTriangle(distance) {
 
 function boundDistance3Points(ranges, opt) {
     let boxes = [];
-    for (let r of [0, 1, 2, 3, 4])
+    for (let r of [0, 1, 2])
         boxes[r] = new Box(ranges[r], opt.flight);
-    const maxDistance = geom.maxDistanceNRectangles(boxes);
+    const pin = geom.findFurthestPointInSegment(0, ranges[0].a, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.flight.fixes.length - 1, boxes[2], opt);
+    const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
     return maxDistance;
 }
 
 function scoreDistance3Points(tp, opt) {
     let distance = 0;
+    const pin = geom.findFurthestPointInSegment(0, tp[0].r, tp[0], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.flight.fixes.length - 1, tp[2], opt);
+    const all = [pin, tp[0], tp[1], tp[2], pout];
     for (let i of [0, 1, 2, 3])
-        distance += tp[i].distanceEarth(tp[i + 1]);
-    return { distance, score: distance, tp: tp.slice(1, 4), cp: { in: tp[0], out: tp[4], d: 0 } };
+        distance += all[i].distanceEarth(all[i + 1]);
+    return { distance, score: distance, tp: tp, cp: { in: pin, out: pout, d: 0 } };
 }
 
 const MINSIDE = 0.28

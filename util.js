@@ -33,16 +33,15 @@ class Point {
         return JSON.stringify(this.geojson())
     }
 
+    intersects(other) {
+        if (other instanceof Point)
+            return (this.x == other.x && this.y == other.y)
+        if (other instanceof Box)
+            return other.intersects(this);
+        throw ('other must be either Point or Box');
+    }
+
     distanceEarth(p) {
-        /*
-        const f1 = radians(this.y);
-        const f2 = radians(p.y);
-        const df = radians(p.y - this.y);
-        const dg = radians(p.x - this.x);
-        const a = Math.sin(df / 2) * Math.sin(df / 2) + Math.cos(f1) * Math.cos(f2) * Math.sin(dg / 2) * Math.sin(dg / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = REarth * c;
-        */
         const df = (p.y - this.y);
         const dg = (p.x - this.x);
         const fm = radians((this.y + p.y) / 2);
@@ -83,6 +82,10 @@ class Range {
     contains(p) {
         return this.a <= p && p <= this.b;
     }
+
+    toString() {
+        return `${this.a}:${this.b}`;
+    }
 }
 
 class Box {
@@ -110,6 +113,9 @@ class Box {
     }
 
     intersects(other) {
+        if (other instanceof Point)
+            return this.intersects(new Box(other.x, other.y, other.x, other.y));
+        
         if (this.x1 > other.x2 || this.x2 < other.x1 || this.y1 > other.y2 || this.y2 < other.y1)
             return false;
         return true;    
@@ -162,7 +168,7 @@ class Box {
     }
 
     geojson_collection(boxes) {
-        let features;
+        let features = [];
         for (let b in boxes) {
             features.push(boxes[b].geojson(b, { id: b }));
         }

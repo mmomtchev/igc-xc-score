@@ -65,15 +65,7 @@ function minDistance3Rectangles(boxes, distance_fn) {
 
     let path = [[], [], []];
     for (let i of [0, 1, 2]) {
-        /*for (let v of vertices[i])
-            if (!(v.x == minx || v.x == maxx || v.y == miny || v.y == maxy))
-                path[i].push(v);
-        if (path[i].length == 0)
-            for (let v of vertices[i])
-                if (!(v.x == minx || v.x == maxx) || !(v.y == miny || v.y == maxy))
-                    path[i].push(v);
-        if (path[i].length == 0)*/
-            path[i] = vertices[i];
+        path[i] = vertices[i];
     }
 
     let distanceMin = Infinity;
@@ -100,15 +92,7 @@ function maxDistance2Rectangles(boxes) {
 
     let path = [[], []];
     for (let i of [0, 1]) {
-        /*for (let v of vertices[i])
-            if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
-                path[i].push(v);
-        if (path[i].length == 0)
-            for (let v of vertices[i])
-                if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
-                    path[i].push(v);
-        if (i > 1 && boxes[i - 1].intersects(boxes[i]))*/
-            path[i] = vertices[i];
+        path[i] = vertices[i];
     }
 
     let distanceMax = 0;
@@ -130,28 +114,57 @@ function maxDistancePath(p, path) {
     return distanceMax;
 }
 
+let distanceCache;
+function maxFlightLengthOverRange(r, opt) {
+    let distance = 0;
+    for (let i = r.a; i < r.b; i++)
+        distance += distanceCache[i];
+    return distance;
+}
+
 function maxDistanceNRectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
     let path = [];
     for (let r in boxes) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+        if (boxes[r] instanceof Box) {
+            vertices[r] = boxes[r].vertices();
+            minx = Math.min(minx || Infinity, boxes[r].x1);
+            miny = Math.min(miny || Infinity, boxes[r].y1);
+            maxx = Math.max(maxx || -Infinity, boxes[r].x2);
+            maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+        } else if (boxes[r] instanceof Point) {
+            vertices[r] = [boxes[r]];
+            minx = Math.min(minx || Infinity, boxes[r].x);
+            miny = Math.min(miny || Infinity, boxes[r].y);
+            maxx = Math.max(maxx || -Infinity, boxes[r].x);
+            maxy = Math.max(maxy || -Infinity, boxes[r].y);
+        } else
+            throw 'boxes must contain only Box or Point';
         path[r] = [];
     }
 
+    let intersecting = false;
+    for (let i in boxes)
+        if (i > 0) {
+            intersecting = boxes[i - 1].intersects(boxes[i]);
+            if (intersecting)
+                break;
+        }
+
     for (let i in boxes) {
-        /*for (let v of vertices[i])
+        if (intersecting) {
+            path[i] = vertices[i];
+            continue;
+        }
+        for (let v of vertices[i])
             if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
                 path[i].push(v);
         if (path[i].length == 0)
             for (let v of vertices[i])
                 if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
                     path[i].push(v);
-        if (path[i].length == 0 || (i > 1 && boxes[i - 1].intersects(boxes[i])))*/
+        if (path[i].length == 0)
             path[i] = vertices[i];
     }
 
@@ -164,7 +177,7 @@ function maxDistanceNRectangles(boxes) {
     return distanceMax;
 }
 
-const closestPairs = new RBush();
+let closestPairs;
 function findClosestPairIn2Segments(p1, p2, opt) {
     const precomputed = closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 })[0];
     if (precomputed !== undefined)
@@ -196,35 +209,43 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     return min;
 }
 
-function findFurthestPoint(p, startend, opt) {
-    const inc = startend == 'start' ? 1 : -1;
-    let i = startend == 'start' ? 0 : opt.flight.fixes.length - 1;
-    
-    let maxDistance = -Infinity;
-    let furthestPointA = undefined;
-    let furthestPointB = undefined;
-    let end;
-    let origin;
-    if (p instanceof Range) {
-        origin = (new Box(p, opt.flight)).vertices();
-        end = startend == 'start' ? p.a : p.b;
-    } else {
-        origin = [new Point(opt.flight, p)];
-        end = p;
-    }
-    for (; startend == 'start' ? i <= end : i >= end; i += inc) {
-        const p2 = new Point(opt.flight, i);
-        for (let p1 of origin) {
-            let d = p1.distanceEarth(p2);
-            if (d > maxDistance) {
-                maxDistance = d;
-                furthestPointA = p1.r;
-                furthestPointB = i;
+let furthestPoints;
+function findFurthestPointInSegment(sega, segb, target, opt) {
+    let points;
+    if (target instanceof Box)
+        points = target.vertices();
+    else if (target instanceof Point)
+        points = [target];
+    else
+        throw 'target must be either Point or Box';
+        
+    let distanceMax = -Infinity;
+    let fpoint, forigin;
+    for (let v of points) {
+        const precomputed = furthestPoints.search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y });
+        for (let pc of precomputed) {
+            if (sega <= pc.o && pc.o <= segb) {
+                fpoint = new Point(opt.flight, pc.o);
+                return fpoint;
+            }
+        }
+        for (let p = sega; p <= segb; p++) {
+            const f = new Point(opt.flight, p);
+            if (target instanceof Box && target.intersects(f))
+                continue;
+            const d = v.distanceEarth(f);
+            if (d > distanceMax) {
+                distanceMax = d;
+                fpoint = f;
+                forigin = v;
             }
         }
     }
-
-    return { d: maxDistance, in: Math.min(furthestPointA, furthestPointB), out: Math.max(furthestPointA, furthestPointB) };
+    if (fpoint === undefined)
+        fpoint = target;
+    else
+        furthestPoints.insert({ minX: forigin.x, minY: forigin.y, maxX: forigin.x, maxY: forigin.y, o: fpoint.r })
+    return fpoint;
 }
 
 function isTriangleClosed(p1, p2, distance, opt) {
@@ -240,11 +261,27 @@ function isTriangleClosed(p1, p2, distance, opt) {
     return false;
 }
 
+function init(opt) {
+    closestPairs = new RBush();
+    furthestPoints = new RBush();
+    distanceCache = [];
+    let p1 = new Point(opt.flight, 0);
+    for (let r in opt.flight.fixes)
+        if (opt.flight.fixes[parseInt(r) + 1] !== undefined) {
+            const p2 = new Point(opt.flight, parseInt(r) + 1);
+            distanceCache[r] = p1.distanceEarth(p2);
+            p1 = p2;
+        } else
+            distanceCache[r] = 0;
+}
+
 module.exports = {
     maxDistance3Rectangles,
     maxDistance2Rectangles,
     minDistance3Rectangles,
     maxDistanceNRectangles,
-    findFurthestPoint,
+    maxFlightLengthOverRange,
+    findFurthestPointInSegment,
     isTriangleClosed,
+    init,
 }
