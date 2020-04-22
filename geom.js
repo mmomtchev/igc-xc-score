@@ -114,14 +114,6 @@ function maxDistancePath(p, path) {
     return distanceMax;
 }
 
-let distanceCache;
-function maxFlightLengthOverRange(r, opt) {
-    let distance = 0;
-    for (let i = r.a; i < r.b; i++)
-        distance += distanceCache[i];
-    return distance;
-}
-
 function maxDistanceNRectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
@@ -264,15 +256,6 @@ function isTriangleClosed(p1, p2, distance, opt) {
 function init(opt) {
     closestPairs = new RBush();
     furthestPoints = new RBush();
-    distanceCache = [];
-    let p1 = new Point(opt.flight, 0);
-    for (let r in opt.flight.fixes)
-        if (opt.flight.fixes[parseInt(r) + 1] !== undefined) {
-            const p2 = new Point(opt.flight, parseInt(r) + 1);
-            distanceCache[r] = p1.distanceEarth(p2);
-            p1 = p2;
-        } else
-            distanceCache[r] = 0;
 }
 
 module.exports = {
@@ -280,7 +263,6 @@ module.exports = {
     maxDistance2Rectangles,
     minDistance3Rectangles,
     maxDistanceNRectangles,
-    maxFlightLengthOverRange,
     findFurthestPointInSegment,
     isTriangleClosed,
     init,
