@@ -1,5 +1,6 @@
 let id = 0;
 
+const fs = require('fs');
 const util = require('./util');
 const Box = util.Box;
 const Point = util.Point;
@@ -19,6 +20,7 @@ class Solution {
             this.parent = parent + '-' + this.id;
         else
             this.parent = this.id;
+        this.trace();
     }
 
     do_branch() {
@@ -49,6 +51,7 @@ class Solution {
 
     do_bound() {
         this.bound = this.opt.scoring.bound(this.ranges, this.opt);
+        this.trace();
     }
 
     do_score() {
@@ -64,6 +67,7 @@ class Solution {
         
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
+        this.trace();
     }
 
     contentEquals(self, other) {
@@ -84,10 +88,11 @@ class Solution {
 
     geojson(config) {
         let features = [];
-        if (!config.quiet) {
+        if (config.debug) {
             for (let r in this.ranges)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
+                        id: 'box' + r,
                         a: this.ranges[r].a,
                         b: this.ranges[r].b
                     }));
@@ -195,7 +200,24 @@ class Solution {
     }
 
     toString() {
-        return JSON.stringify(this.geojson());
+        return JSON.stringify(this.geojson({}));
+    }
+
+    trace() {
+        if (!this.opt.trace)
+            return;
+        for (let i in this.ranges)
+            if (!this.ranges[i].contains(this.opt.trace[i]))
+                return;
+        let r = `solution tracing: ${this.id} `;
+        for (let i in this.ranges)
+            r += this.ranges[i] + ' ';
+        if (this.bound)
+            r += `bound: ${this.bound} `;
+        if (this.score)
+            r += `score: ${this.score} `;
+        process.stdout.write('\n' + r + '\n');
+        fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
     }
 }
 
