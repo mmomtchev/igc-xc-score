@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "node test",
-    "build": "rollup -c"
+    "build": "rollup -c && nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64 && nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x86 && nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-macos -t darwin-x64-12.15.0"
   },
   "repository": {
     "type": "git",
