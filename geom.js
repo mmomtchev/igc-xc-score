@@ -6,6 +6,7 @@ const Box = util.Box;
 const Point = util.Point;
 const Range = util.Range;
 
+let flightPoints;
 
 /* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
  * http://www.penguin.cz/~ondrap/algorithm.pdf
