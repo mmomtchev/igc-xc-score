@@ -1,4 +1,3 @@
-const fs = require('fs');
 const SortedSet = require('collections/sorted-set');
 const solution = require('./solution');
 const Solution = solution.Solution;
@@ -6,6 +5,8 @@ const util = require('./util');
 const Range = util.Range;
 const geom = require('./geom');
 const scoring = require('./scoring');
+
+const terminalAvailable = process && process.stdout && process.stdout.write;
 
 function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {}) {
     flight.fixes = flight.fixes.filter(x => x.valid);
@@ -33,7 +34,7 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
     outer:
     while (solutionQueue.length > 0) {
         let current = solutionQueue.pop();
-        if (!config.quiet && process.stdout.write)
+        if (!config.quiet && terminalAvailable)
             process.stdout.write(`${solutionQueue.length} elements in queue, processing ${current.id}`
                 + ` ( <${current.bound.toFixed(4)} ~${best.opt.scoring.rounding(current.score)} ) best=${best.opt.scoring.rounding(best.score)} (${best.opt.scoring.name})`
                 + (config.debug ? (
@@ -41,7 +42,7 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
                 + ` ${current.ranges[0].a}:${current.ranges[0].b} ${current.ranges[1].a}:${current.ranges[1].b} ${current.ranges[2].a}:${current.ranges[2].b}\r`) : '\r'));
 
         if (current.bound <= best.score) {
-            if (!config.quiet && process.stdout.write)
+            if (!config.quiet && terminalAvailable)
                 process.stdout.write('only shit left in queue                                                                                                                  \n');
             break;
         }
@@ -59,7 +60,7 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
             }
             if (s.score >= best.score && s.score > 0) {
                 best = s;
-                if (!config.quiet && process.stdout.write)
+                if (!config.quiet && terminalAvailable)
                     process.stdout.write(`best so far : ${s.opt.scoring.name}, ${s.score.toFixed(5)} points, id:${s.id}`
                         + (config.debug ? (` ${s.ranges[0].a}:${s.ranges[0].b} ${s.ranges[1].a}:${s.ranges[1].b} ${s.ranges[2].a}:${s.ranges[2].b} ${s.parent}`) : '')
                         + '                                                                        \n');
@@ -69,7 +70,7 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
                     if (garbageBest !== undefined) {
                         const cutoff = solutionQueue.indexOf(garbageBest.value);
                         const garbageSize = solutionQueue.splice(0, cutoff + 1).length;
-                        if (!config.quiet && process.stdout.write)
+                        if (!config.quiet && terminalAvailable)
                             process.stdout.write(`throwing out the shit....  ${garbageSize} solutions zapped                                \n`);
                     }
                 }
@@ -77,7 +78,7 @@ function solver(flight, scoringTypes = scoring.defaultScoringTypes, config = {})
             solutionQueue.push(s);
         }
     }
-    if (!config.quiet && process.stdout.write)
+    if (!config.quiet && terminalAvailable)
         process.stdout.write(`processed ${processed} candidates                                                           \n`);
 
     best.processed = processed;

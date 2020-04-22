@@ -1,6 +1,4 @@
 let id = 0;
-
-const fs = require('fs');
 const util = require('./util');
 const Box = util.Box;
 const Point = util.Point;
@@ -204,7 +202,7 @@ class Solution {
     }
 
     trace() {
-        if (!this.opt.trace)
+        if (!this.opt.trace || !this.opt.writeFileSync)
             return;
         for (let i in this.ranges)
             if (!this.ranges[i].contains(this.opt.trace[i]))
@@ -217,7 +215,7 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        this.opt.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
     }
 }
 

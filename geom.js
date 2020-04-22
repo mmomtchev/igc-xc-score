@@ -1,4 +1,5 @@
-const Flatbush = require('flatbush');
+const _Flatbush = require('flatbush');
+const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
 const util = require('./util');
 const Box = util.Box;
