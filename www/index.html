@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>igc-xc-score</title>
+    <style>
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid m-1">
+        <div class="row h-100">
+            <div class="col-12 col-md-4 p-4 d-flex flex-column">
+                <h1>
+                    igc-xc-score Demo
+                </h1>
+                <p>
+                    igc-xc-score is a <a href="https://choosealicense.com/licenses/lgpl-3.0/">LGPLed</a> JS library for scoring paragliding/hang-gliding XC flights according to a configurable set of rules
+                </p>
+                <p>
+                    It can run in the browser, in a desktop application or as a standalone command-line tool
+                </p>
+                <p>
+                    The full source of the library and this webpage are available here:
+                </p>
+                <p>
+                    <a href="https://www.github.com/mmomtchev/igc-xc-score">https://www.github.com/mmomtchev/igc-xc-score</a>
+                </p>
+                <small class="text-muted mb-3">
+                    The CPU used for the optimization process is your CPU through the JS engine of your browser.
+                    You need a good computer with a good browser.
+                    Chrome, Firefox, Safari and the latest Edge since January 2020 should be ok.
+                    Everything else is probably not and will be slow.
+                </small>
+                <div class="jumbotron shadow p-1">
+                    <form id="igc-form" class="form-inline" action="" method="">
+                        <p class="d-inline m-0 ml-1 mr-1">Upload your igc file here</p>
+                        <label class="ml-auto btn btn-primary"> Browse
+                            <input id="igc-upload" type="file" accept=".igc" hidden>
+                        </label>
+                    </form>
+                </div>
+                <div class="jumbotron shadow p-1">
+                    <p id="status" class="m-0 ml-2 mr-2 p-1">ready</p>
+                </div>
+                <div id="spinner" class="w-100">
+                    <img class="w-100" src="pacman.svg"/>
+                </div>
+                <div class="mt-auto">
+                    <footer class="ml-auto blockquote-footer">Momtchil Momtchev, velivole.fr / meteo.guru / 2020</footer>
+                </div>
+            </div>
+            <div class="col-12 col-md-8">
+                <div id="map"></div>
+                <script src="bundle.js"></script>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
+"use strict";
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
 const scoring = require('./scoring');
@@ -26,7 +27,10 @@ for (let arg of process.argv.slice(3)) {
 
 if (Object.keys(config).length && !config.quiet)
     console.log(config);
-const best = solver(flight, scoring.defaultScoringTypes, config);
+if (!isNaN(config.maxtime))
+    config.maxtime *= 1000;
+const it = solver(flight, scoring.defaultScoringTypes, config);
+const best = it.next().value;
 
 if (config.out)
     fs.writeFileSync(config.out, JSON.stringify(best.geojson(config)));

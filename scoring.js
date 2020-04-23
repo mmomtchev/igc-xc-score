@@ -1,3 +1,4 @@
+"use strict";
 const solution = require('./solution');
 const Solution = solution.Solution;
 const util = require('./util');

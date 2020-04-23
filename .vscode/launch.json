@@ -48,9 +48,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20228755.igc",
-                "maxtime=5"
-            ],
+                "test/20228755.igc"            ],
             "console": "integratedTerminal"
         },
         {
@@ -61,9 +59,22 @@
             "args": [
                 "test/crash.igc",
                 "out=out.json",
+                "maxtime=10",
                 "verbose=true"
             ],
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Launch demo",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://${env:VELIVOLE_WORK}/xc-score",
+            "webRoot": "${env:HOME}/velivole/dev/www",
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:///./*": "${workspaceFolder}/*"
+            }
+        },
+        
     ]
 }

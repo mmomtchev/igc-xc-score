@@ -1,3 +1,4 @@
+"use strict";
 let id = 0;
 const util = require('./util');
 const Box = util.Box;
@@ -86,7 +87,7 @@ class Solution {
 
     geojson(config) {
         let features = [];
-        if (config.debug) {
+        if (config && config.debug) {
             for (let r in this.ranges)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -134,7 +135,7 @@ class Solution {
                     features.push({
                         type: 'Feature',
                         id: 'closing',
-                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        properties: { id: 'closing', 'stroke': 'green', 'stroke-width': 3 },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['in'].x, cp['in'].y], [cp['out'].x, cp['out'].y]],
@@ -144,8 +145,8 @@ class Solution {
                 else {
                     features.push({
                         type: 'Feature',
-                        id: 'closing',
-                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        id: 'seg_in',
+                        properties: { id: 'seg_out', 'stroke': 'green', 'stroke-width': 3 },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['in'].x, cp['in'].y], [tp[0].x, tp[0].y]],
@@ -154,8 +155,8 @@ class Solution {
                     });
                     features.push({
                         type: 'Feature',
-                        id: 'closing',
-                        properties: { id: 'seg', 'stroke': 'green', 'stroke-width': 3 },
+                        id: 'seg_out',
+                        properties: { id: 'seg_out', 'stroke': 'green', 'stroke-width': 3 },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['out'].x, cp['out'].y], [tp[2].x, tp[2].y]],
@@ -167,13 +168,26 @@ class Solution {
         } catch (e) {
             console.error('no closing points');
         }
-        if (!config.noflight) {
+        features.push(new Point(this.opt.flight, 0)
+            .geojson('launch', {
+                id: 'launch',
+                r: 0,
+                timestamp: this.opt.flight.fixes[0].timestamp
+            }));
+        features.push(new Point(this.opt.flight, this.opt.flight.fixes.length - 1)
+            .geojson('land', {
+                id: 'land',
+                r: this.opt.flight.fixes.length - 1,
+                timestamp: this.opt.flight.fixes[this.opt.flight.fixes.length - 1].timestamp
+            }));
+        if (!config || !config.noflight) {
             let flightData = [];
             for (let r of this.opt.flight.fixes) {
                 flightData.push([r.longitude, r.latitude]);
             }
             features.push({
                 type: 'Feature',
+                id: 'flight',
                 properties: { id: 'flight' },
                 geometry: {
                     type: 'LineString',
@@ -184,6 +198,7 @@ class Solution {
         let collection = {
             type: 'FeatureCollection',
             properties: {
+                name: 'EPSG:3857',
                 id: this.id,
                 score: this.score !== undefined ? this.score : undefined,
                 bound: this.bound !== undefined ? this.bound : undefined,

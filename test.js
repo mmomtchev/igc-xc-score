@@ -14,7 +14,7 @@ const testsFFVL = [
 
 for (let test of testsFFVL) {
     const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
-    const best = solver(flight, scoring.scoringFFVL, { quiet: true });
+    const best = solver(flight, scoring.scoringFFVL, { quiet: true }).next().value;
     if (best.score == test.score)
         console.log(test.file, String.fromCodePoint(0x2713));
     else {

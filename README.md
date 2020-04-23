@@ -36,8 +36,9 @@ If you just want to run it from the command-line, download the executable file f
 
 Or, if you already have Node.js, you can download the source distribution.
 
-```bash
-```
+You can try a demo here: [https://www.meteo.guru/xc-score/](https://www.meteo.guru/xc-score/).
+
+The sources used for this demo are in the www directory.
 
 ## Usage
 
@@ -63,16 +64,34 @@ const fs = require('fs');
 const IGCParser = require('./igc-parser');
 const scoring = require('./scoring');
 const solver = require('./solver');
-const flight = IGCParser.parse(fs.readFileSync('flight.igc'), 'utf8'));
-const result = solver(flight, scoring.scoringFFVL, { quiet: true, maxtime: 20 });
+const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
+const best = solver(flight, scoring.scoringFFVL, { quiet: true }).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
+solver is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
 
-Calling the solver from the browser is possible but it is still an ugly hack.
+It supports resetting or it will automatically reset itself if an optimal solution has been found.
 
-There is no progress callback and the solver will block your main event loop until a solution is found.
-**I will gladly accept a PR for a more browser-friendly interface. The ES2016 compatiblity also needs more work.**
+When calling from the browser, you should use requestIdleCallback when it is available. When it is not, setTimeout could be a good substitude.
+```JS
+function loop() {
+    const s = this.next();
+    if (!s.done) {
+        $('#spinner').show();
+        window.requestIdleCallback(loop.bind(this));
+        $('#status').html(`trying solutions, best so far is ${s.value.score} points`);
+    } else {
+        $('#spinner').hide();
+        $('#status').html(`Best possible ${s.value.score} points`);
+    }
+}
+
+window.requestIdleCallback(() => {
+    const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxtime: 100 });
+    loop.call(it);
+})
+```
 
 I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
 

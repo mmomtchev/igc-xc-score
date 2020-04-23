@@ -1,3 +1,4 @@
+"use strict";
 const REarth = 6371;
 
 function radians(degrees) {
