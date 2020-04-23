@@ -8,7 +8,7 @@ Currently only the FFVL scoring rules are implemented, but you can pass your own
 
 I plan to also add the XContest rules.
 
-Changing the coefficients is easy, adding new bounding algorithms is not.
+Changing the multipliers or the closing distances is easy, adding new bounding algorithms is not.
 
 ## Background
 
@@ -42,7 +42,7 @@ The sources used for this demo are in the www directory.
 
 ## Usage
 
-This tool 
+### The prepackaged command-line tool
 
 With an executable (**user**)
 ```bash
@@ -58,7 +58,9 @@ node index flight.igc
 cat flight.json | jq .properties
 ```
 
-From another program you should look at index.js and test.js for examples
+### The solver library
+
+Calling the solver from another Node.js program is easy, you should look at index.js and test.js for examples
 ```JS
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
@@ -73,8 +75,11 @@ solver is a generator function that can be called multiple times with a maximum 
 
 It supports resetting or it will automatically reset itself if an optimal solution has been found.
 
-When calling from the browser, you should use requestIdleCallback when it is available. When it is not, setTimeout could be a good substitude.
+When calling from the browser, in order to avoid blocking the main event loop, you should use requestIdleCallback when it is available. When it is not, setTimeout could be a good substitude. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
 ```JS
+const igcSolver = require('igc-xc-score/solver');
+const igcParser = require('igc-xc-score/igc-parser');
+const igcScoring = require('igc-xc-score/scoring');
 function loop() {
     const s = this.next();
     if (!s.done) {
