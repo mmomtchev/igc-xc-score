@@ -71,11 +71,11 @@ const best = solver(flight, scoring.scoringFFVL, { quiet: true }).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
-solver is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
+*solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
 
 It supports resetting or it will automatically reset itself if an optimal solution has been found.
 
-When calling from the browser, in order to avoid blocking the main event loop, you should use requestIdleCallback when it is available. When it is not, setTimeout could be a good substitude. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
+When calling from the browser, in order to avoid blocking the main event loop, you should use *requestIdleCallback* when it is available. When it is not, *setTimeout* could be a good substitute. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
 ```JS
 const igcSolver = require('igc-xc-score/solver');
 const igcParser = require('igc-xc-score/igc-parser');
