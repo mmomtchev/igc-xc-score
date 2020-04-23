@@ -1,10 +1,6 @@
-"use strict";
-const solution = require('./solution');
-const Solution = solution.Solution;
+'use strict';
 const util = require('./util');
 const Box = util.Box;
-const Point = util.Point;
-const Range = util.Range;
 const geom = require('./geom');
 
 /*
@@ -92,7 +88,7 @@ function scoreDistance3Points(tp, opt) {
     return { distance, score: distance, tp: tp, cp: { in: pin, out: pout, d: 0 } };
 }
 
-const MINSIDE = 0.28
+const MINSIDE = 0.28;
 function boundFAITriangle(ranges, opt) {
     let boxes = [];
     for (let r of [0, 1, 2])
@@ -155,4 +151,4 @@ module.exports = {
     scoreDistance3Points,
     boundFAITriangle,
     scoreFAITriangle,
-}
+};

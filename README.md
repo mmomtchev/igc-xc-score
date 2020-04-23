@@ -44,14 +44,14 @@ The sources used for this demo are in the www directory.
 
 This tool 
 
-With an executable (user)
+With an executable (**user**)
 ```bash
 igc-xc-score flight.igc out=flight.json maxtime=50
 ```
 
 You can visualize the resulting GeoJSON files at [geojson.io](http://geojson.io/).
 
-With node (developer)
+With node (**developer**)
 ```bash
 node igc-xc-score.min flight.igc out=flight.json quiet=true
 node index flight.igc

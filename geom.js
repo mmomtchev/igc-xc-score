@@ -4,7 +4,6 @@ const RBush = require('rbush');
 const util = require('./util');
 const Box = util.Box;
 const Point = util.Point;
-const Range = util.Range;
 
 let flightPoints;
 
@@ -204,7 +203,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
 }
 
 let furthestPoints;
-function findFurthestPointInSegment(sega, segb, target, opt) {
+function findFurthestPointInSegment(sega, segb, target) {
     let points;
     if (target instanceof Box)
         points = target.vertices();
@@ -238,7 +237,7 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     if (fpoint === undefined)
         fpoint = target;
     else
-        furthestPoints.insert({ minX: forigin.x, minY: forigin.y, maxX: forigin.x, maxY: forigin.y, o: fpoint.r })
+        furthestPoints.insert({ minX: forigin.x, minY: forigin.y, maxX: forigin.x, maxY: forigin.y, o: fpoint.r });
     return fpoint;
 }
 
@@ -271,4 +270,4 @@ module.exports = {
     findFurthestPointInSegment,
     isTriangleClosed,
     init,
-}
+};

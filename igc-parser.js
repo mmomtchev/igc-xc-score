@@ -3,7 +3,7 @@ var lookupManufacturer = require('flight-recorder-manufacturers/lookup');
 var ONE_HOUR = 60 * 60 * 1000;
 var ONE_DAY = 24 * 60 * 60 * 1000;
 /* tslint:disable:max-line-length */
-var RE_A = /^A(\w{3})(\w{3,}?)(?:FLIGHT:(\d+)|\:(.+))?$/;
+var RE_A = /^A(\w{3})(\w{3,}?)(?:FLIGHT:(\d+)|:(.+))?$/;
 var RE_HFDTE = /^HFDTE(?:DATE:)?(\d{2})(\d{2})(\d{2})(?:,?(\d{2}))?/;
 var RE_PLT_HEADER = /^H[FOP]PLT(?:.{0,}?:(.*)|(.*))$/;
 var RE_CM2_HEADER = /^H[FOP]CM2(?:.{0,}?:(.*)|(.*))$/; // P is used by some broken Flarms
@@ -58,7 +58,6 @@ var IGCParser = /** @class */ (function () {
                 }
                 else {
                     continue;
-                    throw error;
                 }
             }
         }
@@ -156,16 +155,16 @@ var IGCParser = /** @class */ (function () {
     IGCParser.prototype.parseARecord = function (line) {
         var match = line.match(RE_A);
         if (match) {
-            var manufacturer = lookupManufacturer(match[1]);
+            let manufacturer = lookupManufacturer(match[1]);
             var loggerId = match[2];
             var numFlight = match[3] ? parseInt(match[3], 10) : null;
-            var additionalData = match[4] || null;
+            let additionalData = match[4] || null;
             return { manufacturer: manufacturer, loggerId: loggerId, numFlight: numFlight, additionalData: additionalData };
         }
         match = line.match(/^A(\w{3})(.+)?$/);
         if (match) {
-            var manufacturer = lookupManufacturer(match[1]);
-            var additionalData = match[2] ? match[2].trim() : null;
+            let manufacturer = lookupManufacturer(match[1]);
+            let additionalData = match[2] ? match[2].trim() : null;
             return { manufacturer: manufacturer, loggerId: null, numFlight: null, additionalData: additionalData };
         }
         throw new Error("Invalid A record at line " + this.lineNumber + ": " + line);
@@ -185,7 +184,6 @@ var IGCParser = /** @class */ (function () {
         var match = line.match(regex);
         if (!match) {
             return '';
-            throw new Error("Invalid " + headerType + " header at line " + this.lineNumber + ": " + line);
         }
         return (match[1] || match[2] || '').replace(/_/g, underscoreReplacement).trim();
     };
@@ -329,8 +327,8 @@ var IGCParser = /** @class */ (function () {
     IGCParser.prototype.parseIJRecord = function (line) {
         var match = line.match(RE_IJ);
         if (!match) {
+            console.error("Invalid " + line[0] + " record at line " + this.lineNumber + ": " + line);
             return [];
-            throw new Error("Invalid " + line[0] + " record at line " + this.lineNumber + ": " + line);
         }
         var num = parseInt(match[1], 10);
         if (line.length < 3 + num * 7) {

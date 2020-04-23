@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
 const scoring = require('./scoring');

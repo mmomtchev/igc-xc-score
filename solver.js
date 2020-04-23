@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 const SortedSet = require('collections/sorted-set');
 const solution = require('./solution');
 const Solution = solution.Solution;

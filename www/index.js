@@ -1,3 +1,4 @@
+/*eslint-env jquery*/
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Map, View } from 'ol';
 import { transformExtent } from 'ol/proj';
@@ -6,11 +7,10 @@ import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 import { defaults as defaultControls, ScaleLine } from 'ol/control';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { Circle as CircleStyle, Stroke, Style } from 'ol/style';
 import { easeOut } from 'ol/easing';
 import 'ol/ol.css';
 import './igc-xc-score.css';
-
 
 const igcSolver = require('../solver');
 const igcParser = require('../igc-parser');
@@ -144,7 +144,7 @@ $(document).ready(() => {
 if (!window.requestIdleCallback)
     window.requestIdleCallback = (a) => {
         setTimeout(a, 50);
-    }
+    };
 
 $('#igc-upload').on('change', () => {
     const input = event.target;
@@ -173,7 +173,7 @@ $('#igc-upload').on('change', () => {
             window.requestIdleCallback(() => {
                 const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxtime: 100 });
                 loop.call(it);
-            })
+            });
         } catch (e) {
             $('#status').html(e);
             $('#spinner').hide();

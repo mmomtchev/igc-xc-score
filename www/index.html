@@ -19,7 +19,7 @@
                     igc-xc-score is a <a href="https://choosealicense.com/licenses/lgpl-3.0/">LGPLed</a> JS library for scoring paragliding/hang-gliding XC flights according to a configurable set of rules
                 </p>
                 <p>
-                    It can run in the browser, in a desktop application or as a standalone command-line tool
+                    It can run in the browser, in a desktop application or as a standalone command-line tool. Currently this demo supports only the FFVL rules.
                 </p>
                 <p>
                     The full source of the library and this webpage are available here:
@@ -28,6 +28,7 @@
                     <a href="https://www.github.com/mmomtchev/igc-xc-score">https://www.github.com/mmomtchev/igc-xc-score</a>
                 </p>
                 <small class="text-muted mb-3">
+                    Your IGC file never leaves your computer. You can download this page from the github link and use it while offline.
                     The CPU used for the optimization process is your CPU through the JS engine of your browser.
                     You need a good computer with a good browser.
                     Chrome, Firefox, Safari and the latest Edge since January 2020 should be ok.
@@ -35,7 +36,7 @@
                 </small>
                 <div class="jumbotron shadow p-1">
                     <form id="igc-form" class="form-inline" action="" method="">
-                        <p class="d-inline m-0 ml-1 mr-1">Upload your igc file here</p>
+                        <p class="d-inline m-0 ml-1 mr-1">Select your igc file here</p>
                         <label class="ml-auto btn btn-primary"> Browse
                             <input id="igc-upload" type="file" accept=".igc" hidden>
                         </label>
