@@ -25,7 +25,9 @@ export default [
 				],
 			}),
 			json(),
-			terser()
+			terser({
+				mangle: false
+			})
 		]
 	}
 ];

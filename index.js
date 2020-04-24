@@ -35,6 +35,7 @@ if (config.pipe) {
     outf = config.out;
 }
 const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'));
+config.env = { fs };
 
 let best;
 const tend = Date.now() + config.maxtime * 1000;
@@ -58,7 +59,7 @@ do {
     if (!config.quiet)
         process.stdout.write(`processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
     if (config.maxtime !== undefined && Date.now() > tend) {
-        process.stdout.write(`max execution time reached, no optimal solution found                                         \r`);
+        process.stdout.write('max execution time reached, no optimal solution found                                         \r');
         break;
     }
 } while (!newbest.done);

@@ -119,6 +119,12 @@ window.requestIdleCallback(() => {
 })
 ```
 
+### Integrating with a non-JS desktop application
+
+Probably the easiest way to embed the solver in a non-JS desktop application is to use the provided executable in pipe (stdin/stdout) mode. It expects an IGC file as its and input and it will output the possible solutions in GeoJSON format. See the section below on flight instruments if the file size is a problem.
+
+### igc-parser
+
 I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
 
 ### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
