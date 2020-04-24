@@ -82,26 +82,31 @@ function loop() {
     const s = this.next();
     if (!s.done) {
         $('#spinner').show();
+        display(s.value.geojson());
         window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.bound).toFixed(2)} points`);
-        display(s.value.geojson());
     } else {
         $('#spinner').hide();
-        let r = [`Best possible ${s.value.score} points<p>`,
-            `${s.value.opt.scoring.name}`,
-            `${s.value.scoreInfo.distance}km`,
+        display(s.value.geojson());
+        let r = [`<td class="label">Best possible</td><td class="data">${s.value.score} points</td>`,
+            `<td class="label">${s.value.opt.scoring.name}</td>`
+            + `<td class="data">${s.value.scoreInfo.distance}km</td>`,
         ];
         if (s.value.opt.scoring.closingDistance)
-            r.push(`closing distance ${s.value.scoreInfo.cp.d}km`);
+            r.push(`<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d}km</td>`);
+        let d = [];
         if (!s.value.opt.scoring.closingDistance)
-            r.push(`din:0 ${s.value.scoreInfo.cp['in'].distanceEarth(s.value.scoreInfo.tp[0]).toFixed(3)}km`);
+            d.push(['in:0', s.value.scoreInfo.cp['in'], s.value.scoreInfo.tp[0]]);
         for (let i of [0, 1, 2])
             if (i != 2 || s.value.opt.scoring.closingDistance)
-                r.push(`d${i}:${(i + 1) % 3} ${s.value.scoreInfo.tp[i].distanceEarth(s.value.scoreInfo.tp[(i + 1) % 3]).toFixed(3)}km`);
+                d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % 3]]);
         if (!s.value.opt.scoring.closingDistance)
-            r.push(`d2:out ${s.value.scoreInfo.cp['out'].distanceEarth(s.value.scoreInfo.tp[2]).toFixed(3)}km`);
-        $('#status').html(r.join('<p>'));
+            d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.cp['out']]);
+
+        for (let i of d)
+            r.push(`<td class="label">d${i[0]}</td><td class="data">${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+        $('#status').html('<table class="table"><tr>' + r.join('</tr><tr>'));
     }
 }
 
@@ -151,6 +156,7 @@ $('#igc-upload').on('change', () => {
     const reader = new FileReader();
     reader.onload = function () {
         try {
+            flightDataSource.clear();
             $('#spinner').show();
             const igcData = reader.result;
             $('#status').html(`igc loaded, ${igcData.length} bytes read`);
@@ -165,7 +171,7 @@ $('#igc-upload').on('change', () => {
                 maxlon = Math.max(r.longitude, maxlon);
             }
             map.getView().fit(transformExtent([minlon, minlat, maxlon, maxlat], 'EPSG:4326', 'EPSG:3857'), {
-                padding: [20, 20, 20, 20],
+                padding: [20, 20, 50, 20],
                 duration: 1,
                 easing: easeOut
             });
