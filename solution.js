@@ -84,9 +84,9 @@ class Solution {
         return 0;
     }
 
-    geojson(config) {
+    geojson() {
         let features = [];
-        if (config && config.debug) {
+        if (this.opt.config && this.opt.config.debug) {
             for (let r in this.ranges)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -108,7 +108,12 @@ class Solution {
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
-                        properties: { id: 'seg' + r, 'stroke': 'yellow', 'stroke-width': 4 },
+                        properties: {
+                            id: 'seg' + r,
+                            'stroke': 'yellow',
+                            'stroke-width': 4,
+                            d: tp[r].distanceEarth(tp[(r + 1) % 3])
+                        },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % 3].x, tp[(r + 1) % 3].y]],
@@ -134,7 +139,12 @@ class Solution {
                     features.push({
                         type: 'Feature',
                         id: 'closing',
-                        properties: { id: 'closing', 'stroke': 'green', 'stroke-width': 3 },
+                        properties: {
+                            id: 'closing',
+                            'stroke': 'green',
+                            'stroke-width': 3,
+                            d: cp['in'].distanceEarth(cp['out'])
+                        },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['in'].x, cp['in'].y], [cp['out'].x, cp['out'].y]],
@@ -145,7 +155,12 @@ class Solution {
                     features.push({
                         type: 'Feature',
                         id: 'seg_in',
-                        properties: { id: 'seg_out', 'stroke': 'green', 'stroke-width': 3 },
+                        properties: {
+                            id: 'seg_in',
+                            'stroke': 'green',
+                            'stroke-width': 3,
+                            d: cp['in'].distanceEarth(tp[0])
+                        },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['in'].x, cp['in'].y], [tp[0].x, tp[0].y]],
@@ -155,7 +170,12 @@ class Solution {
                     features.push({
                         type: 'Feature',
                         id: 'seg_out',
-                        properties: { id: 'seg_out', 'stroke': 'green', 'stroke-width': 3 },
+                        properties: {
+                            id: 'seg_out',
+                            'stroke': 'green',
+                            'stroke-width': 3,
+                            d: cp['out'].distanceEarth(tp[2])
+                        },
                         geometry: {
                             type: 'LineString',
                             coordinates: [[cp['out'].x, cp['out'].y], [tp[2].x, tp[2].y]],
@@ -179,7 +199,7 @@ class Solution {
                 r: this.opt.flight.fixes.length - 1,
                 timestamp: this.opt.flight.fixes[this.opt.flight.fixes.length - 1].timestamp
             }));
-        if (!config || !config.noflight) {
+        if (!this.opt.config || !this.opt.config.noflight) {
             let flightData = [];
             for (let r of this.opt.flight.fixes) {
                 flightData.push([r.longitude, r.latitude]);
@@ -200,7 +220,7 @@ class Solution {
                 name: 'EPSG:3857',
                 id: this.id,
                 score: this.score !== undefined ? this.score : undefined,
-                bound: this.bound !== undefined ? this.bound : undefined,
+                bound: this.currentUpperBound !== undefined ? this.currentUpperBound : this.bound,
                 optimal: this.optimal,
                 processedTime: this.time / 1000,
                 processedSolutions: this.processed,
@@ -212,11 +232,21 @@ class Solution {
     }
 
     toString() {
-        return JSON.stringify(this.geojson({}));
+        let s = `${this.opt.scoring.name}`;
+        if (this.score)
+            s += ` ${this.opt.scoring.rounding(this.score)}`;
+        s += ` ( <${this.bound.toFixed(4)} )`;
+        if (this.opt.config && this.opt.config.debug) {
+            s += ` { id: ${this.id} `;
+            for (let r of this.ranges)
+                s += ' ' + r.toString();
+            s += ' } ';
+        }
+        return s;
     }
 
     trace() {
-        if (!this.opt.trace || !this.opt.env || !this.opt.env.fs)
+        if (!this.opt.trace)
             return;
         for (let i in this.ranges)
             if (!this.ranges[i].contains(this.opt.trace[i]))

@@ -8,7 +8,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20268357.igc"
+                "test/tri.igc"
             ],
             "console": "integratedTerminal"
         },
@@ -18,7 +18,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20269833.igc"
+                "test/d3p.igc",
+                "out=out.json"
             ],
             "console": "integratedTerminal"
         },
@@ -28,7 +29,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20267711.igc"
+                "test/bigflat.igc"
             ],
             "console": "integratedTerminal"
         },
@@ -38,7 +39,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20269304.igc"
+                "test/fai.igc"
             ],
             "console": "integratedTerminal"
         },
@@ -48,7 +49,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/20228755.igc"            ],
+                "test/line.igc"            ],
             "console": "integratedTerminal"
         },
         {

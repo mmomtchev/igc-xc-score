@@ -44,7 +44,7 @@ The sources used for this demo are in the www directory.
 
 ### The prepackaged command-line tool
 
-With an executable (**user**)
+Using with an executable (**user**)
 ```bash
 igc-xc-score flight.igc out=flight.json maxtime=50
 ```
@@ -53,7 +53,17 @@ You can visualize the resulting GeoJSON files at [geojson.io](http://geojson.io/
 
 It will contain all the details of the optimal solution - score, distances, turnpoints. See the section below on program output for additional details.
 
-With node (**developer**)
+Valid options are:
+```bash
+out=<geojson>           # save the optimal solution in <geojson>
+maxtime=<seconds>       # do not run for more than <seconds>, producing eventually a sub-optimal result
+quiet=false             # do not output any unncessary information
+pipe=false              # run in pipe mode, reading flight data from stdin and writing optimal solutions to stdout, works best with quiet, use stdin for filename
+progress=<milliseconds> # report the current solution every <milliseconds>, works best in pipe mode
+noflight=false          # do not include the flight track in the geojson output
+```
+
+Using with node (**developer**)
 ```bash
 node igc-xc-score.min flight.igc out=flight.json quiet=true
 node index flight.igc
@@ -74,8 +84,17 @@ if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
 *solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
+*Be advised that in JS, a for..of loop will ignore the final return value of a generator. Do not use a for..of loop. Look at index.js for a proper solution.*
 
 It supports resetting or it will automatically reset itself if an optimal solution has been found.
+
+*solver* accepts the following options in its third argument:
+```JS
+const opt = {
+    maxcycle: undefined          // max execution time per cycle in milliseconds
+    noflight: false              // do not include the flight track in the geojson output
+}
+```
 
 When calling from the browser, in order to avoid blocking the main event loop, you should use *requestIdleCallback* when it is available. When it is not, *setTimeout* could be a good substitute. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
 ```JS
@@ -95,7 +114,7 @@ function loop() {
 }
 
 window.requestIdleCallback(() => {
-    const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxtime: 100 });
+    const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxcycle: 100 });
     loop.call(it);
 })
 ```
@@ -121,7 +140,7 @@ This will lower the executable size down to about 10Mb on Windows and 15Mb on Li
 
 #### If CPU/memory is the problem
 
-I have lots of experience working on ARM and MIPS platforms, so you can contact me for porting the library to your specific device, but this definitely won't be free or open-source software. Debugging a very complex mathematical algorithm on a small electronic board with an integrated hardware debugger is not a leisure project.
+I have lots of experience working on ARM and MIPS platforms, so you can contact me for porting the library to your specific device, but this definitely won't be free or open-source software. Debugging a very complex mathematical algorithm in C++ on a small electronic board with an integrated hardware debugger is not a leisure project.
 
 ## Program Output
 

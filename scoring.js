@@ -138,7 +138,7 @@ function scoreFAITriangle(tp, opt) {
 }
 
 function round2(score) {
-    return score.toFixed(2);
+    return parseFloat(parseFloat(score).toFixed(2));
 }
 
 module.exports = {

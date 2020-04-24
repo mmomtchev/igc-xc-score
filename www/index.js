@@ -85,7 +85,7 @@ function loop() {
         display(s.value.geojson());
         window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
-            + `<p>theoretical best could be up to ${parseFloat(s.value.bound).toFixed(2)} points`);
+            + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
     } else {
         $('#spinner').hide();
         display(s.value.geojson());
@@ -177,7 +177,7 @@ $('#igc-upload').on('change', () => {
             });
 
             window.requestIdleCallback(() => {
-                const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxtime: 100 });
+                const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxcycle: 100 });
                 loop.call(it);
             });
         } catch (e) {
