@@ -59,7 +59,7 @@ function* solver(flight, _scoringTypes, _config) {
                             const garbageBest = solutionQueue.findGreatestLessThanOrEqual({ bound: best.score });
                             if (garbageBest !== undefined) {
                                 const cutoff = solutionQueue.indexOf(garbageBest.value);
-                                const garbageSize = solutionQueue.splice(0, cutoff + 1).length;
+                                solutionQueue.splice(0, cutoff + 1).length;
                             }
                         }
                     }

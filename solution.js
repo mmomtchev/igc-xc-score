@@ -259,7 +259,7 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        this.opt.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
     }
 }
 
