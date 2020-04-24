@@ -51,6 +51,8 @@ igc-xc-score flight.igc out=flight.json maxtime=50
 
 You can visualize the resulting GeoJSON files at [geojson.io](http://geojson.io/).
 
+It will contain all the details of the optimal solution - score, distances, turnpoints. See the section below on program output for additional details.
+
 With node (**developer**)
 ```bash
 node igc-xc-score.min flight.igc out=flight.json quiet=true
@@ -60,7 +62,7 @@ cat flight.json | jq .properties
 
 ### The solver library
 
-Calling the solver from another Node.js program is easy, you should look at index.js and test.js for examples
+Calling the solver from another Node.js program is easy, you should look at *index.js* and *test.js* for examples
 ```JS
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
@@ -99,6 +101,27 @@ window.requestIdleCallback(() => {
 ```
 
 I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
+
+### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
+
+Depending on the exact nature of your device, you might be able to use the full version. Android-based devices should be more than capable of running the original JS code.
+
+#### If the problem is the executable file size
+
+Using the JS code in an older embedded engine (Rhino and Chakra for example) will lead to abysmal performance. However a very simple solution is to use Babel 6 to transpile to ES2015 and to embed Node4:
+```bash
+npm i nexe babel-cli babel-plugin-transform-runtime babel-polyfill babel-preset-env babel-preset-es2015 babel-preset-stage-0
+echo '{"presets":["es2015","stage-0"],"plugins":[["transform-runtime",{"regenerator":true}]]}' > .babelrc
+babel igc-xc-score.min.js --minified -o igc-xc-score.es2015.min.js
+cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-linux -t linux-x64-4.9.1
+cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-macos -t mac-x64-4.9.1
+cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-win.exe -t windows-x64-4.8.4
+```
+This will lower the executable size down to about 10Mb on Windows and 15Mb on Linux with almost no loss of performance at all. Further reduction is possible if you build yourself a Node 0.14 package.
+
+#### If CPU/memory is the problem
+
+I have lots of experience working on ARM and MIPS platforms, so you can contact me for porting the library to your specific device, but this definitely won't be free or open-source software. Debugging a very complex mathematical algorithm on a small electronic board with an integrated hardware debugger is not a leisure project.
 
 ## Program Output
 
