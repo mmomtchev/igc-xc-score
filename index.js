@@ -1,7 +1,6 @@
 'use strict';
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
-const scoring = require('./scoring-rules.config');
 const solver = require('./solver');
 const Solution = require('./solution').Solution;
 const util = require('./util');
@@ -37,7 +36,7 @@ if (config.pipe) {
         console.log(`igc-xc-score ${require('./package.json').version}`);
         console.log('Momtchil Momtchev, velivole.fr/meteo.guru, 2020/COVID19');
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|Xcontest] [quiet=true] [pipe=true] [progress=<n>]');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>]');
         console.log('flight.igc             is the flight track log');
         console.log('out=flight.json        save the optimal solution in GeoJSON format');
         console.log('maxtime=n              limit the execution time to n seconds');
