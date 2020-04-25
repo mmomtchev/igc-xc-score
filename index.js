@@ -23,13 +23,28 @@ for (let arg of process.argv.slice(3)) {
 if (Object.keys(config).length && !config.quiet)
     console.log(config);
 
+if (config.scoring && !scoringRules[config.scoring]) {
+    console.log(`No scoring rules named ${config.scoring}`);
+    process.exit(2);
+}
+
 let inf, outf;
 if (config.pipe) {
     inf = 0;
     outf = 1;
 } else {
     if (!process.argv[2]) {
-        console.log('please specify an IGC file');
+        console.log(`igc-xc-score ${require('./package.json').version}`);
+        console.log('Momtchil Momtchev, velivole.fr/meteo.guru, 2020/COVID19');
+        console.log('Usage:');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|Xcontest] [quiet=true] [pipe=true] [progress=<n>]');
+        console.log('flight.igc             is the flight track log');
+        console.log('out=flight.json        save the optimal solution in GeoJSON format');
+        console.log('maxtime=n              limit the execution time to n seconds');
+        console.log('scoring=FFVL|XContest  select the scoring rules');
+        console.log('quiet=true             suppress all output');
+        console.log('pipe=true              read flight data from stdin and write optimal solutions to stdout, works best with quiet');
+        console.log('progress=<n>           output an intermediate solution every n milliseconds, works best with pipe');
         process.exit(1);
     }
     inf = process.argv[2];
