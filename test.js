@@ -10,7 +10,8 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'line.igc', score: 53.34 },
-        { file: 'tri.igc', score: 17.51 }
+        { file: 'tri.igc', score: 17.51 },
+        { file: 'record_de_france.igc', score: 421.91 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },

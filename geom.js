@@ -38,7 +38,7 @@ function maxDistance3Rectangles(boxes, distance_fn) {
             for (let v of vertices[i])
                 if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
                     path[i].push(v);
-        if (path[i].length == 0 || (i > 1 && boxes[i-1].intersects(boxes[i])))
+        if (path[i].length == 0 || (i > 1 && boxes[i - 1].intersects(boxes[i])))
             path[i] = vertices[i];
     }
 
@@ -211,31 +211,34 @@ function findFurthestPointInSegment(sega, segb, target) {
         points = [target];
     else
         throw 'target must be either Point or Box';
-        
+
     let distanceMax = -Infinity;
     let fpoint;
     for (let v of points) {
         const precomputed = furthestPoints.search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y });
-        for (let pc of precomputed) {
-            if (sega <= pc.o && pc.o <= segb) {
-                fpoint = flightPoints[pc.o];
-                return fpoint;
-            }
-        }
         let distanceVMax = -Infinity;
         let fVpoint;
-        for (let p = sega; p <= segb; p++) {
-            const f = flightPoints[p];
-            if (target instanceof Box && target.intersects(f))
-                continue;
-            const d = v.distanceEarth(f);
-            if (d > distanceVMax) {
-                distanceVMax = d;
-                fVpoint = f;
+        for (let pc of precomputed) {
+            if (sega <= pc.o && pc.o <= segb) {
+                fVpoint = flightPoints[pc.o];
+                distanceVMax = v.distanceEarth(fVpoint);
+                break;
             }
         }
-        if (fVpoint !== undefined)
-            furthestPoints.insert({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, o: fVpoint.r });
+        if (fVpoint === undefined) {
+            for (let p = sega; p <= segb; p++) {
+                const f = flightPoints[p];
+                if (target instanceof Box && target.intersects(f))
+                    continue;
+                const d = v.distanceEarth(f);
+                if (d > distanceVMax) {
+                    distanceVMax = d;
+                    fVpoint = f;
+                }
+            }
+            if (fVpoint !== undefined)
+                furthestPoints.insert({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, o: fVpoint.r });
+        }
         if (distanceVMax > distanceMax) {
             distanceMax = distanceVMax;
             fpoint = fVpoint;
@@ -252,7 +255,7 @@ function isTriangleClosed(p1, p2, distance, opt) {
     for (let f of fastCandidates)
         if (f.o.d <= opt.scoring.closingDistanceFree)
             return f.o;
-    
+
     const min = findClosestPairIn2Segments(p1, p2, opt);
 
     if (min.d <= opt.scoring.closingDistance(distance, opt))
