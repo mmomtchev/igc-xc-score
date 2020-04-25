@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node test",
+    "test": "node test && npm run -s eslint",
+    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js util.js",
     "nexe_linux": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x86",
     "nexe_win": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64",
     "nexe_mac": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
@@ -50,6 +51,7 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jquery": "^3.5.0",
+    "nexe": "^3.3.2",
     "ol": "^6.3.1",
     "popper.js": "^1.16.1",
     "rollup": "^2.6.1",

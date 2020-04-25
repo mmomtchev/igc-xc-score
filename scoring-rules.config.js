@@ -1,5 +1,5 @@
 'use strict';
-const scoring = require('./scoring')
+const scoring = require('./scoring');
 
 /*
  * These are the scoring types

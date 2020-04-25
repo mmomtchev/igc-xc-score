@@ -43,6 +43,7 @@ function closingWithLimit(distance, opt) {
     return Math.max(opt.scoring.closingDistanceFixed || 0, distance * (opt.scoring.closingDistanceRelative || 0));
 }
 
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
 function closingWithPenalty(distance, opt) {
     return Infinity;
 }
