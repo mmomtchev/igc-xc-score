@@ -244,12 +244,12 @@ function findFurthestPointInSegment(sega, segb, target) {
 function isTriangleClosed(p1, p2, distance, opt) {
     const fastCandidates = closestPairs.search({ minX: 0, minY: p2, maxX: p1, maxY: opt.flight.fixes.length });
     for (let f of fastCandidates)
-        if (f.o.d < opt.scoring.closingDistance(0))
+        if (f.o.d <= opt.scoring.closingDistanceFree)
             return f.o;
     
     const min = findClosestPairIn2Segments(p1, p2, opt);
 
-    if (min.d <= opt.scoring.closingDistance(distance))
+    if (min.d <= opt.scoring.closingDistance(distance, opt))
         return min;
     return false;
 }

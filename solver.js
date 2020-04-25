@@ -5,13 +5,13 @@ const Solution = solution.Solution;
 const util = require('./util');
 const Range = util.Range;
 const geom = require('./geom');
-const scoring = require('./scoring');
+const scoringRules = require('./scoring-rules.config');
 
 function* solver(flight, _scoringTypes, _config) {
     let reset;
 
     while (true) {
-        const scoringTypes = _scoringTypes || scoring.defaultScoringTypes;
+        const scoringTypes = _scoringTypes || scoringRules.FFVL;
         const config = _config || {};
         flight.fixes = flight.fixes.filter(x => x.valid);
         let solutionRoots = [];

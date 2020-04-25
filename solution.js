@@ -234,7 +234,9 @@ class Solution {
     toString() {
         let s = `${this.opt.scoring.name}`;
         if (this.score)
-            s += ` ${this.opt.scoring.rounding(this.score)}`;
+            s += ` ${this.opt.scoring.rounding(this.score)} points`;
+        if (this.scoreInfo)
+            s += ` ${this.opt.scoring.rounding(this.scoreInfo.distance)}km`;
         s += ` ( <${this.bound.toFixed(4)} )`;
         if (this.opt.config && this.opt.config.debug) {
             s += ` { id: ${this.id} `;

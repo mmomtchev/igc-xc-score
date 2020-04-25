@@ -1,5 +1,4 @@
 /*eslint-env jquery*/
-import 'bootstrap/dist/css/bootstrap.min.css';
 import { Map, View } from 'ol';
 import { transformExtent } from 'ol/proj';
 import GeoJSON from 'ol/format/GeoJSON';
@@ -9,12 +8,14 @@ import VectorSource from 'ol/source/Vector';
 import { defaults as defaultControls, ScaleLine } from 'ol/control';
 import { Circle as CircleStyle, Stroke, Style } from 'ol/style';
 import { easeOut } from 'ol/easing';
+import 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
 import './igc-xc-score.css';
 
 const igcSolver = require('../solver');
 const igcParser = require('../igc-parser');
-const igcScoring = require('../scoring');
+const igcScoring = require('../scoring-rules.config');
 
 const flightStyle = {
     'flight': new Style({
@@ -151,6 +152,10 @@ if (!window.requestIdleCallback)
         setTimeout(a, 50);
     };
 
+$('.ctrl-scoringRules').on('click', (event) => {
+    $('#igc-scoringRules').html($(event.target).html());
+});
+
 $('#igc-upload').on('change', () => {
     const input = event.target;
     const reader = new FileReader();
@@ -177,7 +182,9 @@ $('#igc-upload').on('change', () => {
             });
 
             window.requestIdleCallback(() => {
-                const it = igcSolver(igcFlight, igcScoring.scoringFFVL, { maxcycle: 100 });
+                console.log($('#igc-scoringRules').html(), igcScoring);
+                console.log(igcScoring[$('#igc-scoringRules').html()]);
+                const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], { maxcycle: 100 });
                 loop.call(it);
             });
         } catch (e) {

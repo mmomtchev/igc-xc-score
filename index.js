@@ -1,10 +1,11 @@
 'use strict';
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
-const scoring = require('./scoring');
+const scoring = require('./scoring-rules.config');
 const solver = require('./solver');
 const Solution = require('./solution').Solution;
 const util = require('./util');
+const scoringRules = require('./scoring-rules.config');
 
 let config = { };
 for (let arg of process.argv.slice(3)) {
@@ -40,7 +41,7 @@ config.env = { fs };
 let best;
 const tend = Date.now() + config.maxtime * 1000;
 config.maxcycle = config.progress || 100;
-const it = solver(flight, scoring.defaultScoringTypes, config);
+const it = solver(flight, scoringRules[config.scoring] || scoringRules.FFVL, config);
 /* 
  * BEWARE!
  * In JS generators a for..of loop will ignore the closing return value of the generator
