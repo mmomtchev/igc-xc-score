@@ -213,7 +213,7 @@ function findFurthestPointInSegment(sega, segb, target) {
         throw 'target must be either Point or Box';
         
     let distanceMax = -Infinity;
-    let fpoint, forigin;
+    let fpoint;
     for (let v of points) {
         const precomputed = furthestPoints.search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y });
         for (let pc of precomputed) {
@@ -222,22 +222,28 @@ function findFurthestPointInSegment(sega, segb, target) {
                 return fpoint;
             }
         }
+        let distanceVMax = -Infinity;
+        let fVpoint;
         for (let p = sega; p <= segb; p++) {
             const f = flightPoints[p];
             if (target instanceof Box && target.intersects(f))
                 continue;
             const d = v.distanceEarth(f);
-            if (d > distanceMax) {
-                distanceMax = d;
-                fpoint = f;
-                forigin = v;
+            if (d > distanceVMax) {
+                distanceVMax = d;
+                fVpoint = f;
             }
+        }
+        if (fVpoint !== undefined)
+            furthestPoints.insert({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, o: fVpoint.r });
+        if (distanceVMax > distanceMax) {
+            distanceMax = distanceVMax;
+            fpoint = fVpoint;
         }
     }
     if (fpoint === undefined)
         fpoint = target;
-    else
-        furthestPoints.insert({ minX: forigin.x, minY: forigin.y, maxX: forigin.x, maxY: forigin.y, o: fpoint.r });
+
     return fpoint;
 }
 
@@ -269,5 +275,5 @@ module.exports = {
     maxDistanceNRectangles,
     findFurthestPointInSegment,
     isTriangleClosed,
-    init,
+    init
 };

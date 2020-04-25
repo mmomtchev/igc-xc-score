@@ -20,8 +20,8 @@ const tests = {
         { file: 'flat-xcontest-8.01.igc', score: 8.07 },
         { file: 'trifai-xcontest-189.65.igc', score: 191.84 },
         { file: 'trifai-xcontest-452.21.igc', score: 455.38 },
-        { file: 'trifai-xcontest-307.57.igc', score: 308.33 }
-        //{ file: 'freeflight-xcontest-465.33.igc', score: 465.55 }, // this one is still very slow
+        { file: 'trifai-xcontest-307.57.igc', score: 308.33 },
+        { file: 'freeflight-xcontest-465.33.igc', score: 465.58 }
     ]
 };
 
