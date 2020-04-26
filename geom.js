@@ -184,9 +184,9 @@ function findClosestPairIn2Segments(p1, p2, opt) {
         return precomputed.o;
 
     const rtree = new Flatbush(p1 + 1);
+    const lc = Math.abs(Math.cos(util.radians(opt.flight.fixes[p1].latitude)));
     for (let i = 0; i <= p1; i++) {
         const r = opt.flight.fixes[i];
-        const lc = Math.abs(Math.cos(util.radians(r.latitude)));
         rtree.add(r.longitude * lc, r.latitude, r.longitude * lc, r.latitude);
     }
     rtree.finish();
@@ -194,7 +194,6 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     let min = { d: Infinity };
     for (let i = p2; i < opt.flight.fixes.length; i++) {
         const pout = flightPoints[i];
-        const lc = Math.abs(Math.cos(util.radians(pout.y)));
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0];
         if (n !== undefined) {
             const pin = flightPoints[n];
