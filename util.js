@@ -220,5 +220,6 @@ module.exports = {
     Point,
     Range,
     Box,
+    radians,
     consoleColors
 };

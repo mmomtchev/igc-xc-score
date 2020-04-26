@@ -81,6 +81,7 @@
                 "test/crash.igc",
                 "out=out.json",
                 "maxtime=10",
+                "debug=true",
                 "verbose=true"
             ],
             "console": "integratedTerminal"
