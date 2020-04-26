@@ -10,6 +10,8 @@ Changing the multipliers or the closing distances is easy, adding new bounding a
 
 See *scoring-rules.config.js* if you want to modify the rules.
 
+**You have an IGC file for which you think that there is a higher scoring solution using only track-log points? Send it along with your turnpoints and I will investigate.**
+
 ## Background
 
 Correctly scoring paragliding XC flights is a rather hard linear optimization problem that remains impossible to correctly solve in a deterministic way for every possible flight.
