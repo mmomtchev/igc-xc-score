@@ -79,7 +79,6 @@ function* solver(flight, _scoringTypes, _config) {
                 best.optimal = true;
             else
                 best.optimal = false;
-            best.score = best.opt.scoring.rounding(best.score);
             if (best.scoreInfo) {
                 best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
                 if (best.scoreInfo.cp.d)
@@ -87,9 +86,10 @@ function* solver(flight, _scoringTypes, _config) {
             }
 
             if (best.optimal) {
+                best.score = best.opt.scoring.rounding(best.score);
                 reset = true;
                 return best;
-            } else 
+            } else
                 reset = yield best;
         } while (!reset);
     }
