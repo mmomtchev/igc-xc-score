@@ -152,9 +152,20 @@ if (!window.requestIdleCallback)
         setTimeout(a, 50);
     };
 
+function runProcessing() {
+    window.requestIdleCallback(() => {
+        const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], { maxcycle: 100 });
+        loop.call(it);
+    });
+}
+
 $('.ctrl-scoringRules').on('click', (event) => {
     $('#igc-scoringRules').html($(event.target).html());
+    if (igcFlight)
+        runProcessing();
 });
+
+let igcFlight;
 
 $('#igc-upload').on('change', () => {
     const input = event.target;
@@ -165,7 +176,7 @@ $('#igc-upload').on('change', () => {
             $('#spinner').show();
             const igcData = reader.result;
             $('#status').html(`igc loaded, ${igcData.length} bytes read`);
-            const igcFlight = igcParser.parse(igcData, 'utf8');
+            igcFlight = igcParser.parse(igcData, 'utf8');
             $('#status').html(`igc parsed, ${igcFlight.fixes.length} GPS records found`);
             let minlat, maxlat, minlon, maxlon;
             [minlat, maxlat, minlon, maxlon] = [Infinity, -Infinity, Infinity, -Infinity];
@@ -180,17 +191,14 @@ $('#igc-upload').on('change', () => {
                 duration: 1,
                 easing: easeOut
             });
-
-            window.requestIdleCallback(() => {
-                console.log($('#igc-scoringRules').html(), igcScoring);
-                console.log(igcScoring[$('#igc-scoringRules').html()]);
-                const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], { maxcycle: 100 });
-                loop.call(it);
-            });
+            runProcessing();
         } catch (e) {
             $('#status').html(e);
             $('#spinner').hide();
+            igcFlight = undefined;
         }
     };
-    reader.readAsBinaryString(input.files[0]);
+
+    if (input.files[0])
+        reader.readAsBinaryString(input.files[0]);
 });
