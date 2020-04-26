@@ -53,6 +53,26 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "ZIGZAG",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/zigzag.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "ZIGZAGTRI",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/index",
+            "args": [
+                "test/flat-ffvl-26.37.igc"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "CRASH",
             "type": "node",
             "request": "launch",

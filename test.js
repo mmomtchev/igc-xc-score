@@ -11,7 +11,9 @@ const tests = {
         { file: 'fai.igc', score: 228.71 },
         { file: 'line.igc', score: 53.34 },
         { file: 'tri.igc', score: 17.51 },
-        { file: 'record_de_france.igc', score: 421.91 }
+        { file: 'record_de_france.igc', score: 422.02 },
+        { file: 'zigzag.igc', score: 90.64 },
+        { file: 'flat-ffvl-26.37.igc', score: 26.4 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },

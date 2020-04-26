@@ -29,6 +29,13 @@ function maxDistance3Rectangles(boxes, distance_fn) {
         maxy = Math.max(maxy || -Infinity, boxes[r].y2);
     }
 
+    let intersecting = false;
+    for (let i of [0, 1, 2])
+        if (boxes[i].intersects(boxes[(i + 1) % 3])) {
+            intersecting = true;
+            break;
+        }
+
     let path = [[], [], []];
     for (let i of [0, 1, 2]) {
         for (let v of vertices[i])
@@ -38,7 +45,7 @@ function maxDistance3Rectangles(boxes, distance_fn) {
             for (let v of vertices[i])
                 if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
                     path[i].push(v);
-        if (path[i].length == 0 || (i > 1 && boxes[i - 1].intersects(boxes[i])))
+        if (path[i].length == 0 || intersecting)
             path[i] = vertices[i];
     }
 
@@ -225,18 +232,33 @@ function findFurthestPointInSegment(sega, segb, target) {
                 break;
             }
         }
+        let intersecting = false;
+        let canCache = false;
         if (fVpoint === undefined) {
             for (let p = sega; p <= segb; p++) {
                 const f = flightPoints[p];
-                if (target instanceof Box && target.intersects(f))
+                if (target instanceof Box && target.intersects(f)) {
+                    intersecting = true;
                     continue;
+                }
                 const d = v.distanceEarth(f);
                 if (d > distanceVMax) {
                     distanceVMax = d;
                     fVpoint = f;
+                    canCache = true;
                 }
             }
-            if (fVpoint !== undefined)
+            if (intersecting) {
+                for (let p of points) {
+                    const d = v.distanceEarth(p);
+                    if (d > distanceVMax) {
+                        distanceVMax = d;
+                        fVpoint = target;
+                        canCache = false;
+                    }
+                }
+            }
+            if (canCache)
                 furthestPoints.insert({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, o: fVpoint.r });
         }
         if (distanceVMax > distanceMax) {

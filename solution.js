@@ -248,10 +248,11 @@ class Solution {
     }
 
     trace() {
-        if (!this.opt.trace || !process.stdout)
+        if (!this.opt.config.trace || !process.stdout)
             return;
+        const trace = this.opt.config.trace.split(',');
         for (let i in this.ranges)
-            if (!this.ranges[i].contains(this.opt.trace[i]))
+            if (!this.ranges[i].contains(trace[i]))
                 return;
         let r = `solution tracing: ${this.id} ${this.opt.scoring.name} `;
         for (let i in this.ranges)
