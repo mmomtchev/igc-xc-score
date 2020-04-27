@@ -114,12 +114,12 @@ function maxDistance2Rectangles(boxes) {
     return distanceMax;
 }
 
-function maxDistancePath(p, path) {
+function maxDistancePath(origin, path, pathStart) {
     let distanceMax = 0;
-    const nextPath = path.slice(1);
-    for (let i of path[0]) {
-        const distance = i.distanceEarth(p) + (path.length > 1 ? maxDistancePath(i, nextPath) : 0);
-        distanceMax = Math.max(distanceMax, distance);
+    for (let i of path[pathStart]) {
+        const distance1 = origin !== undefined ? i.distanceEarth(origin) : 0;
+        const distance2 = path.length > pathStart + 1 ? maxDistancePath(i, path, pathStart + 1) : 0;
+        distanceMax = Math.max(distanceMax, distance1 + distance2);
     }
     return distanceMax;
 }
@@ -170,12 +170,7 @@ function maxDistanceNRectangles(boxes) {
             path[i] = vertices[i];
     }
 
-    let distanceMax = 0;
-    for (let i of path[0]) {
-        const distance = maxDistancePath(i, path.slice(1));
-        distanceMax = Math.max(distanceMax, distance);
-    }
-
+    let distanceMax = maxDistancePath(undefined, path, 0);
     return distanceMax;
 }
 
@@ -240,7 +235,7 @@ function findFurthestPointInSegment(sega, segb, target) {
     else if (segb === flightPoints.length - 1)
         pos = 1;
     else
-        throw 'start/stop only';
+        throw 'this function supports seeking only from the launch or the landing point';
 
     let distanceMax = -Infinity;
     let fpoint;
