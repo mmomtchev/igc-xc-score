@@ -115,8 +115,9 @@ function maxDistance2Rectangles(boxes) {
 
 function maxDistancePath(p, path) {
     let distanceMax = 0;
+    const nextPath = path.slice(1);
     for (let i of path[0]) {
-        const distance = i.distanceEarth(p) + (path.length > 1 ? maxDistancePath(i, path.slice(1)) : 0);
+        const distance = i.distanceEarth(p) + (path.length > 1 ? maxDistancePath(i, nextPath) : 0);
         distanceMax = Math.max(distanceMax, distance);
     }
     return distanceMax;
