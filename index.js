@@ -79,7 +79,7 @@ do {
         break;
     }
     const mem = process.memoryUsage();
-    if (mem.heapUsed / mem.heapTotal > 0.95) {
+    if (mem.heapTotal - mem.heapUsed < 100*1024) {
         console.error('max memory usage reached, allocate more heap memory (--max-old-space-size)                  ');
         break;
     }
