@@ -74,7 +74,13 @@ do {
     if (!config.quiet)
         process.stdout.write(`processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
     if (config.maxtime !== undefined && Date.now() > tend) {
-        process.stdout.write('max execution time reached, no optimal solution found                                         \r');
+        if (!config.quiet)
+            process.stdout.write('max execution time reached, no optimal solution found                                         \r');
+        break;
+    }
+    const mem = process.memoryUsage();
+    if (mem.heapUsed / mem.heapTotal > 0.95) {
+        console.error('max memory usage reached, allocate more heap memory (--max-old-space-size)                  ');
         break;
     }
 } while (!newbest.done);
