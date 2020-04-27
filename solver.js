@@ -42,7 +42,7 @@ function* solver(flight, _scoringTypes, _config) {
             while (solutionQueue.length > 0) {
                 let current = solutionQueue.pop();
 
-                if (current.bound <= best.score) {
+                if (current.opt.scoring.rounding(current.bound) <= best.opt.scoring.rounding(best.score)) {
                     solutionQueue.clear();
                     break;
                 }
