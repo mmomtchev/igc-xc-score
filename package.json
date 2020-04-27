@@ -4,17 +4,21 @@
   "description": "igc-xc-score is a paragliding and hang-gliding XC scoring program in vanilla JS",
   "main": "index.js",
   "directories": {
-    "test": "test"
+    "test": "test",
+    "example": "www"
   },
   "scripts": {
-    "test": "node test && npm run -s eslint",
+    "test": "node test && npm run eslint",
     "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js util.js",
     "nexe_linux": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x86",
     "nexe_win": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64",
     "nexe_mac": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
-    "nexe_all": "npm run -s nexe_linux && npm run -s nexe_win && npm run -s nexe_mac",
+    "nexe_all": "npm run nexe_linux && npm run nexe_win && npm run nexe_mac",
     "www": "webpack && cp www/index.html www/pacman.svg dist/www",
-    "build": "rollup -c && npm run -s nexe_all && npm run -s www"
+    "build": "rollup -c && npm run nexe_all && npm run www",
+    "preversion": "npm test",
+    "version": "npm run build && git add package.json igc-xc-score.min.js",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
