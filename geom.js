@@ -1,3 +1,4 @@
+const Map = require('collections/map');
 const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
@@ -192,8 +193,10 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     }
     rtree.finish();
 
+    const precomputedNext = closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.flight.fixes.length })[0];
+    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.flight.fixes.length;
     let min = { d: Infinity };
-    for (let i = p2; i < opt.flight.fixes.length; i++) {
+    for (let i = p2; i < lastUnknown; i++) {
         const pout = flightPoints[i];
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0];
         if (n !== undefined) {
@@ -204,6 +207,16 @@ function findClosestPairIn2Segments(p1, p2, opt) {
                 min.out = pout;
                 min.in = pin;
             }
+        }
+    }
+    if (precomputedNext !== undefined) {
+        const pout = precomputedNext.o.out;
+        const pin = precomputedNext.o.in;
+        const d = pout.distanceEarth(pin);
+        if (d < min.d) {
+            min.d = d;
+            min.out = pout;
+            min.in = pin;
         }
     }
 
@@ -220,19 +233,24 @@ function findFurthestPointInSegment(sega, segb, target) {
         points = [target];
     else
         throw 'target must be either Point or Box';
+    
+    let pos;
+    if (sega === 0)
+        pos = 0;
+    else if (segb === flightPoints.length - 1)
+        pos = 1;
+    else
+        throw 'start/stop only';
 
     let distanceMax = -Infinity;
     let fpoint;
     for (let v of points) {
-        const precomputed = furthestPoints.search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y });
+        const precomputed = furthestPoints[pos].get(v.x + ':' + v.y, -Infinity);
         let distanceVMax = -Infinity;
         let fVpoint;
-        for (let pc of precomputed) {
-            if (sega <= pc.o && pc.o <= segb) {
-                fVpoint = flightPoints[pc.o];
-                distanceVMax = v.distanceEarth(fVpoint);
-                break;
-            }
+        if (sega <= precomputed && precomputed <= segb) {
+            fVpoint = flightPoints[precomputed];
+            distanceVMax = v.distanceEarth(fVpoint);
         }
         let intersecting = false;
         let canCache = false;
@@ -261,7 +279,7 @@ function findFurthestPointInSegment(sega, segb, target) {
                 }
             }
             if (canCache)
-                furthestPoints.insert({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, o: fVpoint.r });
+                furthestPoints[pos].set(v.x + ':' + v.y, fVpoint.r);
         }
         if (distanceVMax > distanceMax) {
             distanceMax = distanceVMax;
@@ -289,7 +307,7 @@ function isTriangleClosed(p1, p2, distance, opt) {
 
 function init(opt) {
     closestPairs = new RBush();
-    furthestPoints = new RBush();
+    furthestPoints = [new Map(), new Map()];
     flightPoints = [];
     for (let r in opt.flight.fixes)
         flightPoints[r] = new Point(opt.flight, r);
