@@ -180,7 +180,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     if (precomputed !== undefined)
         return precomputed.o;
 
-    const rtree = new Flatbush(p1 + 1);
+    const rtree = new Flatbush(p1 + 1, 8);
     const lc = Math.abs(Math.cos(util.radians(opt.flight.fixes[p1].latitude)));
     for (let i = 0; i <= p1; i++) {
         const r = opt.flight.fixes[i];
