@@ -23,13 +23,33 @@ The task might seem impossible at first, as the complexity of the general case i
 To further complicate matters, all calculations happen in a non-euclidean space which happens to be the Earth's surface.
 Luckily, even if an absolutely universal solution remains impossible, there is usually some internal structure of the solution space.
 
-The worst case of this algorithm remains a *O(n⁵)*, but the average complexity is only *O(n²log³(n))*.
+The worst case of this algorithm remains a *O(n⁴log(n))*, but the average complexity is only *O(n²log³(n))*.
 It uses a classical branch and bounding approach with a n³ branching for triangles with a *O(n log(n))* cost function and *n³* branching for 3 turnpoints distance flights with a *O(n)* cost function. Different scoring types run in parallel until they are bounded.
 It has really good performance for triangles, but tends to be a little bit slow for long straight flights. If there is interest, I could eventually implement it. Or if there is anyone in the paragliding community who wants to learn dynamic programming or JS, he is more than welcome to do so.
 
 Geographical distances are calculated on a WGS84 ellipsoid (oblate spheroid) according to the FAI's recommendations and FFVL's rules, taking into account not only the curvature of Earth, but also its flattening over the poles. In reality, the additionnal error incurred from not applying these corrections would be only about 500m for 500km.
 
 This tools tries to be as precise as possible. There is no resampling, no interpolation and only points lying on the flight track log are used as turn points. As such, its run time could be extreme in some cases. Two modes of execution are provided: optimal solution at all costs and bounded-time execution. When running in bounded-time mode the tool will report if it has found the absolutely best solution or if it had to abandon the search due to reaching of the time limit.
+
+### Algorithm
+
+The algorithm used has a few key differences to the one described by Ondřej Palkovský in his excellent 2010 paper. The most notable one is that the cardinality of the branching is only 3. The branching is over the 3 turnpoints **expressed in linear coordinates over the flight log records**, thus giving O(n³) basic branching complexity.
+
+The two remaining points - the closing points of the triangle for triangle flights and the start/finish points for the free distance flights, are determined as part of the cost function.
+
+The rationale behind this decision is that both of these problems are well-known and well-studied simple geometric problems.
+
+* Finding the triangle closing points is a classical nearest-neighbor search which can be solved in *O(n log(n))* by a number of different approaches, this tool uses a [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) provided by [mourner/flatbush](https://github.com/mourner/flatbush), locally compensated for the curvature of Earth. Keep in mind that this distance does not need to be 100% precise, as it is used only for selecting the closest point, the scoring effect of the closing distance is measured by the method described in the following section
+* Finding the best start/finish points is a simple minimum/maximum search which is a *O(n)* problem
+* Both can be further optimized by keeping the intermediate results in an R-Tree or a Hashmap, shared among all the branches
+
+The only weak point of the current implementation are flights consisting of perfectly straight lines. These are in fact impossible to optimize, generating a very large number of identical solutions that can not be eliminated.
+
+The branch selection is slightly depth-first biased.
+
+### Distance between two points over a WGS84 ellipsoid
+
+The FAI recommended method for computing distance is distance over a WGS84 ellipsoid. Finding the distance between two points on a WGS84 ellipsoid is not a trivial problem. The currently de-facto standard method for doing it is called [Vincenty's algorithm](https://en.wikipedia.org/wiki/Vincenty%27s_formulae) and it is an iterative solution which makes its use absolutely prohibitive in this tool. I have settled over a simplified direct formula obtained by a Taylor series expansion of the equations. That method, which requires 5 cosinus and 1 square root computation, can be found in FCC's recommendations for computing distances not exceeding 500km. *Keep in mind that this distance is the distance of one leg, not the whole flight*. That formula has an error of less than 1m for 100km which should be acceptable for paragliding and hang-gliding flights. The method is described here: [Code of Federal Regulations (Annual Edition). Title 47: Telecommunication.](https://www.govinfo.gov/content/pkg/CFR-2016-title47-vol4/pdf/CFR-2016-title47-vol4-sec73-208.pdf) and on also on [Wikipedia](https://en.wikipedia.org/wiki/Geographical_distance). This is the very same formula that was famously mistaken in an [earlier edition](https://en.wikipedia.org/wiki/Geographical_distance) of the document.
 
 ## Installation
 
