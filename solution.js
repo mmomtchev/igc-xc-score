@@ -14,11 +14,13 @@ class Solution {
         this.bound = undefined;
         this.id = id++;
         this.opt = opt;
-        if (parent !== undefined)
-            this.parent = parent + '-' + this.id;
-        else
-            this.parent = this.id;
-        this.trace();
+        if (this.opt.config && this.opt.config.debug) {
+            if (parent !== undefined)
+                this.parent = parent + '-' + this.id;
+            else
+                this.parent = this.id;
+            this.trace();
+        }
     }
 
     do_branch() {
