@@ -142,7 +142,7 @@ function maxDistanceNRectangles(boxes) {
             maxx = Math.max(maxx || -Infinity, boxes[r].x);
             maxy = Math.max(maxy || -Infinity, boxes[r].y);
         } else
-            throw 'boxes must contain only Box or Point';
+            throw new TypeError('boxes must contain only Box or Point');
         path[r] = [];
     }
 
@@ -227,7 +227,7 @@ function findFurthestPointInSegment(sega, segb, target) {
     else if (target instanceof Point)
         points = [target];
     else
-        throw 'target must be either Point or Box';
+        throw new TypeError('target must be either Point or Box');
     
     let pos;
     if (sega === 0)
@@ -235,7 +235,7 @@ function findFurthestPointInSegment(sega, segb, target) {
     else if (segb === flightPoints.length - 1)
         pos = 1;
     else
-        throw 'this function supports seeking only from the launch or the landing point';
+        throw new RangeError('this function supports seeking only from the launch or the landing point');
 
     let distanceMax = -Infinity;
     let fpoint;
