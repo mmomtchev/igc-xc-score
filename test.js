@@ -6,12 +6,12 @@ const scoringRules = require('./scoring-rules.config');
 
 const tests = {
     FFVL: [
-        { file: 'bigflat.igc', score: 225.21 },
+        { file: 'bigflat.igc', score: 225.2 },
         { file: 'd3p.igc', score: 60.77 },
-        { file: 'fai.igc', score: 228.71 },
+        { file: 'fai.igc', score: 228.7 },
         { file: 'line.igc', score: 53.34 },
         { file: 'tri.igc', score: 17.51 },
-        { file: 'record_de_france.igc', score: 422.02 },
+        { file: 'record_de_france.igc', score: 421.99 },
         { file: 'zigzag.igc', score: 90.64 },
         { file: 'flat-ffvl-26.37.igc', score: 26.4 },
         { file: 'curvature-of-earth-triangle.igc', score: 90.71 }
@@ -22,9 +22,9 @@ const tests = {
         { file: 'freeflight-xcontest-66.46.igc', score: 66.5 },
         { file: 'flat-xcontest-100.59.igc', score: 102.27 },
         { file: 'flat-xcontest-8.01.igc', score: 8.08 },
-        { file: 'trifai-xcontest-189.65.igc', score: 191.89 },
-        { file: 'trifai-xcontest-452.21.igc', score: 455.38 },
-        { file: 'trifai-xcontest-307.57.igc', score: 308.33 },
+        { file: 'trifai-xcontest-189.65.igc', score: 191.88 },
+        { file: 'trifai-xcontest-452.21.igc', score: 455.37 },
+        { file: 'trifai-xcontest-307.57.igc', score: 308.32 },
         { file: 'freeflight-xcontest-465.33.igc', score: 465.58 }
     ]
 };

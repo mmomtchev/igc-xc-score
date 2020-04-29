@@ -4,6 +4,7 @@ const solution = require('./solution');
 const Solution = solution.Solution;
 const util = require('./util');
 const Range = util.Range;
+const Point = util.Point;
 const geom = require('./geom');
 const scoringRules = require('./scoring-rules.config');
 
@@ -86,6 +87,7 @@ function* solver(flight, _scoringTypes, _config) {
             }
 
             if (best.optimal) {
+                best.do_score(Point.prototype.distanceEarthHP);
                 best.score = best.opt.scoring.rounding(best.score);
                 reset = true;
                 return best;

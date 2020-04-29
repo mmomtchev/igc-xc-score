@@ -54,7 +54,7 @@ class Solution {
         this.trace();
     }
 
-    do_score() {
+    do_score(distance_fn) {
         for (let r in this.ranges)
             if (r < this.ranges.length - 1 && this.ranges[r].center() >= this.ranges[parseInt(r) + 1].center()) {
                 this.score = 0;
@@ -65,7 +65,7 @@ class Solution {
         for (let r in this.ranges)
             tp[r] = new Point(this.opt.flight, this.ranges[r].center());
         
-        this.scoreInfo = this.opt.scoring.score(tp, this.opt);
+        this.scoreInfo = this.opt.scoring.score(tp, this.opt, distance_fn || Point.prototype.distanceEarth);
         this.score = this.scoreInfo.score;
         this.trace();
     }

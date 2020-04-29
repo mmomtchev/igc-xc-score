@@ -57,6 +57,10 @@ class Point {
         const lat = this.y + degrees(dy / REarth);
         return new Point(lon, lat);
     }
+
+    distanceEarthHP(p) {
+        return require('./vincentys').inverse(this, p).distance;
+    }
 }
 
 class Range {
@@ -221,5 +225,6 @@ module.exports = {
     Range,
     Box,
     radians,
+    degrees,
     consoleColors
 };
