@@ -6,7 +6,7 @@ const Solution = require('./solution').Solution;
 const util = require('./util');
 const scoringRules = require('./scoring-rules.config');
 
-let config = { };
+let config = {};
 for (let arg of process.argv.slice(3)) {
     const kv = arg.split('=');
     if (!isNaN(kv[1]))
@@ -49,55 +49,62 @@ if (config.pipe) {
     inf = process.argv[2];
     outf = config.out;
 }
-const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'));
-config.env = { fs };
+try {
+    const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'));
+    config.env = { fs };
 
-let best;
-const tend = Date.now() + config.maxtime * 1000;
-config.maxcycle = config.progress || 100;
-const it = solver(flight, scoringRules[config.scoring] || scoringRules.FFVL, config);
-/* 
- * BEWARE!
- * In JS generators a for..of loop will ignore the closing return value of the generator
- * This is the only type of loop that works
- */
-let newbest;
-do {
-    newbest = it.next();
-    if (config.progress)
-        process.stdout.write(JSON.stringify(newbest.value.geojson()));
-    if (best === undefined || !Solution.prototype.contentEquals(newbest.value, best)) {
-        best = newbest.value;
+    let best;
+    const tend = Date.now() + config.maxtime * 1000;
+    config.maxcycle = config.progress || 100;
+    const it = solver(flight, scoringRules[config.scoring] || scoringRules.FFVL, config);
+    /* 
+     * BEWARE!
+     * In JS generators a for..of loop will ignore the closing return value of the generator
+     * This is the only type of loop that works
+     */
+    let newbest;
+    do {
+        newbest = it.next();
+        if (config.progress)
+            process.stdout.write(JSON.stringify(newbest.value.geojson()));
+        if (best === undefined || !Solution.prototype.contentEquals(newbest.value, best)) {
+            best = newbest.value;
+            if (!config.quiet)
+                process.stdout.write('best so far is ' + best + '                                                               \n');
+        }
         if (!config.quiet)
-            process.stdout.write('best so far is ' + best + '                                                               \n');
-    }
-    if (!config.quiet)
-        process.stdout.write(`processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
-    if (config.maxtime !== undefined && Date.now() > tend) {
-        if (!config.quiet)
-            process.stdout.write('max execution time reached, no optimal solution found                                         \r');
-        break;
-    }
-    const mem = process.memoryUsage();
-    if (mem.heapTotal - mem.heapUsed < 100*1024) {
-        console.error('max memory usage reached, allocate more heap memory (--max-old-space-size)                  ');
-        break;
-    }
-} while (!newbest.done);
-process.stdout.write('                                                                                                      \r');
+            process.stdout.write(`processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
+        if (config.maxtime !== undefined && Date.now() > tend) {
+            if (!config.quiet)
+                process.stdout.write('max execution time reached, no optimal solution found                                         \r');
+            break;
+        }
+        const mem = process.memoryUsage();
+        if (mem.heapTotal - mem.heapUsed < 100 * 1024) {
+            console.error('max memory usage reached, allocate more heap memory (--max-old-space-size)                  ');
+            break;
+        }
+    } while (!newbest.done);
+    process.stdout.write('                                                                                                      \r');
 
-if (outf !== undefined)
-    fs.writeFileSync(outf, JSON.stringify(best.geojson()));
+    if (outf !== undefined)
+        fs.writeFileSync(outf, JSON.stringify(best.geojson()));
 
-if (!config.quiet) {
-    if (best.scoreInfo !== undefined) {
-        console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
-            + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
-            + ` ${util.consoleColors.fg.green}${best.score} points,`
-            + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
-            + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
-            + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
-            + util.consoleColors.reset);
-    } else
-        console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);
+    if (!config.quiet) {
+        if (best.scoreInfo !== undefined) {
+            console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
+                + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
+                + ` ${util.consoleColors.fg.green}${best.score} points,`
+                + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
+                + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
+                + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
+                + util.consoleColors.reset);
+        } else
+            console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);
+    }
+} catch (e) {
+    console.error(e.message);
+    if (config && config.debug)
+        console.error(e.stack);
+    process.exit(1);
 }

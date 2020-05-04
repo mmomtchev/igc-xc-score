@@ -93,6 +93,7 @@ quiet=false             # do not output any unncessary information
 pipe=false              # run in pipe mode, reading flight data from stdin and writing optimal solutions to stdout, works best with quiet, use stdin for filename
 progress=<milliseconds> # report the current solution every <milliseconds>, works best in pipe mode
 noflight=false          # do not include the flight track in the geojson output
+invalid=false           # include invalid GPS fixes
 ```
 
 Using with node (**developer**)
@@ -125,6 +126,7 @@ It supports resetting or it will automatically reset itself if an optimal soluti
 const opt = {
     maxcycle: undefined          // max execution time per cycle in milliseconds
     noflight: false              // do not include the flight track in the geojson output
+    invalid: false               // do not filter invalid GPS fixes
 }
 ```
 

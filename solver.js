@@ -14,7 +14,11 @@ function* solver(flight, _scoringTypes, _config) {
     while (true) {
         const scoringTypes = _scoringTypes || scoringRules.FFVL;
         const config = _config || {};
-        flight.fixes = flight.fixes.filter(x => x.valid);
+        const oldlen = flight.fixes.length;
+        if (!config.invalid)
+            flight.fixes = flight.fixes.filter(x => x.valid);
+        if (flight.fixes.length < 5)
+            throw new Error(`Flight must contain at least 5 valid GPS fixes, ${flight.fixes.length} valid fixes found (out of ${oldlen})`);
         let solutionRoots = [];
         geom.init({ flight });
         for (let scoringType of scoringTypes) {
