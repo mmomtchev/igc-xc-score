@@ -18,7 +18,7 @@ const tests = {
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
-        { file: 'trifai-xcontest-362.70.igc', score: 363.43 },
+        { file: 'trifai-xcontest-362.70.igc', score: 363.42 },
         { file: 'freeflight-xcontest-66.46.igc', score: 66.5 },
         { file: 'flat-xcontest-100.59.igc', score: 102.27 },
         { file: 'flat-xcontest-8.01.igc', score: 8.08 },

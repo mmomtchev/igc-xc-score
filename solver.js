@@ -80,15 +80,15 @@ function* solver(flight, _scoringTypes, _config) {
                 best.optimal = true;
             else
                 best.optimal = false;
-            if (best.scoreInfo) {
-                best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp.d)
-                    best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
-            }
 
             if (best.optimal) {
                 best.do_score(Point.prototype.distanceEarthHP);
                 best.score = best.opt.scoring.rounding(best.score);
+                if (best.scoreInfo) {
+                    best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
+                    if (best.scoreInfo.cp.d)
+                        best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
+                }
                 reset = true;
                 return best;
             } else
