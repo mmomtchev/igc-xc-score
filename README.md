@@ -55,7 +55,11 @@ The FAI recommended method for computing distance is distance on the surface of 
 
 Once the linear optimization is finished, the flight score is recomputed using Vincenty's down to a millimeter-level precision (on the WGS84 model). The difference between the two is found to be usually less than 5m for most flights, but on flights with exceptionnally long legs (such as the French national distance record), it can be as high as 25m, which is more than the standard GPS error.
 
-As a side note, while the GPS naviation system coordinates are relative to WGS84, which remains the current widely approved standard, the internal model used has been upgraded to the more recent EGM96, which is a higher-order model (a geoid). The typical error of WGS84 when compared to EGM96 is less than 1m which is less than the typical GPS receiver error. Thus WGS84 will probably stay in use for most practical applications.
+As a side note, while the GPS naviation system coordinates are relative to WGS84, which remains the current widely approved standard, the internal model used has been upgraded to the more recent EGM96, which is a higher-order model (a geoid). The typical error of WGS84 when compared to EGM96 is less than 1m (on the horizontal) which is less than the typical GPS receiver error. Thus WGS84, which is mathematically much simpler to use, will probably stay in use for most practical applications.
+
+##### *En France*
+
+*En France [l'ellipsoïde de référence](https://geodesie.ign.fr/contenu/fichiers/documentation/SRCfrance.pdf) normalisé par l'IGN est le GRS80 pour la métropole et le WGS84 pour les DOM-TOM. Le géoïde utilisé est celui du RGF93. Les deux ellipsoïdes sont absolument équivalents, à moins d'un millimètre près, et l'utilisation des coordonnées WGS84 est admise par l'IGN sans [aucune transformation supplémentaire](https://geodesie.ign.fr/contenu/fichiers/documentation/pedagogiques/TransformationsCoordonneesGeodesiques.pdf).*
 
 ## Installation
 
