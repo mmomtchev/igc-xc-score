@@ -39,7 +39,7 @@ function inverse(p1, p2) {
         λ = L + (1 - C) * f * sinα * (σ + C * sinσ * (cos2σₘ + C * cosσ * (-1 + 2 * cos2σₘ * cos2σₘ)));
         const iterationCheck = antipodal ? Math.abs(λ) - Math.PI : Math.abs(λ);
         if (iterationCheck > Math.PI) throw new EvalError('λ > π');
-    } while (Math.abs(λ - λʹ) > 1e-12 && ++iterations < 1000);
+    } while (Math.abs(λ - λʹ) > 1e-7 && ++iterations < 1000);
     if (iterations >= 1000) throw new EvalError('Vincenty formula failed to converge');
 
     const uSq = cosSqα * (a * a - b * b) / (b * b);
