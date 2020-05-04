@@ -21,6 +21,10 @@ function* solver(flight, _scoringTypes, _config) {
             throw new Error(`Flight must contain at least 5 valid GPS fixes, ${flight.fixes.length} valid fixes found (out of ${oldlen})`);
         let solutionRoots = [];
         geom.init({ flight });
+        if (config.hp)
+            Point.prototype.distanceEarth = Point.prototype.distanceEarthVincentys;
+        else
+            Point.prototype.distanceEarth = Point.prototype.distanceEarthFCC;
         for (let scoringType of scoringTypes) {
             const opt = {
                 flight,
@@ -86,7 +90,6 @@ function* solver(flight, _scoringTypes, _config) {
                 best.optimal = false;
 
             if (best.optimal) {
-                best.do_score(Point.prototype.distanceEarthHP);
                 best.score = best.opt.scoring.rounding(best.score);
                 if (best.scoreInfo) {
                     best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);

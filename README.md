@@ -51,9 +51,7 @@ The branch selection is breadth-first biased when branching and depth-first bias
 
 ### Distance between two points on the surface of a WGS84 ellipsoid
 
-The FAI recommended method for computing distance is distance on the surface of a WGS84 ellipsoid. Finding the distance between two points on a WGS84 ellipsoid is not a trivial problem. The currently de-facto standard method for doing it is called [Vincenty's algorithm](https://en.wikipedia.org/wiki/Vincenty%27s_formulae) and it is an iterative solution which makes its use computationally prohibitive during the linear optimization phase. I have settled over a simplified direct formula obtained by a Taylor series expansion of the ellipsoid equations which do not have a closed-form expression. This method, which requires 5 cosinus and 1 square root computation, can be found in FCC's recommendations for computing distances not exceeding 500km. *Keep in mind that this distance is the distance of one leg, not the whole flight*. This method has an error of less than 10m for 100km which should be acceptable for paragliding and hang-gliding flights. The method is described here: [Code of Federal Regulations (Annual Edition). Title 47: Telecommunication.](https://www.govinfo.gov/content/pkg/CFR-2016-title47-vol4/pdf/CFR-2016-title47-vol4-sec73-208.pdf) and on also on [Wikipedia](https://en.wikipedia.org/wiki/Geographical_distance). This is the very same formula that was famously mistaken in an [earlier edition](https://www.tvtechnology.com/news/fcc-invents-negative-distance) of the document. 
-
-Once the linear optimization is finished, the flight score is recomputed using Vincenty's down to a millimeter-level precision (on the WGS84 model). The difference between the two is found to be usually less than 5m for most flights, but on flights with exceptionnally long legs (such as the French national distance record), it can be as high as 25m, which is more than the standard GPS error.
+The FAI recommended method for computing distance is distance on the surface of a WGS84 ellipsoid. Finding the distance between two points on a WGS84 ellipsoid is not a trivial problem. The ellipsoid surface equations do not have a [closed-form expression](https://en.wikipedia.org/wiki/Elliptic_integral) and the distance can not be directly calculated. The currently de-facto standard method for computing it is called [Vincenty's algorithm](https://en.wikipedia.org/wiki/Vincenty%27s_formulae) and it is an iterative solution which makes it computationally very expensive. It is available through the **hp=true** option, giving twice slower execution speed for a much higher precision - which is currently hard-coded at 60cm over the WGS84 reference ellipsoid. If the **hp=true** option is not used, I have settled over a simplified direct formula obtained by Taylor series expansion of the ellipsoid surface equations. This method, which requires 5 cosinus and 1 square root computation, can be found in FCC's recommendations for computing distances not exceeding 500km. *Keep in mind that this distance is the distance of one leg, and not the whole flight*. It has a typical error of 5m and a maximum error of 10m for 100km which should be acceptable for most paragliding and hang-gliding flights. On flights with exceptionnally long legs (such as the French national distance record), the error can be as high as 25m, which is more than the standard GPS error. The method is described here: [Code of Federal Regulations (Annual Edition). Title 47: Telecommunication.](https://www.govinfo.gov/content/pkg/CFR-2016-title47-vol4/pdf/CFR-2016-title47-vol4-sec73-208.pdf) and on also on [Wikipedia](https://en.wikipedia.org/wiki/Geographical_distance). This is the very same formula that was famously mistaken in an [earlier edition](https://www.tvtechnology.com/news/fcc-invents-negative-distance) of the document.
 
 As a side note, while the GPS naviation system coordinates are relative to WGS84, which remains the current widely approved standard, the internal model used has been upgraded to the more recent EGM96, which is a higher-order model (a geoid). The typical error of WGS84 when compared to EGM96 is less than 1m (on the horizontal) which is less than the typical GPS receiver error. Thus WGS84, which is mathematically much simpler to use, will probably stay in use for most practical applications.
 
@@ -94,6 +92,7 @@ pipe=false              # run in pipe mode, reading flight data from stdin and w
 progress=<milliseconds> # report the current solution every <milliseconds>, works best in pipe mode
 noflight=false          # do not include the flight track in the geojson output
 invalid=false           # include invalid GPS fixes
+hp=false                # High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
 ```
 
 Using with node (**developer**)
@@ -127,6 +126,7 @@ const opt = {
     maxcycle: undefined          // max execution time per cycle in milliseconds
     noflight: false              // do not include the flight track in the geojson output
     invalid: false               // do not filter invalid GPS fixes
+    hp: false                    // High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
 }
 ```
 

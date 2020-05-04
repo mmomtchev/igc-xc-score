@@ -27,7 +27,19 @@ module.exports = {
             }
         },
         {
+            files: ['test.js'],
+            parserOptions: {
+                ecmaVersion: 2018
+            }
+        },
+        {
             files: ['www/index.js'],
+            env: {
+                browser: true,
+                es6: true,
+                commonjs: false,
+                node: false
+            },
             parserOptions: {
                 ecmaVersion: 2016,
                 sourceType: 'module'

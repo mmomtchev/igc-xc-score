@@ -35,6 +35,10 @@ class Point {
     }
 
     distanceEarth(p) {
+        return this.distanceEarthFCC(p);
+    }
+
+    distanceEarthFCC(p) {
         const df = (p.y - this.y);
         const dg = (p.x - this.x);
         const fm = util.radians((this.y + p.y) / 2);
@@ -50,7 +54,7 @@ class Point {
         return new Point(lon, lat);
     }
 
-    distanceEarthHP(p) {
+    distanceEarthVincentys(p) {
         return require('./vincentys').inverse(this, p).distance;
     }
 }
