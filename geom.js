@@ -3,8 +3,9 @@ const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
 const util = require('./util');
-const Box = util.Box;
-const Point = util.Point;
+const foundation = require('./foundation');
+const Box = foundation.Box;
+const Point = foundation.Point;
 
 let flightPoints;
 

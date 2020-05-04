@@ -1,23 +1,14 @@
 'use strict';
 const util = require('./util');
-const Point = util.Point;
-const radians = util.radians;
-const degrees = util.degrees;
-
-const WGS84 = {
-    a: 6378.137,
-    b: 6356.752314245,
-    f: 1 / 298.257223563
-}
 
 // Vincenty's Algorithm, courtesy of Movable Type Ltd
 // https://www.movable-type.co.uk/scripts/latlong-vincenty.html
 // Published and included here under an MIT licence
 function inverse(p1, p2) {
-    const φ1 = radians(p1.y), λ1 = radians(p1.x);
-    const φ2 = radians(p2.y), λ2 = radians(p2.x);
+    const φ1 = util.radians(p1.y), λ1 = util.radians(p1.x);
+    const φ2 = util.radians(p2.y), λ2 = util.radians(p2.x);
 
-    const { a, b, f } = WGS84;
+    const { a, b, f } = util.WGS84;
 
     const L = λ2 - λ1; // L = difference in longitude, U = reduced latitude, defined by tan U = (1-f)·tanφ.
     const tanU1 = (1 - f) * Math.tan(φ1), cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1)), sinU1 = tanU1 * cosU1;
@@ -68,8 +59,8 @@ function inverse(p1, p2) {
 
     return {
         distance: s,
-        initialBearing: Math.abs(s) < Number.EPSILON ? NaN : degrees(α1),
-        finalBearing: Math.abs(s) < Number.EPSILON ? NaN : degrees(α2),
+        initialBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α1),
+        finalBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α2),
         iterations: iterations,
     };
 }

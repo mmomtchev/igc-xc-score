@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "node test && npm run eslint",
-    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js util.js",
+    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js foundation.js util.js vincentys.js",
     "nexe_linux": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
     "nexe_win": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
     "nexe_mac": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",

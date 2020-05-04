@@ -1,8 +1,8 @@
 'use strict';
 let id = 0;
-const util = require('./util');
-const Box = util.Box;
-const Point = util.Point;
+const foundation = require('./foundation');
+const Box = foundation.Box;
+const Point = foundation.Point;
 
 class Solution {
     constructor(ranges, opt, parent) {

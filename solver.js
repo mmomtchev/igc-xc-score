@@ -2,9 +2,9 @@
 const SortedSet = require('collections/sorted-set');
 const solution = require('./solution');
 const Solution = solution.Solution;
-const util = require('./util');
-const Range = util.Range;
-const Point = util.Point;
+const foundation = require('./foundation');
+const Range = foundation.Range;
+const Point = foundation.Point;
 const geom = require('./geom');
 const scoringRules = require('./scoring-rules.config');
 

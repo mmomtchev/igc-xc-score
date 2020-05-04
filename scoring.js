@@ -1,6 +1,6 @@
 'use strict';
-const util = require('./util');
-const Box = util.Box;
+const foundation = require('./foundation');
+const Box = foundation.Box;
 const geom = require('./geom');
 
 function boundFlatTriangle(ranges, opt) {
