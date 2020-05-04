@@ -153,8 +153,12 @@ if (!window.requestIdleCallback)
     };
 
 function runProcessing() {
+    const hp = $('#igc-hp').prop('checked');
     window.requestIdleCallback(() => {
-        const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], { maxcycle: 100 });
+        const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
+            maxcycle: 100,
+            hp: hp
+        });
         loop.call(it);
     });
 }
@@ -164,6 +168,9 @@ $('.ctrl-scoringRules').on('click', (event) => {
     if (igcFlight)
         runProcessing();
 });
+
+console.log(__BUILD_DATE__);
+$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
 
 let igcFlight;
 

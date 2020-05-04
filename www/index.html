@@ -11,23 +11,23 @@
 <body>
     <div class="container-fluid m-1 h-100">
         <div class="row h-100">
-            <div class="col-12 col-md-4 p-4 d-flex flex-column">
+            <div class="col-12 col-md-4 p-2 d-flex flex-column">
                 <h1>
                     igc-xc-score
                 </h1>
-                <p>
+                <p class="text-justify">
                     igc-xc-score is a free and <a href="https://choosealicense.com/licenses/lgpl-3.0/">LGPLed</a> JS library for scoring paragliding/hang-gliding XC flights according to a configurable set of rules
                 </p>
-                <p>
+                <p class="text-justify">
                     It can run in the browser, can be embedded in a desktop application or it can be used as a standalone command-line tool. It currently supports only the FFVL and the XContest rules.
                 </p>
-                <p>
+                <p class="text-justify">
                     The full source of the library and this webpage are available here:
                 </p>
-                <p>
+                <p class="text-justify">
                     <a href="https://www.github.com/mmomtchev/igc-xc-score">https://www.github.com/mmomtchev/igc-xc-score</a>
-                </p>
-                <small class="text-muted mb-3">
+                </p class="text-justify">
+                <small class="text-muted mb-3 text-justify">
                     Your IGC file never leaves your computer. You can download this page from the github link and use it while offline.
                     The CPU used for the optimization process is your CPU through the JS engine of your browser.
                     You need a good computer with a good browser.
@@ -36,14 +36,18 @@
                 </small>
                 <div class="jumbotron shadow p-1 d-inline">
                     <div class="btn-group w-100">
-                        <div class="dropdown col-8 pl-1 pr-1">
+                        <div class="col-3">
+                            <input type="checkbox" class="form-check-input" id="igc-hp">
+                            <label class="form-check-label small">High Precision</label>
+                        </div>
+                        <div class="dropdown col-5">
                             <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="igc-scoringRules" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">FFVL</button>
                             <div class="dropdown-menu" aria-labelledby="igc-scoringRules">
                                 <button class="dropdown-item ctrl-scoringRules" id="FFVL">FFVL</button>
                                 <button class="dropdown-item ctrl-scoringRules" id="XContest">XContest</button>
                             </div>
                         </div>
-                        <label class="btn btn-primary col-4 pr-1 pl-1">Select IGC
+                        <label class="btn btn-primary col-4">Select IGC
                             <input id="igc-upload" type="file" accept=".igc" hidden>
                         </label>
                     </div>
@@ -55,7 +59,10 @@
                     <img style="width: 6rem;" src="pacman.svg"/>
                 </div>
                 <div class="mt-auto">
-                    <footer class="ml-auto blockquote-footer">Momtchil Momtchev, <a href="https://www.velivole.fr/">velivole.fr</a> / <a href="https://www.meteo.guru/">meteo.guru</a> / 2020</footer>
+                    <footer class="ml-auto blockquote-footer">
+                        <p>Momtchil Momtchev, <a href="https://www.velivole.fr/">velivole.fr</a> / <a href="https://www.meteo.guru/">meteo.guru</a> / 2020</p>
+                        <p id="igc-xc-score-version">igc-xc-score</p>
+                    </footer>
                 </div>
             </div>
             <div class="col-12 col-md-8">
