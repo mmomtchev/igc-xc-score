@@ -13,8 +13,8 @@
  */
 const detectLaunchLanding = {
     n: 10,
-    x: 1,
-    z: 0.1
+    x: 1.5,
+    z: 0.05
 };
 
 function analyze(opt) {
@@ -55,7 +55,7 @@ function detectLaunch(opt) {
     const fixes = opt.flight.fixes;
 
     for (let i = 0; i < fixes.length - 1; i++)
-        if (fixes[i].hma > 1 && Math.abs(fixes[i].vma) > 0.1)
+        if (fixes[i].hma > detectLaunchLanding.x && Math.abs(fixes[i].vma) > detectLaunchLanding.z)
             return i;
     
     return undefined;
@@ -65,7 +65,7 @@ function detectLanding(opt) {
     const fixes = opt.flight.fixes;
 
     for (let i = (detectLaunch(opt) || 0) + 1; i < fixes.length - 1; i++)
-        if (fixes[i].hma < 1 && Math.abs(fixes[i].vma) < 0.1)
+        if (fixes[i].hma < detectLaunchLanding.x && Math.abs(fixes[i].vma) < detectLaunchLanding.z)
             return i;
 
     return undefined;
