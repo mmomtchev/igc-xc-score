@@ -86,6 +86,7 @@ class Solution {
         return 0;
     }
 
+    /*eslint no-empty: ["off"]*/
     geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
@@ -124,7 +125,6 @@ class Solution {
                     });
             }
         } catch (e) {
-            console.error('no turnpoints');
         }
         try {
             if (this.scoreInfo.cp !== undefined) {
@@ -187,7 +187,6 @@ class Solution {
                 }
             }
         } catch (e) {
-            console.error('no closing points');
         }
         features.push(new Point(this.opt.flight, 0)
             .geojson('launch', {
