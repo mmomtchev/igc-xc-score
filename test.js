@@ -2,7 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const IGCParser = require('./igc-parser');
 const solver = require('./solver');
+const util = require('./util');
 const scoringRules = require('./scoring-rules.config');
+
+const defaultConfig = {
+    quiet: true,
+    detectLanding: true,
+    detectLaunch: true
+};
 
 const tests = {
     FFVL: [
@@ -10,7 +17,8 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34 },
+        { file: 'line.igc', score: 53.33 },
+        { file: 'line.igc', score: 53.34, config: { detectLaunch: false } },
         { file: 'tri.igc', score: 17.51 },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
@@ -38,11 +46,11 @@ const tests = {
 for (let rules of Object.keys(tests))
     for (let test of tests[rules]) {
         const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
-        const best = solver(flight, scoringRules[rules], { quiet: true, ...test.config }).next().value;
+        const best = solver(flight, scoringRules[rules], { ...defaultConfig, ...test.config }).next().value;
         if (best.score == test.score)
             console.log(rules, test.file, (test.config || {}).hp ? 'HP' : 'Fast', best.score, String.fromCodePoint(0x2713));
         else {
-            console.error(rules, test.file, test.score, best.score);
+            console.error(rules, test.file, test.score, best.score, util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
             process.exit(1);
         }
     }

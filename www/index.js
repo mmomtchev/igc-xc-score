@@ -84,10 +84,11 @@ function loop() {
     if (!s.done) {
         $('#spinner').show();
         display(s.value.geojson());
-        window.requestIdleCallback(loop.bind(this));
+        runningProcess = window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
     } else {
+        runningProcess = undefined;
         $('#spinner').hide();
         display(s.value.geojson());
         let r = [`<td class="label">Best possible</td><td class="data">${s.value.score} points</td>`,
@@ -147,29 +148,45 @@ $(document).ready(() => {
     });
 });
 
-if (!window.requestIdleCallback)
+if (!window.requestIdleCallback) {
     window.requestIdleCallback = (a) => {
-        setTimeout(a, 50);
+        return setTimeout(a, 50);
     };
+    window.cancelIdleCallback = (a) => {
+        clearTimeout(a);
+    }
+}
 
+let runningProcess;
 function runProcessing() {
+    if (!igcFlight)
+        return;
+    
+    if (runningProcess) {
+        window.cancelIdleCallback(runningProcess);
+        runningProcess = undefined;
+    }
+
     const hp = $('#igc-hp').prop('checked');
+    const detectLaunch = $('#igc-detect-launch').prop('checked');
+    const detectLanding = $('#igc-detect-landing').prop('checked');
     window.requestIdleCallback(() => {
         const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
             maxcycle: 100,
-            hp: hp
-        });
+            hp: hp,
+            detectLaunch,
+            detectLanding
+        }, { timeout: 2000 });
         loop.call(it);
     });
 }
 
 $('.ctrl-scoringRules').on('click', (event) => {
     $('#igc-scoringRules').html($(event.target).html());
-    if (igcFlight)
-        runProcessing();
+    runProcessing();
 });
+$('.ctrl-process').on('click', runProcessing);
 
-console.log(__BUILD_DATE__);
 $('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
 
 let igcFlight;

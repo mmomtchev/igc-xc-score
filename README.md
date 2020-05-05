@@ -93,6 +93,8 @@ progress=<milliseconds> # report the current solution every <milliseconds>, work
 noflight=false          # do not include the flight track in the geojson output
 invalid=false           # include invalid GPS fixes
 hp=false                # High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
+detectLaunch=false      # auto-trim the beginning of the flight
+detectLanding=false     # auto-trim the end of the flight
 ```
 
 Using with node (**developer**)
@@ -127,7 +129,9 @@ const opt = {
     noflight: false              // do not include the flight track in the geojson output
     invalid: false               // do not filter invalid GPS fixes
     hp: false                    // High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
-}
+    detectLaunch: false          // auto-trim the beginning of the flight
+    detectLanding: false         // auto-trim the end of the flight
+};
 ```
 
 When calling from the browser, in order to avoid blocking the main event loop, you should use *requestIdleCallback* when it is available. When it is not, *setTimeout* could be a good substitute. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.

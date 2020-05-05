@@ -44,6 +44,9 @@ if (config.pipe) {
         console.log('quiet=true             suppress all output');
         console.log('pipe=true              read flight data from stdin and write optimal solutions to stdout, works best with quiet');
         console.log('progress=<n>           output an intermediate solution every n milliseconds, works best with pipe');
+        console.log('hp=true                enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
+        console.log('detectLaunch=true      auto-trim the start of the flight to the detected launch point');
+        console.log('detectLanding=true     auto-trim the end of the flight to the detected landing point');
         process.exit(1);
     }
     inf = process.argv[2];

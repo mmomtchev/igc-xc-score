@@ -34,22 +34,39 @@
                     Chrome, Firefox, Safari and the latest Edge since January 2020 should be ok.
                     Everything else is probably not and will be slow.
                 </small>
-                <div class="jumbotron shadow p-1 d-inline">
-                    <div class="btn-group w-100">
-                        <div class="col-3">
-                            <input type="checkbox" class="form-check-input" id="igc-hp">
-                            <label class="form-check-label small">High Precision</label>
-                        </div>
-                        <div class="dropdown col-5">
+                <div class="jumbotron shadow p-1">
+                    <div class="btn-group row">
+                        <div class="dropdown col-6">
                             <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="igc-scoringRules" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">FFVL</button>
                             <div class="dropdown-menu" aria-labelledby="igc-scoringRules">
                                 <button class="dropdown-item ctrl-scoringRules" id="FFVL">FFVL</button>
                                 <button class="dropdown-item ctrl-scoringRules" id="XContest">XContest</button>
                             </div>
                         </div>
-                        <label class="btn btn-primary col-4">Select IGC
-                            <input id="igc-upload" type="file" accept=".igc" hidden>
-                        </label>
+                        <div class="col-6">
+                            <label class="btn btn-primary w-100">
+                                <input id="igc-upload" type="file" accept=".igc" hidden>
+                                Select IGC
+                            </label>
+                        </div>
+                        <div class="offset-1 col-3">
+                            <label class="form-check-label small w-100">
+                                <input type="checkbox" class="form-check-input ctrl-process" id="igc-hp">
+                                High Precision
+                            </label>
+                        </div>
+                        <div class="offset-2 col-3">
+                            <label class="form-check-label small">
+                                <input type="checkbox" class="form-check-input ctrl-process" id="igc-detect-launch">
+                                Trim to Launch
+                            </label>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-check-label small">
+                                <input type="checkbox" class="form-check-input ctrl-process" id="igc-detect-landing">
+                                Trim to Landing
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="jumbotron shadow p-1">
