@@ -45,6 +45,8 @@ function* solver(flight, _scoringTypes, _config) {
 
     const scoringTypes = _scoringTypes || scoringRules.FFVL;
     const config = _config || {};
+    if (flight.original !== undefined)
+        flight.fixes = flight.original.slice(0);
     geom.init({ flight });
     analyze(flight, config);
     geom.init({ flight });
