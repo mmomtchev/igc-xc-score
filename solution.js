@@ -104,7 +104,7 @@ class Solution {
                 features.push(tp[r]
                     .geojson('tp' + r, {
                         id: 'tp' + r,
-                        r: tp[r].r,
+                        r: tp[r].r + this.opt.flight.launch,
                         timestamp: this.opt.flight.fixes[tp[r].r].timestamp
                     }));
                 if (r < 2 || this.opt.scoring.closingDistance)
@@ -134,7 +134,7 @@ class Solution {
                     features.push(cp[r]
                         .geojson('cp_' + r, {
                             id: 'cp_' + r,
-                            r: cp[r].r,
+                            r: cp[r].r + this.opt.flight.launch,
                             timestamp: this.opt.flight.fixes[cp[r].r].timestamp
                         }));
                 if (this.opt.scoring.closingDistance)
@@ -191,18 +191,18 @@ class Solution {
         features.push(new Point(this.opt.flight, 0)
             .geojson('launch', {
                 id: 'launch',
-                r: 0,
+                r: this.opt.flight.launch,
                 timestamp: this.opt.flight.fixes[0].timestamp
             }));
         features.push(new Point(this.opt.flight, this.opt.flight.fixes.length - 1)
             .geojson('land', {
                 id: 'land',
-                r: this.opt.flight.fixes.length - 1,
+                r: this.opt.flight.landing,
                 timestamp: this.opt.flight.fixes[this.opt.flight.fixes.length - 1].timestamp
             }));
         if (!this.opt.config || !this.opt.config.noflight) {
             let flightData = [];
-            for (let r of this.opt.flight.fixes) {
+            for (let r of this.opt.flight.original) {
                 flightData.push([r.longitude, r.latitude]);
             }
             features.push({
