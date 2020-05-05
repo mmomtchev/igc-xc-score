@@ -94,8 +94,12 @@ try {
         fs.writeFileSync(outf, JSON.stringify(best.geojson()));
 
     if (!config.quiet) {
+        if (config.detectLaunch)
+            console.log(`Launch detected at fix ${flight.launch}, ${flight.fixes[0].time}`);
+        if (config.detectLanding)
+            console.log(`Landing detected at fix n-${flight.original.length - flight.landing - 1}, ${flight.fixes[flight.fixes.length - 1].time}`);
         if (best.scoreInfo !== undefined) {
-            console.log(`best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
+            console.log(`Best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
                 + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
                 + ` ${util.consoleColors.fg.green}${best.score} points,`
                 + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`

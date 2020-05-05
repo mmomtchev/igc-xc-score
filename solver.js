@@ -13,26 +13,26 @@ function analyze(flight, config) {
     const oldlen = flight.fixes.length;
     if (!config.invalid)
         flight.fixes = flight.fixes.filter(x => x.valid);
+    flight.launch = 0;
+    flight.landing = flight.fixes.length - 1;
+    flight.original = flight.fixes;
     if (config.detectLaunch || config.detectLanding) {
         Flight.analyze({ flight });
+        flight.original = flight.fixes.slice(0);
 
         if (config.detectLaunch) {
             const launch = Flight.detectLaunch({ flight });
             if (launch !== undefined) {
-                if (!config.quiet)
-                    console.log(`Launch detected at fix ${launch}, ${flight.fixes[0].time}`);
+                flight.launch = launch;
                 flight.fixes.splice(0, launch);
-                flight.flightPoints.splice(0, launch);
             }
         }
 
         if (config.detectLanding) {
             const landing = Flight.detectLanding({ flight });
             if (landing !== undefined) {
-                if (!config.quiet)
-                    console.log(`Landing detected at fix n-${flight.fixes.length - landing - 1}, ${flight.fixes[flight.fixes.length - 1].time}`);
+                flight.landing = flight.launch + landing;
                 flight.fixes.splice(landing);
-                flight.flightPoints.splice(landing);
             }
         }  
     }
