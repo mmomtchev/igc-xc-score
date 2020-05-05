@@ -59,6 +59,10 @@ As a side note, while the GPS naviation system coordinates are relative to WGS84
 
 *En France [l'ellipsoïde de référence](https://geodesie.ign.fr/contenu/fichiers/documentation/SRCfrance.pdf) normalisé par l'IGN est le GRS80 pour la métropole et le WGS84 pour les DOM-TOM. Le géoïde utilisé est celui du RGF93. Les deux ellipsoïdes sont absolument équivalents, à moins d'un millimètre près, et l'utilisation des coordonnées WGS84 est admise par l'IGN sans [aucune transformation supplémentaire](https://geodesie.ign.fr/contenu/fichiers/documentation/pedagogiques/TransformationsCoordonneesGeodesiques.pdf).*
 
+### Launch and landing detection
+
+The tool includes a primitive launch and landing detection based upon a moving average of the vertical and the horizontal (ground) speed. It can not distinguish a glider that is completely immobile up in the air for a set period of time (ie, gliding into a wind equal to its airspeed while soaring at its sink rate) from a glider that has landed, but outside of this somewhat rare (and very dangerous) situation, it should work well in most cases. The values, including the number of seconds used for the moving average, can be tweaked in *flight.js*.
+
 ## Installation
 
 If you just want to run it from the command-line, download the executable file for your platform from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases).

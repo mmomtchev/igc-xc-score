@@ -1,3 +1,22 @@
+/* Launch and landing detection can affect the score,
+ * and must be as precise as possible
+ *
+ * Launch and landing are detected on a n-second moving average
+ * of the horizontal and vertical speed
+ * 
+ * n is the number of seconds for the moving average
+ * x is the horizontal speed in m/s
+ * z is the absolute value of the vertical speed in m/s
+ * 
+ * Launch/landing is detected when both of the moving averages
+ * cross the detection threshold
+ */
+const detectLaunchLanding = {
+    n: 10,
+    x: 1,
+    z: 0.1
+};
+
 function analyze(opt) {
     const fixes = opt.flight.fixes;
 
@@ -22,10 +41,13 @@ function analyze(opt) {
 
     for (let _i in fixes) {
         const i = parseInt(_i);
-        fixes[i].hma = fixes.slice(Math.max(0, i - 5), Math.min(fixes.length - 1, i + 5))
-            .reduce((sum, x) => (sum + x.hspeed), 0) / 11;
-        fixes[i].vma = fixes.slice(Math.max(0, i - 5), Math.min(fixes.length - 1, i + 5))
-            .reduce((sum, x) => (sum + x.vspeed), 0) / 11;
+        const now = fixes[i].timestamp;
+        let start, end;
+        for (start = i; start > 0 && fixes[start].timestamp > now - Math.round(detectLaunchLanding.n * 1000 / 2); start--);
+        for (end = i; end < fixes.length - 1 && fixes[end].timestamp < now + Math.round(detectLaunchLanding.n * 1000 / 2); end++);
+        const maSegment = fixes.slice(start, end + 1);
+        fixes[i].hma = maSegment.reduce((sum, x) => (sum + x.hspeed), 0) / maSegment.length;
+        fixes[i].vma = maSegment.reduce((sum, x) => (sum + x.vspeed), 0) / maSegment.length;
     }
 }
 
