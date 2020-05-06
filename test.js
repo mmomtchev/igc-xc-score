@@ -25,7 +25,7 @@ const tests = {
         { file: 'flat-ffvl-26.37.igc', score: 26.4 },
         { file: 'curvature-of-earth-triangle.igc', score: 90.71 },
         { file: 'vincentys.igc', score: 174.35 },
-        { file: 'discontinuity.igc', score: 53.01 }
+        { file: 'discontinuity.igc', score: 53 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },

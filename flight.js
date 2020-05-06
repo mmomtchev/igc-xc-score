@@ -14,7 +14,7 @@
  */
 const detectLaunchLanding = {
     n: 10,
-    t: 10,
+    t: 5,
     x: 1.5,
     z: 0.05
 };
@@ -62,6 +62,8 @@ function detectLaunch(opt) {
             if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
                 return start;
             }
+            if (start === undefined)
+                start = i;
         } else
             start = undefined;
     
@@ -77,6 +79,8 @@ function detectLanding(opt) {
             if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
                 return start;
             }
+            if (start === undefined)
+                start = i;
         } else
             start = undefined;
 
