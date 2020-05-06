@@ -47,7 +47,7 @@ function closingWithPenalty(distance, opt) {
 
 function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(0, ranges[0].a, boxes[0], opt);
-    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.flight.fixes.length - 1, boxes[2], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.flight.flightPoints.length - 1, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
     return maxDistance;
 }
@@ -55,7 +55,7 @@ function boundDistance3Points(ranges, boxes, opt) {
 function scoreDistance3Points(tp, opt) {
     let distance = 0;
     const pin = geom.findFurthestPointInSegment(0, tp[0].r, tp[0], opt);
-    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.flight.fixes.length - 1, tp[2], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.flight.flightPoints.length - 1, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
     for (let i of [0, 1, 2, 3])
         distance += all[i].distanceEarth(all[i + 1]);

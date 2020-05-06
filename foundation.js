@@ -94,10 +94,10 @@ class Box {
         if (a instanceof Range) {
             [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
             for (let i = a.a; i <= a.b; i++) {
-                this.x1 = Math.min(b.fixes[i].longitude, this.x1);
-                this.y1 = Math.min(b.fixes[i].latitude, this.y1);
-                this.x2 = Math.max(b.fixes[i].longitude, this.x2);
-                this.y2 = Math.max(b.fixes[i].latitude, this.y2);
+                this.x1 = Math.min(b.flightPoints[i].x, this.x1);
+                this.y1 = Math.min(b.flightPoints[i].y, this.y1);
+                this.x2 = Math.max(b.flightPoints[i].x, this.x2);
+                this.y2 = Math.max(b.flightPoints[i].y, this.y2);
             }
         } else {
             [this.x1, this.y1, this.x2, this.y2] = [a, b, c, d];

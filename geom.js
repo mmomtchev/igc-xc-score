@@ -179,15 +179,15 @@ function findClosestPairIn2Segments(p1, p2, opt) {
         return precomputed.o;
 
     const rtree = new Flatbush(p1 + 1, 8);
-    const lc = Math.abs(Math.cos(util.radians(opt.flight.fixes[p1].latitude)));
+    const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[p1].y)));
     for (let i = 0; i <= p1; i++) {
-        const r = opt.flight.fixes[i];
-        rtree.add(r.longitude * lc, r.latitude, r.longitude * lc, r.latitude);
+        const r = opt.flight.flightPoints[i];
+        rtree.add(r.x * lc, r.y, r.x * lc, r.y);
     }
     rtree.finish();
 
-    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.flight.fixes.length })[0];
-    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.flight.fixes.length;
+    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.flight.flightPoints.length })[0];
+    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.flight.flightPoints.length;
     let min = { d: Infinity };
     for (let i = p2; i < lastUnknown; i++) {
         const pout = opt.flight.flightPoints[i];
@@ -285,7 +285,7 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
 }
 
 function isTriangleClosed(p1, p2, distance, opt) {
-    const fastCandidates = opt.flight.closestPairs.search({ minX: 0, minY: p2, maxX: p1, maxY: opt.flight.fixes.length });
+    const fastCandidates = opt.flight.closestPairs.search({ minX: 0, minY: p2, maxX: p1, maxY: opt.flight.flightPoints.length });
     for (let f of fastCandidates)
         if (f.o.d <= opt.scoring.closingDistanceFree)
             return f.o;
