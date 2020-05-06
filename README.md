@@ -67,7 +67,10 @@ The tool includes a primitive launch and landing detection based upon a moving a
 
 If you just want to run it from the command-line, download the executable file for your platform from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases).
 
-Or, if you already have Node.js, you can download the source distribution.
+Or, if you already have Node.js, you can download the source distribution with npm:
+```bash
+npm install igc-xc-score
+```
 
 You can try a demo here: [https://www.meteo.guru/xc-score/](https://www.meteo.guru/xc-score/).
 
