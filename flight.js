@@ -5,8 +5,12 @@
  * of the horizontal and vertical speed
  * 
  * n is the number of seconds for the moving average
+ * 
  * t is the number of seconds that the conditions must be true
+ * (the event is still assigned to the start of the period)
+ * 
  * x is the horizontal speed in m/s
+ * 
  * z is the absolute value of the vertical speed in m/s
  * 
  * Launch/landing is detected when both of the moving averages
@@ -14,10 +18,15 @@
  */
 const detectLaunchLanding = {
     n: 10,
-    t: 5,
-    x: 1.5,
+    t: 20,
+    x: 3,
     z: 0.05
 };
+
+function printFixes(fixes, a, b) {
+    for (let i = a; i <= b; i++)
+        console.log(i, fixes[i].time, 'speed', fixes[i].hspeed, fixes[i].vspeed, 'ma', fixes[i].hma, fixes[i].vma, 'alt', fixes[i].pressureAltitude);
+}
 
 function analyze(opt) {
     const fixes = opt.flight.fixes;
@@ -30,7 +39,7 @@ function analyze(opt) {
             fixes[i].hspeed = 0;
 
     for (let i in fixes) {
-        if (fixes[i].pressureAltitude === null || fixes[i].pressureAltitude === undefined)
+        if (fixes[i].pressureAltitude === null || fixes[i].pressureAltitude === undefined || fixes[i].pressureAltitude < -1000)
             fixes[i].pressureAltitude = fixes[i].gpsAltitude;
         if (fixes[i].pressureAltitude === null)
             fixes[i].gpsAltitude = undefined;
@@ -49,7 +58,7 @@ function analyze(opt) {
         for (end = i; end < fixes.length - 1 && fixes[end].timestamp < now + Math.round(detectLaunchLanding.n * 1000 / 2); end++);
         const maSegment = fixes.slice(start, end + 1);
         fixes[i].hma = maSegment.reduce((sum, x) => (sum + x.hspeed), 0) / maSegment.length;
-        fixes[i].vma = maSegment.reduce((sum, x) => (sum + x.vspeed), 0) / maSegment.length;
+        fixes[i].vma = maSegment.reduce((sum, x) => (sum + Math.abs(x.vspeed)), 0) / maSegment.length;
     }
 }
 
@@ -72,9 +81,14 @@ function detectLaunch(opt) {
 
 function detectLanding(opt) {
     const fixes = opt.flight.fixes;
+    const launch = detectLaunch(opt);
+
+    if (launch === undefined)
+        return undefined;
 
     let start;
-    for (let i = (detectLaunch(opt) || 0) + 1; i < fixes.length - 1; i++)
+    //printFixes(fixes, 0, 20);
+    for (let i = launch; i < fixes.length - 1; i++)
         if (fixes[i].hma < detectLaunchLanding.x && Math.abs(fixes[i].vma) < detectLaunchLanding.z) {
             if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
                 return start;

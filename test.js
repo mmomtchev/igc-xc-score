@@ -14,7 +14,7 @@ const defaultConfig = {
 const tests = {
     FFVL: [
         { file: 'bigflat.igc', score: 225.21 },
-        { file: 'd3p.igc', score: 60.77 },
+        { file: 'd3p.igc', score: 60.76 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
         { file: 'line.igc', score: 53.34 },
@@ -25,7 +25,10 @@ const tests = {
         { file: 'flat-ffvl-26.37.igc', score: 26.4 },
         { file: 'curvature-of-earth-triangle.igc', score: 90.71 },
         { file: 'vincentys.igc', score: 174.35 },
-        { file: 'discontinuity.igc', score: 53 }
+        { file: 'discontinuity.igc', score: 53 },
+        { file: 'hiking-up.igc', score: 40.53 },
+        { file: 'hiking-up-2.igc', score: 125.94 },
+        { file: 'lunch-break.igc', score: 6.09 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
@@ -39,7 +42,7 @@ const tests = {
         { file: 'trifai-xcontest-452.21.igc', score: 455.38 },
         { file: 'trifai-xcontest-452.21.igc', score: 455.37, config: { hp: true } },
         { file: 'trifai-xcontest-307.57.igc', score: 308.33 },
-        { file: 'freeflight-xcontest-465.33.igc', score: 465.58 }
+        { file: 'freeflight-xcontest-465.33.igc', score: 465.57 }
     ]
 };
 

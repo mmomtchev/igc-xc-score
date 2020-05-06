@@ -49,7 +49,10 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/line.igc"            ],
+                "test/line.igc",
+                "detectLaunch=true",
+                "detectLanding=true"
+            ],
             "console": "integratedTerminal"
         },
         {
@@ -73,16 +76,18 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "CRASH",
+            "name": "WORK",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/crash.igc",
+                "test/work.igc",
                 "out=out.json",
                 "maxtime=10",
                 "debug=true",
-                "verbose=true"
+                "verbose=true",
+                "detectLaunch=true",
+                "detectLanding=true"
             ],
             "console": "integratedTerminal"
         },
