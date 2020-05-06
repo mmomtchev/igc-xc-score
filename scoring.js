@@ -1,13 +1,7 @@
 'use strict';
-const foundation = require('./foundation');
-const Box = foundation.Box;
 const geom = require('./geom');
 
-function boundFlatTriangle(ranges, opt) {
-    let boxes = [];
-    for (let r of [0, 1, 2])
-        boxes[r] = new Box(ranges[r], opt.flight);
-
+function boundFlatTriangle(ranges, boxes, opt) {
     const maxDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
@@ -51,10 +45,7 @@ function closingWithPenalty(distance, opt) {
     return Infinity;
 }
 
-function boundDistance3Points(ranges, opt) {
-    let boxes = [];
-    for (let r of [0, 1, 2])
-        boxes[r] = new Box(ranges[r], opt.flight);
+function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(0, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.flight.fixes.length - 1, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
@@ -71,11 +62,7 @@ function scoreDistance3Points(tp, opt) {
     return { distance, score: distance, tp: tp, cp: { in: pin, out: pout, d: 0 } };
 }
 
-function boundFAITriangle(ranges, opt) {
-    let boxes = [];
-    for (let r of [0, 1, 2])
-        boxes[r] = new Box(ranges[r], opt.flight);
-
+function boundFAITriangle(ranges, boxes, opt) {
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });

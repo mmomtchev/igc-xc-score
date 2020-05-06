@@ -10,6 +10,9 @@ class Solution {
             this.ranges = ranges.slice(0, opt.scoring.cardinality);
         else
             this.ranges = ranges;
+        this.boxes = [];
+        for (let r in this.ranges)
+            this.boxes[r] = new Box(this.ranges[r], opt.flight);
         this.score = undefined;
         this.bound = undefined;
         this.id = id++;
@@ -27,6 +30,9 @@ class Solution {
         let div = 0;
         for (let r in this.ranges)
             if (this.ranges[r].count() > this.ranges[div].count())
+                div = parseInt(r);
+        for (let r in this.ranges)
+            if (this.ranges[r].count() > 1 && this.boxes[r].area() > this.boxes[div].area() * 8)
                 div = parseInt(r);
         
         if (this.ranges[div].count() == 1)
@@ -50,7 +56,7 @@ class Solution {
     }
 
     do_bound() {
-        this.bound = this.opt.scoring.bound(this.ranges, this.opt);
+        this.bound = this.opt.scoring.bound(this.ranges, this.boxes, this.opt);
         this.trace();
     }
 

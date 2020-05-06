@@ -121,6 +121,12 @@ class Box {
         return true;
     }
 
+    area() {
+        const h = Math.abs(this.x2 - this.x1);
+        const w = Math.abs(this.y2 - this.y1);
+        return h * w;
+    }
+
     distance(other) {
         if (this.intersects(other))
             return 0;

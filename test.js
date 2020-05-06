@@ -24,7 +24,8 @@ const tests = {
         { file: 'zigzag.igc', score: 90.64 },
         { file: 'flat-ffvl-26.37.igc', score: 26.4 },
         { file: 'curvature-of-earth-triangle.igc', score: 90.71 },
-        { file: 'vincentys.igc', score: 174.35 }
+        { file: 'vincentys.igc', score: 174.35 },
+        { file: 'discontinuity.igc', score: 53 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
@@ -45,11 +46,16 @@ const tests = {
 for (let rules of Object.keys(tests))
     for (let test of tests[rules]) {
         const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
+        const ts = Date.now();
         const best = solver(flight, scoringRules[rules], { ...defaultConfig, ...test.config }).next().value;
         if (best.score == test.score)
-            console.log(rules, test.file, (test.config || {}).hp ? 'HP' : 'Fast', best.score, String.fromCodePoint(0x2713));
+            console.log(rules, test.file,
+                (test.config || {}).hp ? 'HP' : 'Fast', best.score,
+                (Date.now() - ts) + 'ms',
+                util.consoleColors.fg.green + String.fromCodePoint(0x2713) + util.consoleColors.reset);
         else {
-            console.error(rules, test.file, test.score, best.score, util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
+            console.error(rules, test.file, test.score, best.score,
+                util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
             process.exit(1);
         }
     }
