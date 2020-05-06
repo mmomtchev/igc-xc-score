@@ -5,14 +5,16 @@
  * of the horizontal and vertical speed
  * 
  * n is the number of seconds for the moving average
+ * t is the number of seconds that the conditions must be true
  * x is the horizontal speed in m/s
  * z is the absolute value of the vertical speed in m/s
  * 
  * Launch/landing is detected when both of the moving averages
- * cross the detection threshold
+ * cross the detection threshold for t seconds
  */
 const detectLaunchLanding = {
     n: 10,
+    t: 10,
     x: 1.5,
     z: 0.05
 };
@@ -54,9 +56,14 @@ function analyze(opt) {
 function detectLaunch(opt) {
     const fixes = opt.flight.fixes;
 
+    let start;
     for (let i = 0; i < fixes.length - 1; i++)
-        if (fixes[i].hma > detectLaunchLanding.x && Math.abs(fixes[i].vma) > detectLaunchLanding.z)
-            return i;
+        if (fixes[i].hma > detectLaunchLanding.x && Math.abs(fixes[i].vma) > detectLaunchLanding.z) {
+            if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
+                return start;
+            }
+        } else
+            start = undefined;
     
     return undefined;
 }
@@ -64,9 +71,14 @@ function detectLaunch(opt) {
 function detectLanding(opt) {
     const fixes = opt.flight.fixes;
 
+    let start;
     for (let i = (detectLaunch(opt) || 0) + 1; i < fixes.length - 1; i++)
-        if (fixes[i].hma < detectLaunchLanding.x && Math.abs(fixes[i].vma) < detectLaunchLanding.z)
-            return i;
+        if (fixes[i].hma < detectLaunchLanding.x && Math.abs(fixes[i].vma) < detectLaunchLanding.z) {
+            if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
+                return start;
+            }
+        } else
+            start = undefined;
 
     return undefined;
 }

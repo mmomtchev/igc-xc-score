@@ -25,7 +25,7 @@ const tests = {
         { file: 'flat-ffvl-26.37.igc', score: 26.4 },
         { file: 'curvature-of-earth-triangle.igc', score: 90.71 },
         { file: 'vincentys.igc', score: 174.35 },
-        { file: 'discontinuity.igc', score: 53 }
+        { file: 'discontinuity.igc', score: 53.01 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
@@ -56,6 +56,7 @@ for (let rules of Object.keys(tests))
         else {
             console.error(rules, test.file, test.score, best.score,
                 util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
-            process.exit(1);
+            if (process.argv[2] !== 'force')
+                process.exit(1);
         }
     }
