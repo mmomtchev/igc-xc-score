@@ -61,7 +61,7 @@ As a side note, while the GPS naviation system coordinates are relative to WGS84
 
 ### Launch and landing detection
 
-The tool includes a primitive launch and landing detection based upon a moving average of the vertical and the horizontal (ground) speed. It can not distinguish a glider that is completely immobile up in the air for a set period of time (ie, gliding into a wind equal to its airspeed while soaring at its sink rate) from a glider that has landed, but outside of this somewhat rare (and very dangerous) situation, it should work well in most cases. The values, including the number of seconds used for the moving average, can be tweaked in *flight.js*.
+The tool includes a launch and landing detection based upon a moving average of the vertical and the horizontal (ground) speed. It should correctly segment flight logs containing multiple launches and landings and will score the best flight. It can not distinguish a glider that is completely immobile up in the air for a set period of time (ie, gliding into a wind equal to its airspeed while soaring at its sink rate) from a glider that has landed, but outside of this somewhat rare (and very precarious) situation, or maybe a car climbing a twisty mountain road, it should work well in most typical hike and fly cases. The values, including the number of seconds used for the moving average, can be tweaked in *flight.js*.
 
 ## Installation
 
@@ -100,8 +100,7 @@ progress=<milliseconds> # report the current solution every <milliseconds>, work
 noflight=false          # do not include the flight track in the geojson output
 invalid=false           # include invalid GPS fixes
 hp=false                # High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
-detectLaunch=false      # auto-trim the beginning of the flight
-detectLanding=false     # auto-trim the end of the flight
+trim=false              # auto-trim the flight log to its launch and landing points
 ```
 
 Using with node (**developer**)
@@ -131,13 +130,12 @@ It supports resetting or it will automatically reset itself if an optimal soluti
 
 *solver* accepts the following options in its third argument:
 ```JS
-const opt = {
+const default_opt = {
     maxcycle: undefined          // max execution time per cycle in milliseconds
     noflight: false              // do not include the flight track in the geojson output
     invalid: false               // do not filter invalid GPS fixes
     hp: false                    // High Precision mode, use Vincenty's instead of FCC distances, twice slower for a little bit better precision
-    detectLaunch: false          // auto-trim the beginning of the flight
-    detectLanding: false         // auto-trim the end of the flight
+    trim: false                  // auto-trim the flight to its launch and landing points
 };
 ```
 

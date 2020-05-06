@@ -168,14 +168,12 @@ function runProcessing() {
     }
 
     const hp = $('#igc-hp').prop('checked');
-    const detectLaunch = $('#igc-detect-launch').prop('checked');
-    const detectLanding = $('#igc-detect-landing').prop('checked');
+    const trim = $('#igc-trim').prop('checked');
     window.requestIdleCallback(() => {
         const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
             maxcycle: 100,
             hp: hp,
-            detectLaunch,
-            detectLanding
+            trim
         }, { timeout: 2000 });
         loop.call(it);
     });

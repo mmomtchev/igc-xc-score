@@ -178,20 +178,20 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     if (precomputed !== undefined)
         return precomputed.o;
 
-    const rtree = new Flatbush(p1 + 1, 8);
+    const rtree = new Flatbush(p1 + 1 - opt.launch, 8);
     const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[p1].y)));
-    for (let i = 0; i <= p1; i++) {
+    for (let i = opt.launch; i <= p1; i++) {
         const r = opt.flight.flightPoints[i];
         rtree.add(r.x * lc, r.y, r.x * lc, r.y);
     }
     rtree.finish();
 
-    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.flight.flightPoints.length })[0];
-    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.flight.flightPoints.length;
+    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing })[0];
+    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
     for (let i = p2; i < lastUnknown; i++) {
         const pout = opt.flight.flightPoints[i];
-        const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0];
+        const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
         if (n !== undefined) {
             const pin = opt.flight.flightPoints[n];
             const d = pout.distanceEarth(pin);
@@ -227,9 +227,9 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
         throw new TypeError('target must be either Point or Box');
     
     let pos;
-    if (sega === 0)
+    if (sega === opt.launch)
         pos = 0;
-    else if (segb === opt.flight.flightPoints.length - 1)
+    else if (segb === opt.landing)
         pos = 1;
     else
         throw new RangeError('this function supports seeking only from the launch or the landing point');
@@ -285,7 +285,7 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
 }
 
 function isTriangleClosed(p1, p2, distance, opt) {
-    const fastCandidates = opt.flight.closestPairs.search({ minX: 0, minY: p2, maxX: p1, maxY: opt.flight.flightPoints.length });
+    const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
     for (let f of fastCandidates)
         if (f.o.d <= opt.scoring.closingDistanceFree)
             return f.o;
@@ -300,9 +300,9 @@ function isTriangleClosed(p1, p2, distance, opt) {
 function init(opt) {
     opt.flight.closestPairs = new RBush();
     opt.flight.furthestPoints = [new Map(), new Map()];
-    opt.flight.flightPoints = new Array(opt.flight.fixes.length);
-    for (let r in opt.flight.fixes)
-        opt.flight.flightPoints[r] = new Point(opt.flight, r);
+    opt.flight.flightPoints = new Array(opt.flight.filtered.length);
+    for (let r in opt.flight.filtered)
+        opt.flight.flightPoints[r] = new Point(opt.flight.filtered, r);
 }
 
 module.exports = {

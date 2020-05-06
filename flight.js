@@ -1,10 +1,10 @@
 /* Launch and landing detection can affect the score,
  * and must be as precise as possible
- *
+ * 
  * Launch and landing are detected on a n-second moving average
  * of the horizontal and vertical speed
  * 
- * n is the number of seconds for the moving average
+ * maPeriod is the number of seconds for the moving average
  * 
  * t is the number of seconds that the conditions must be true
  * (the event is still assigned to the start of the period)
@@ -16,93 +16,125 @@
  * Launch/landing is detected when both of the moving averages
  * cross the detection threshold for t seconds
  */
-const detectLaunchLanding = {
-    n: 10,
-    t: 20,
-    x: 3,
-    z: 0.05
+const maPeriod = 10;
+const definitionFlight = {
+    t: 60,
+    x0: 1.5,
+    xt: 5,
+    z0: 0.05,
+    zt: 0.9
 };
 
-function printFixes(fixes, a, b) {
-    for (let i = a; i <= b; i++)
-        console.log(i, fixes[i].time, 'speed', fixes[i].hspeed, fixes[i].vspeed, 'ma', fixes[i].hma, fixes[i].vma, 'alt', fixes[i].pressureAltitude);
-}
+const definitionGround = {
+    t: 20,
+    xmax: 2.5,
+    zmax: 0.1
+};
 
-function analyze(opt) {
-    const fixes = opt.flight.fixes;
+const Point = require('./foundation').Point;
 
-    for (let i in fixes)
-        if (i > 0)
-            fixes[i].hspeed = (opt.flight.flightPoints[i - 1].distanceEarth(opt.flight.flightPoints[i])) * 1000 /
-                (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
-        else
-            fixes[i].hspeed = 0;
-
+function prepare(fixes) {
     for (let i in fixes) {
         if (fixes[i].pressureAltitude === null || fixes[i].pressureAltitude === undefined || fixes[i].pressureAltitude < -1000)
             fixes[i].pressureAltitude = fixes[i].gpsAltitude;
         if (fixes[i].pressureAltitude === null)
             fixes[i].gpsAltitude = undefined;
-        if (i > 0)
-            fixes[i].vspeed = (fixes[i].pressureAltitude - fixes[i - 1].pressureAltitude) /
-                (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
-        else
+
+        if (i > 0) {
+            if (fixes[i].timestamp !== fixes[i - 1].timestamp) {
+                fixes[i].hspeed = (new Point(fixes, i - 1).distanceEarth(new Point(fixes, i))) * 1000 /
+                    (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
+                fixes[i].vspeed = (fixes[i].pressureAltitude - fixes[i - 1].pressureAltitude) /
+                    (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
+            } else {
+                fixes[i].hspeed = fixes[i - 1].hspeed;
+                fixes[i].vspeed = fixes[i - 1].vspeed;
+            }
+        } else {
+            fixes[i].hspeed = 0;
             fixes[i].vspeed = 0;
+        }
     }
 
     for (let _i in fixes) {
         const i = parseInt(_i);
         const now = fixes[i].timestamp;
         let start, end;
-        for (start = i; start > 0 && fixes[start].timestamp > now - Math.round(detectLaunchLanding.n * 1000 / 2); start--);
-        for (end = i; end < fixes.length - 1 && fixes[end].timestamp < now + Math.round(detectLaunchLanding.n * 1000 / 2); end++);
+        for (start = i; start > 0 && fixes[start].timestamp > now - Math.round(maPeriod * 1000 / 2); start--);
+        for (end = i; end < fixes.length - 1 && fixes[end].timestamp < now + Math.round(maPeriod * 1000 / 2); end++);
         const maSegment = fixes.slice(start, end + 1);
         fixes[i].hma = maSegment.reduce((sum, x) => (sum + x.hspeed), 0) / maSegment.length;
         fixes[i].vma = maSegment.reduce((sum, x) => (sum + Math.abs(x.vspeed)), 0) / maSegment.length;
     }
 }
 
-function detectLaunch(opt) {
-    const fixes = opt.flight.fixes;
-
+function detectFlight(fixes) {
     let start;
-    for (let i = 0; i < fixes.length - 1; i++)
-        if (fixes[i].hma > detectLaunchLanding.x && Math.abs(fixes[i].vma) > detectLaunchLanding.z) {
-            if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
-                return start;
+    for (let i = 0; i < fixes.length - 1; i++) {
+        if (start === undefined && fixes[i].hma > definitionFlight.xt && fixes[i].vma > definitionFlight.zt)
+            start = i;
+        if (start !== undefined)
+            if (fixes[i].hma > definitionFlight.x0 && fixes[i].vma > definitionFlight.z0) {
+                if (fixes[i].timestamp > fixes[start].timestamp + definitionFlight.t * 1000)
+                    for (let j = start; j <= i; j++)
+                        fixes[i].stateFlight = true;
+            } else {
+                start = undefined;
             }
-            if (start === undefined)
-                start = i;
-        } else
-            start = undefined;
-    
-    return undefined;
+    }
 }
 
-function detectLanding(opt) {
-    const fixes = opt.flight.fixes;
-    const launch = detectLaunch(opt);
-
-    if (launch === undefined)
-        return undefined;
-
+function detectGround(fixes) {
     let start;
-    //printFixes(fixes, 0, 20);
-    for (let i = launch; i < fixes.length - 1; i++)
-        if (fixes[i].hma < detectLaunchLanding.x && Math.abs(fixes[i].vma) < detectLaunchLanding.z) {
-            if (start !== undefined && fixes[i].timestamp > fixes[start].timestamp + detectLaunchLanding.t * 1000) {
-                return start;
+    for (let i = 0; i < fixes.length - 1; i++) {
+        if (start === undefined && fixes[i].hma < definitionGround.xmax && fixes[i].vma < definitionGround.zmax)
+            start = i;
+        if (start !== undefined)
+            if (fixes[i].hma < definitionGround.xmax && fixes[i].vma < definitionGround.zmax) {
+                if (fixes[i].timestamp > fixes[start].timestamp + definitionGround.t * 1000)
+                    for (let j = start; j <= i; j++)
+                        fixes[i].stateGround = true;
+            } else {
+                start = undefined;
             }
-            if (start === undefined)
-                start = i;
-        } else
-            start = undefined;
+    }
+}
 
-    return undefined;
+function detectLaunchLanding(fixes) {
+    let ll = [];
+    for (let i = 0; i < fixes.length - 1; i++) {
+        if (fixes[i].stateFlight) {
+            let j;
+            for (j = i; j > 0 && !fixes[j].stateGround; j--);
+            const launch = j;
+            for (j = i; j < fixes.length - 2 && !fixes[j].stateGround; j++);
+            const landing = j;
+            i = j;
+            ll.push({ launch, landing });
+        }
+    }
+    if (ll.length == 0)
+        ll.push({ launch: 0, landing: fixes.length - 1 });
+    return ll;
+}
+
+function analyze(flight, config) {
+    if (!config.invalid)
+        flight.filtered = flight.fixes.filter(x => x.valid);
+    else
+        flight.filtered = flight.fixes.slice(0);
+    if (flight.filtered.length < 5)
+        throw new Error(`Flight must contain at least 5 valid GPS fixes, ${flight.filtered.length} valid fixes found (out of ${flight.fixes.length})`);
+
+    if (config.trim) {
+        prepare(flight.filtered);
+        detectFlight(flight.filtered);
+        detectGround(flight.filtered);
+        flight.ll = detectLaunchLanding(flight.filtered);
+    } else
+        flight.ll = [ { launch: 0, landing: flight.filtered.length - 1 } ];    
 }
 
 module.exports = {
-    analyze,
-    detectLaunch,
-    detectLanding
+    analyze
 }

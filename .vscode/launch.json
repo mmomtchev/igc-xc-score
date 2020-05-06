@@ -50,8 +50,7 @@
             "program": "${workspaceFolder}/index",
             "args": [
                 "test/line.igc",
-                "detectLaunch=true",
-                "detectLanding=true"
+                "trim=true"
             ],
             "console": "integratedTerminal"
         },
@@ -86,8 +85,7 @@
                 "maxtime=10",
                 "debug=true",
                 "verbose=true",
-                "detectLaunch=true",
-                "detectLanding=true"
+                "trim=true"
             ],
             "console": "integratedTerminal"
         },

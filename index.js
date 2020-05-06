@@ -36,7 +36,7 @@ if (config.pipe) {
         console.log(`igc-xc-score ${require('./package.json').version}`);
         console.log('Momtchil Momtchev, velivole.fr/meteo.guru, 2020/COVID19');
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>]');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>] ...');
         console.log('flight.igc             is the flight track log');
         console.log('out=flight.json        save the optimal solution in GeoJSON format');
         console.log('maxtime=n              limit the execution time to n seconds');
@@ -45,8 +45,7 @@ if (config.pipe) {
         console.log('pipe=true              read flight data from stdin and write optimal solutions to stdout, works best with quiet');
         console.log('progress=<n>           output an intermediate solution every n milliseconds, works best with pipe');
         console.log('hp=true                enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
-        console.log('detectLaunch=true      auto-trim the start of the flight to the detected launch point');
-        console.log('detectLanding=true     auto-trim the end of the flight to the detected landing point');
+        console.log('trim=true              auto-trim the flight log to its launch and landing points');
         process.exit(1);
     }
     inf = process.argv[2];
@@ -94,10 +93,10 @@ try {
         fs.writeFileSync(outf, JSON.stringify(best.geojson()));
 
     if (!config.quiet) {
-        if (config.detectLaunch)
-            console.log(`Launch detected at fix ${flight.launch}, ${flight.fixes[0].time}`);
-        if (config.detectLanding)
-            console.log(`Landing detected at fix n-${flight.original.length - flight.landing - 1}, ${flight.fixes[flight.fixes.length - 1].time}`);
+        for (let l of flight.ll) {
+            console.log(`Launch at fix ${l.launch}, ${flight.filtered[l.launch].time}`);
+            console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1}, ${flight.filtered[l.landing].time}`);
+        }
         if (best.scoreInfo !== undefined) {
             console.log(`Best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
                 + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`

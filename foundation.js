@@ -3,8 +3,8 @@ const util = require('./util');
 
 class Point {
     constructor(x, y) {
-        if (x.fixes !== undefined)
-            [this.x, this.y, this.r] = [x.fixes[y].longitude, x.fixes[y].latitude, y];
+        if (Array.isArray(x))
+            [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
         else
             [this.x, this.y] = [x, y];
     }

@@ -9,46 +9,12 @@ const geom = require('./geom');
 const Flight = require('./flight');
 const scoringRules = require('./scoring-rules.config');
 
-function analyze(flight, config) {
-    const oldlen = flight.fixes.length;
-    if (!config.invalid)
-        flight.fixes = flight.fixes.filter(x => x.valid);
-    flight.launch = 0;
-    flight.landing = flight.fixes.length - 1;
-    flight.original = flight.fixes;
-    if (config.detectLaunch || config.detectLanding) {
-        Flight.analyze({ flight });
-        flight.original = flight.fixes.slice(0);
-
-        if (config.detectLaunch) {
-            const launch = Flight.detectLaunch({ flight });
-            if (launch !== undefined) {
-                flight.launch = launch;
-                flight.fixes.splice(0, launch);
-            }
-        }
-
-        if (config.detectLanding) {
-            const landing = Flight.detectLanding({ flight });
-            if (landing !== undefined) {
-                flight.landing = flight.launch + landing;
-                flight.fixes.splice(landing);
-            }
-        }  
-    }
-    if (flight.fixes.length < 5)
-        throw new Error(`Flight must contain at least 5 valid GPS fixes, ${flight.fixes.length} valid fixes found (out of ${oldlen})`);
-}
-
 function* solver(flight, _scoringTypes, _config) {
     let reset;
 
     const scoringTypes = _scoringTypes || scoringRules.FFVL;
     const config = _config || {};
-    if (flight.original !== undefined)
-        flight.fixes = flight.original.slice(0);
-    geom.init({ flight });
-    analyze(flight, config);
+    Flight.analyze(flight, config);
     geom.init({ flight });
     if (config.hp)
         Point.prototype.distanceEarth = Point.prototype.distanceEarthVincentys;
@@ -56,19 +22,23 @@ function* solver(flight, _scoringTypes, _config) {
         Point.prototype.distanceEarth = Point.prototype.distanceEarthFCC;
     let solutionRoots = [];
     for (let scoringType of scoringTypes) {
-        const opt = {
-            flight,
-            scoring: scoringType,
-            config
-        };
-        let solutionRoot = new Solution([
-            new Range(0, flight.fixes.length - 1),
-            new Range(0, flight.fixes.length - 1),
-            new Range(0, flight.fixes.length - 1)
-        ], opt);
-        solutionRoot.do_bound();
-        solutionRoot.do_score();
-        solutionRoots.push(solutionRoot);
+        for (let l of flight.ll) {
+            const opt = {
+                flight,
+                launch: l.launch,
+                landing: l.landing,
+                scoring: scoringType,
+                config
+            };
+            let solutionRoot = new Solution([
+                new Range(l.launch, l.landing),
+                new Range(l.launch, l.landing),
+                new Range(l.launch, l.landing)
+            ], opt);
+            solutionRoot.do_bound();
+            solutionRoot.do_score();
+            solutionRoots.push(solutionRoot);
+        }
     }
 
     let best = solutionRoots[0];

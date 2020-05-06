@@ -69,7 +69,7 @@ class Solution {
     
         let tp = [];
         for (let r in this.ranges)
-            tp[r] = new Point(this.opt.flight, this.ranges[r].center());
+            tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
         
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
@@ -110,8 +110,8 @@ class Solution {
                 features.push(tp[r]
                     .geojson('tp' + r, {
                         id: 'tp' + r,
-                        r: tp[r].r + this.opt.flight.launch,
-                        timestamp: this.opt.flight.fixes[tp[r].r].timestamp
+                        r: tp[r].r,
+                        timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
                 if (r < 2 || this.opt.scoring.closingDistance)
                     features.push({
@@ -140,8 +140,8 @@ class Solution {
                     features.push(cp[r]
                         .geojson('cp_' + r, {
                             id: 'cp_' + r,
-                            r: cp[r].r + this.opt.flight.launch,
-                            timestamp: this.opt.flight.fixes[cp[r].r].timestamp
+                            r: cp[r].r,
+                            timestamp: this.opt.flight.filtered[cp[r].r].timestamp
                         }));
                 if (this.opt.scoring.closingDistance)
                     features.push({
@@ -194,21 +194,24 @@ class Solution {
             }
         } catch (e) {
         }
-        features.push(new Point(this.opt.flight, 0)
-            .geojson('launch', {
-                id: 'launch',
-                r: this.opt.flight.launch,
-                timestamp: this.opt.flight.fixes[0].timestamp
-            }));
-        features.push(new Point(this.opt.flight, this.opt.flight.fixes.length - 1)
-            .geojson('land', {
-                id: 'land',
-                r: this.opt.flight.landing,
-                timestamp: this.opt.flight.fixes[this.opt.flight.fixes.length - 1].timestamp
-            }));
+        for (let li in this.opt.flight.ll) {
+            const l = this.opt.flight.ll[li];
+            features.push(this.opt.flight.flightPoints[l.launch]
+                .geojson('launch' + li, {
+                    id: 'launch' + li,
+                    r: l.launch,
+                    timestamp: this.opt.flight.filtered[l.launch].timestamp
+                }));
+            features.push(this.opt.flight.flightPoints[l.landing]
+                .geojson('land' + li, {
+                    id: 'land' + li,
+                    r: l.landing,
+                    timestamp: this.opt.flight.filtered[l.landing].timestamp
+                }));
+        }
         if (!this.opt.config || !this.opt.config.noflight) {
             let flightData = [];
-            for (let r of this.opt.flight.original) {
+            for (let r of this.opt.flight.filtered) {
                 flightData.push([r.longitude, r.latitude]);
             }
             features.push({
