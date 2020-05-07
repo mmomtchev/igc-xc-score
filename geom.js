@@ -145,16 +145,17 @@ function maxDistanceNRectangles(boxes) {
         path[r] = [];
     }
 
-    let intersecting = false;
     for (let i in boxes)
         if (i > 0) {
-            intersecting = boxes[i - 1].intersects(boxes[i]);
-            if (intersecting)
-                break;
+            const intersecting = boxes[i - 1].intersects(boxes[i]);
+            if (intersecting) {
+                boxes[i - 1].intersecting = true;
+                boxes[i].intersecting = true;
+            }
         }
 
     for (let i in boxes) {
-        if (intersecting) {
+        if (boxes[i].intersecting) {
             path[i] = vertices[i];
             continue;
         }
