@@ -50,9 +50,10 @@ function* solver(flight, _scoringTypes, _config) {
         const tstart = Date.now();
         while (solutionQueue.length > 0) {
             if (processed % 100 === 0) {
-                const mem = process.memoryUsage();
-                if (mem.heapUsed / mem.heapTotal > 0.98) {
-                    break;
+                if (process && process.memoryUsage) {
+                    const mem = process.memoryUsage();
+                    if (mem.heapUsed / mem.heapTotal > 0.98)
+                        break;
                 }
             }
 
