@@ -3,6 +3,7 @@ let id = 0;
 const foundation = require('./foundation');
 const Box = foundation.Box;
 const Point = foundation.Point;
+const Range = foundation.Range;
 
 class Solution {
     constructor(ranges, opt, parent) {
@@ -10,18 +11,28 @@ class Solution {
             this.ranges = ranges.slice(0, opt.scoring.cardinality);
         else
             this.ranges = ranges;
+        this.opt = opt;
+        for (let _r in this.ranges) {
+            const r = parseInt(_r);
+            if (r > 0)
+                if (this.ranges[r - 1].a > this.ranges[r].a)
+                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].a, this.ranges[r].a), this.ranges[r].b);
+            if (r < this.ranges.length - 1)
+                if (this.ranges[r].b > this.ranges[r + 1].b)
+                    this.ranges[r] = new Range(this.ranges[r].a, Math.min(this.ranges[r + 1].b, this.ranges[r].b));
+            if (this.ranges[r].a > this.ranges[r].b) {
+                console.log(this.ranges, parent.ranges);
+                throw 'error';
+            }
+        }
         this.boxes = [];
         for (let r in this.ranges)
             this.boxes[r] = new Box(this.ranges[r], opt.flight);
         this.score = undefined;
         this.bound = undefined;
         this.id = id++;
-        this.opt = opt;
         if (this.opt.config && this.opt.config.debug) {
-            if (parent !== undefined)
-                this.parent = parent + '-' + this.id;
-            else
-                this.parent = this.id;
+            this.parent = parent;
             this.trace();
         }
     }
@@ -40,17 +51,13 @@ class Solution {
         
         let subsolutions = [];
         for (let i of [this.ranges[div].left(), this.ranges[div].right()]) {
-            if (div > 0 && i.a < this.ranges[div - 1].a)
-                continue;
-            if (div > 0 && i.b < this.ranges[div - 1].b)
-                continue;
             let subranges = [];
             for (let r in this.ranges)
                 if (r != div)
                     subranges[r] = this.ranges[r];
                 else
                     subranges[r] = i;
-            subsolutions.push(new Solution(subranges, this.opt, this.parent));
+            subsolutions.push(new Solution(subranges, this.opt, this));
         }
         return subsolutions;
     }
@@ -100,6 +107,7 @@ class Solution {
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
                         id: 'box' + r,
+                        area: (new Box(this.ranges[r], this.opt.flight)).area(),
                         a: this.ranges[r].a,
                         b: this.ranges[r].b
                     }));
@@ -257,14 +265,19 @@ class Solution {
         return s;
     }
 
-    trace() {
+    trace(msg) {
         if (!this.opt.config.trace || !process.stdout)
             return;
         const trace = this.opt.config.trace.split(',');
-        for (let i in this.ranges)
-            if (!this.ranges[i].contains(trace[i]))
+        if (trace[0] < 0) {
+            if (this.id % parseInt(trace[1]) !== 0)
                 return;
-        let r = `solution tracing: ${this.id} ${this.opt.scoring.name} `;
+        } else {
+            for (let i in this.ranges)
+                if (!this.ranges[i].contains(trace[i]))
+                    return;
+        }
+        let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.opt.scoring.name} `;
         for (let i in this.ranges)
             r += this.ranges[i] + ' ';
         if (this.bound)
