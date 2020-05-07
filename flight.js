@@ -126,7 +126,7 @@ function analyze(flight, config) {
     if (flight.filtered.length < 5)
         throw new Error(`Flight must contain at least 5 valid GPS fixes, ${flight.filtered.length} valid fixes found (out of ${flight.fixes.length})`);
 
-    if (config.trim) {
+    if (config.trim || config.detectLaunch || config.detectLanding) {
         prepare(flight.filtered);
         detectFlight(flight.filtered);
         detectGround(flight.filtered);
@@ -137,4 +137,4 @@ function analyze(flight, config) {
 
 module.exports = {
     analyze
-}
+};
