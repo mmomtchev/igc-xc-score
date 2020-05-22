@@ -174,27 +174,27 @@ function maxDistanceNRectangles(boxes) {
     return distanceMax;
 }
 
-function findClosestPairIn2Segments(p1, p2, opt) {
-    const precomputed = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 })[0];
+function findClosestPairIn2Segments(p1, p2, opt, config) {
+    const precomputed = config.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 })[0];
     if (precomputed !== undefined)
         return precomputed.o;
 
     const rtree = new Flatbush(p1 + 1 - opt.launch, 8);
-    const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[p1].y)));
+    const lc = Math.abs(Math.cos(util.radians(config.flight.flightPoints[p1].y)));
     for (let i = opt.launch; i <= p1; i++) {
-        const r = opt.flight.flightPoints[i];
+        const r = config.flight.flightPoints[i];
         rtree.add(r.x * lc, r.y, r.x * lc, r.y);
     }
     rtree.finish();
 
-    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing })[0];
+    const precomputedNext = config.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing })[0];
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
     for (let i = p2; i < lastUnknown; i++) {
-        const pout = opt.flight.flightPoints[i];
+        const pout = config.flight.flightPoints[i];
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
         if (n !== undefined) {
-            const pin = opt.flight.flightPoints[n];
+            const pin = config.flight.flightPoints[n];
             const d = pout.distanceEarth(pin);
             if (d < min.d) {
                 min.d = d;
@@ -214,11 +214,11 @@ function findClosestPairIn2Segments(p1, p2, opt) {
         }
     }
 
-    opt.flight.closestPairs.insert({ minX: p1, minY: p2, maxX: p1, maxY: p2, o: min });
+    config.flight.closestPairs.insert({ minX: p1, minY: p2, maxX: p1, maxY: p2, o: min });
     return min;
 }
 
-function findFurthestPointInSegment(sega, segb, target, opt) {
+function findFurthestPointInSegment(sega, segb, target, opt, config) {
     let points;
     if (target instanceof Box)
         points = target.vertices();
@@ -238,18 +238,18 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     let distanceMax = -Infinity;
     let fpoint;
     for (let v of points) {
-        const precomputed = opt.flight.furthestPoints[pos].get(v.x + ':' + v.y, -Infinity);
+        const precomputed = config.flight.furthestPoints[pos].get(v.x + ':' + v.y, -Infinity);
         let distanceVMax = -Infinity;
         let fVpoint;
         if (sega <= precomputed && precomputed <= segb) {
-            fVpoint = opt.flight.flightPoints[precomputed];
+            fVpoint = config.flight.flightPoints[precomputed];
             distanceVMax = v.distanceEarth(fVpoint);
         }
         let intersecting = false;
         let canCache = false;
         if (fVpoint === undefined) {
             for (let p = sega; p <= segb; p++) {
-                const f = opt.flight.flightPoints[p];
+                const f = config.flight.flightPoints[p];
                 if (target instanceof Box && target.intersects(f)) {
                     intersecting = true;
                     continue;
@@ -272,7 +272,7 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
                 }
             }
             if (canCache)
-                opt.flight.furthestPoints[pos].set(v.x + ':' + v.y, fVpoint.r);
+                config.flight.furthestPoints[pos].set(v.x + ':' + v.y, fVpoint.r);
         }
         if (distanceVMax > distanceMax) {
             distanceMax = distanceVMax;
@@ -285,25 +285,25 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     return fpoint;
 }
 
-function isTriangleClosed(p1, p2, distance, opt) {
-    const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
+function isTriangleClosed(p1, p2, distance, opt, config, scoring) {
+    const fastCandidates = config.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
     for (let f of fastCandidates)
-        if (f.o.d <= opt.scoring.closingDistanceFree)
+        if (f.o.d <= scoring.closingDistanceFree)
             return f.o;
 
-    const min = findClosestPairIn2Segments(p1, p2, opt);
+    const min = findClosestPairIn2Segments(p1, p2, opt, config);
 
-    if (min.d <= opt.scoring.closingDistance(distance, opt))
+    if (min.d <= scoring.closingDistance(distance, opt, config, scoring))
         return min;
     return false;
 }
 
-function init(opt) {
-    opt.flight.closestPairs = new RBush();
-    opt.flight.furthestPoints = [new Map(), new Map()];
-    opt.flight.flightPoints = new Array(opt.flight.filtered.length);
-    for (let r in opt.flight.filtered)
-        opt.flight.flightPoints[r] = new Point(opt.flight.filtered, r);
+function init(config) {
+    config.flight.closestPairs = new RBush();
+    config.flight.furthestPoints = [new Map(), new Map()];
+    config.flight.flightPoints = new Array(config.flight.filtered.length);
+    for (let r in config.flight.filtered)
+        config.flight.flightPoints[r] = new Point(config.flight.filtered, r);
 }
 
 module.exports = {

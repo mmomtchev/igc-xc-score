@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const WorkerThreads = require('worker_threads');
 const IGCParser = require('./igc-parser');
 const solver = require('./solver');
 const util = require('./util');
-const scoringRules = require('./scoring-rules.config');
 
 const defaultConfig = {
     quiet: true,
@@ -46,20 +46,25 @@ const tests = {
     ]
 };
 
-for (let rules of Object.keys(tests))
-    for (let test of tests[rules]) {
-        const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
-        const ts = Date.now();
-        const best = solver(flight, scoringRules[rules], { ...defaultConfig, ...test.config }).next().value;
-        if (best.score == test.score)
-            console.log(rules, test.file,
-                (test.config || {}).hp ? 'HP' : 'Fast', best.score,
-                (Date.now() - ts) + 'ms',
-                util.consoleColors.fg.green + String.fromCodePoint(0x2713) + util.consoleColors.reset);
-        else {
-            console.error(rules, test.file, test.score, best.score,
-                util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
-            if (process.argv[2] !== 'force')
-                process.exit(1);
+defaultConfig.env = { fs, WorkerThreads };
+
+(async function () {
+    for (let rules of Object.keys(tests))
+        for (let test of tests[rules]) {
+            const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
+            const ts = Date.now();
+            const best = (await solver(flight, rules, { ...defaultConfig, ...test.config }).next()).value;
+            if (best.score == test.score)
+                console.log(rules, test.file,
+                    (test.config || {}).hp ? 'HP' : 'Fast', best.score,
+                    (Date.now() - ts) + 'ms',
+                    util.consoleColors.fg.green + String.fromCodePoint(0x2713) + util.consoleColors.reset);
+            else {
+                console.error(rules, test.file, test.score, best.score,
+                    util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
+                if (process.argv[2] !== 'force')
+                    process.exit(1);
+            }
         }
-    }
+    process.exit(0);
+})();

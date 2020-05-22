@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs');
+const WorkerThreads = require('worker_threads');
 const IGCParser = require('./igc-parser');
 const solver = require('./solver');
 const Solution = require('./solution').Solution;
@@ -27,6 +28,7 @@ if (config.scoring && !scoringRules[config.scoring]) {
     process.exit(2);
 }
 
+
 let inf, outf;
 if (config.pipe) {
     inf = 0;
@@ -51,14 +53,15 @@ if (config.pipe) {
     inf = process.argv[2];
     outf = config.out;
 }
-try {
+(async function () {
     const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'));
-    config.env = { fs };
+    config.maxcycle = config.progress || 100;
+
+    config.env = { fs, WorkerThreads };
 
     let best;
     const tend = Date.now() + config.maxtime * 1000;
-    config.maxcycle = config.progress || 100;
-    const it = solver(flight, scoringRules[config.scoring] || scoringRules.FFVL, config);
+    const it = solver(flight, config.scoring || 'FFVL', config);
     /* 
      * BEWARE!
      * In JS generators a for..of loop will ignore the closing return value of the generator
@@ -66,9 +69,9 @@ try {
      */
     let newbest;
     do {
-        newbest = it.next();
+        newbest = await it.next();
         if (config.progress)
-            process.stdout.write(JSON.stringify(newbest.value.geojson()));
+            process.stdout.write(JSON.stringify(newbest.value.geojson(flight)));
         if (best === undefined || !Solution.prototype.contentEquals(newbest.value, best)) {
             best = newbest.value;
             if (!config.quiet)
@@ -90,7 +93,7 @@ try {
     process.stdout.write('                                                                                                      \r');
 
     if (outf !== undefined)
-        fs.writeFileSync(outf, JSON.stringify(best.geojson()));
+        fs.writeFileSync(outf, JSON.stringify(best.geojson(flight)));
 
     if (!config.quiet) {
         for (let l of flight.ll) {
@@ -99,18 +102,22 @@ try {
         }
         if (best.scoreInfo !== undefined) {
             console.log(`Best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
-                + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
+                + ` ${util.consoleColors.fg.yellow}${best.scoring().name}`
                 + ` ${util.consoleColors.fg.green}${best.score} points,`
                 + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
-                + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
+                + (best.scoring().closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
                 + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
                 + util.consoleColors.reset);
         } else
             console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);
     }
-} catch (e) {
+    (function wait() {
+        setTimeout(wait, 100000);
+    })();
+    process.exit(0);
+})().catch(e => {
     console.error(e.message);
     if (config && config.debug)
         console.error(e.stack);
     process.exit(1);
-}
+});

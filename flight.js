@@ -118,7 +118,8 @@ function detectLaunchLanding(fixes) {
     return ll;
 }
 
-function analyze(flight, config) {
+function analyze(config) {
+    const flight = config.flight;
     if (!config.invalid)
         flight.filtered = flight.fixes.filter(x => x.valid).filter((x, i, a) => i == 0 || a[i-1].timestamp !== x.timestamp);
     else

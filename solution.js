@@ -4,14 +4,17 @@ const foundation = require('./foundation');
 const Box = foundation.Box;
 const Point = foundation.Point;
 const Range = foundation.Range;
+const scoringRules = require('./scoring-rules.config');
 
 class Solution {
-    constructor(ranges, opt, parent) {
-        if (ranges.length > opt.scoring.cardinality)
-            this.ranges = ranges.slice(0, opt.scoring.cardinality);
+    constructor(ranges, opt, config, parent) {
+        this.opt = opt;
+        this.rules = config.rules;
+        const scoring = this.scoring();
+        if (ranges.length > scoring.cardinality)
+            this.ranges = ranges.slice(0, scoring.cardinality);
         else
             this.ranges = ranges;
-        this.opt = opt;
         for (let _r in this.ranges) {
             const r = parseInt(_r);
             if (r > 0)
@@ -27,17 +30,21 @@ class Solution {
         }
         this.boxes = [];
         for (let r in this.ranges)
-            this.boxes[r] = new Box(this.ranges[r], opt.flight);
+            this.boxes[r] = new Box(this.ranges[r], config.flight);
         this.score = undefined;
         this.bound = undefined;
-        this.id = id++;
-        if (this.opt.config && this.opt.config.debug) {
+        this.id = (config.threadId || '') + '_' + id++;
+        if (config && config.debug) {
             this.parent = parent;
-            this.trace();
+            this.trace('new', config);
         }
     }
+    
+    scoring() {
+        return scoringRules[this.rules][this.opt.scoringType];
+    }
 
-    do_branch() {
+    do_branch(config) {
         let div = 0;
         for (let r in this.ranges)
             if (this.ranges[r].count() > this.ranges[div].count())
@@ -57,17 +64,17 @@ class Solution {
                     subranges[r] = this.ranges[r];
                 else
                     subranges[r] = i;
-            subsolutions.push(new Solution(subranges, this.opt, this));
+            subsolutions.push(new Solution(subranges, this.opt, config, this));
         }
         return subsolutions;
     }
 
-    do_bound() {
-        this.bound = this.opt.scoring.bound(this.ranges, this.boxes, this.opt);
-        this.trace();
+    do_bound(config) {
+        this.bound = this.scoring().bound(this.ranges, this.boxes, this.opt, config, this.scoring());
+        this.trace('bound', config);
     }
 
-    do_score() {
+    do_score(config) {
         for (let r in this.ranges)
             if (r < this.ranges.length - 1 && this.ranges[r].center() >= this.ranges[parseInt(r) + 1].center()) {
                 this.score = 0;
@@ -76,11 +83,11 @@ class Solution {
     
         let tp = [];
         for (let r in this.ranges)
-            tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
+            tp[r] = new Point(config.flight.filtered, this.ranges[r].center());
         
-        this.scoreInfo = this.opt.scoring.score(tp, this.opt);
+        this.scoreInfo = this.scoring().score(tp, this.opt, config, this.scoring());
         this.score = this.scoreInfo.score;
-        this.trace();
+        this.trace('score', config);
     }
 
     contentEquals(self, other) {
@@ -100,14 +107,15 @@ class Solution {
     }
 
     /*eslint no-empty: ["off"]*/
-    geojson() {
+    geojson(flight, config) {
         let features = [];
-        if (this.opt.config && this.opt.config.debug) {
+        const scoring = this.scoring();
+        if (config && config.debug) {
             for (let r in this.ranges)
-                features.push((new Box(this.ranges[r], this.opt.flight))
+                features.push((new Box(this.ranges[r], flight))
                     .geojson('box' + r, {
                         id: 'box' + r,
-                        area: (new Box(this.ranges[r], this.opt.flight)).area(),
+                        area: (new Box(this.ranges[r], flight)).area(),
                         a: this.ranges[r].a,
                         b: this.ranges[r].b
                     }));
@@ -119,9 +127,9 @@ class Solution {
                     .geojson('tp' + r, {
                         id: 'tp' + r,
                         r: tp[r].r,
-                        timestamp: this.opt.flight.filtered[tp[r].r].timestamp
+                        timestamp: flight.filtered[tp[r].r].timestamp
                     }));
-                if (r < 2 || this.opt.scoring.closingDistance)
+                if (r < 2 || scoring.closingDistance)
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
@@ -149,9 +157,9 @@ class Solution {
                         .geojson('cp_' + r, {
                             id: 'cp_' + r,
                             r: cp[r].r,
-                            timestamp: this.opt.flight.filtered[cp[r].r].timestamp
+                            timestamp: flight.filtered[cp[r].r].timestamp
                         }));
-                if (this.opt.scoring.closingDistance)
+                if (scoring.closingDistance)
                     features.push({
                         type: 'Feature',
                         id: 'closing',
@@ -202,24 +210,24 @@ class Solution {
             }
         } catch (e) {
         }
-        for (let li in this.opt.flight.ll) {
-            const l = this.opt.flight.ll[li];
-            features.push(this.opt.flight.flightPoints[l.launch]
+        for (let li in flight.ll) {
+            const l = flight.ll[li];
+            features.push(flight.flightPoints[l.launch]
                 .geojson('launch' + li, {
                     id: 'launch' + li,
                     r: l.launch,
-                    timestamp: this.opt.flight.filtered[l.launch].timestamp
+                    timestamp: flight.filtered[l.launch].timestamp
                 }));
-            features.push(this.opt.flight.flightPoints[l.landing]
+            features.push(flight.flightPoints[l.landing]
                 .geojson('land' + li, {
                     id: 'land' + li,
                     r: l.landing,
-                    timestamp: this.opt.flight.filtered[l.landing].timestamp
+                    timestamp: flight.filtered[l.landing].timestamp
                 }));
         }
-        if (!this.opt.config || !this.opt.config.noflight) {
+        if (!config || !config.noflight) {
             let flightData = [];
-            for (let r of this.opt.flight.filtered) {
+            for (let r of flight.filtered) {
                 flightData.push([r.longitude, r.latitude]);
             }
             features.push({
@@ -242,21 +250,22 @@ class Solution {
                 optimal: this.optimal,
                 processedTime: this.time / 1000,
                 processedSolutions: this.processed,
-                type: this.opt.scoring.name
+                type: this.scoring().name
             },
             features
         };
         return collection;
     }
 
-    toString() {
-        let s = `${this.opt.scoring.name}`;
+    toString(config) {
+        const scoring = this.scoring();
+        let s = `${scoring.name}`;
         if (this.score)
-            s += ` ${this.opt.scoring.rounding(this.score)} points`;
+            s += ` ${scoring.rounding(this.score)} points`;
         if (this.scoreInfo)
-            s += ` ${this.opt.scoring.rounding(this.scoreInfo.distance)}km`;
+            s += ` ${scoring.rounding(this.scoreInfo.distance)}km`;
         s += ` ( <${this.bound.toFixed(4)} )`;
-        if (this.opt.config && this.opt.config.debug) {
+        if (config && config.debug) {
             s += ` { id: ${this.id} `;
             for (let r of this.ranges)
                 s += ' ' + r.toString();
@@ -265,19 +274,21 @@ class Solution {
         return s;
     }
 
-    trace(msg) {
-        if (!this.opt.config.trace || !process.stdout)
-            return;
-        const trace = this.opt.config.trace.split(',');
+    trace(msg, config) {
+        if (!config.trace || !process.stdout)
+            return false;
+        const trace = config.trace.split(',');
         if (trace[0] < 0) {
-            if (this.id % parseInt(trace[1]) !== 0)
-                return;
+            if (parseInt(this.id) % parseInt(trace[1]) !== 0)
+                return false;
         } else {
+            if (this.opt.scoringType != trace[0])
+                return false;
             for (let i in this.ranges)
-                if (!this.ranges[i].contains(trace[i]))
-                    return;
+                if (!this.ranges[i].contains(trace[parseInt(i) + 1]))
+                    return false;
         }
-        let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.opt.scoring.name} `;
+        let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.scoring().name} `;
         for (let i in this.ranges)
             r += this.ranges[i] + ' ';
         if (this.bound)
@@ -285,7 +296,8 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson(config.flight, { debug: true })));
+        return this.id;
     }
 }
 
