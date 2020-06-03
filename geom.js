@@ -1,5 +1,6 @@
 const Map = require('collections/map');
 const _Flatbush = require('flatbush');
+const SharedMap = require('sharedmap');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
 const util = require('./util');
@@ -300,7 +301,15 @@ function isTriangleClosed(p1, p2, distance, opt, config, scoring) {
 
 function init(config) {
     config.flight.closestPairs = new RBush();
-    config.flight.furthestPoints = [new Map(), new Map()];
+
+    if (config.flight.furthestPoints) {
+        for (let map of config.flight.furthestPoints) {
+            map.__proto__ = SharedMap.prototype;
+            map.clear();
+        }
+    } else
+        config.flight.furthestPoints = [new SharedMap(65536, 48, 16), new SharedMap(65536, 48, 16)];
+    
     config.flight.flightPoints = new Array(config.flight.filtered.length);
     for (let r in config.flight.filtered)
         config.flight.flightPoints[r] = new Point(config.flight.filtered, r);

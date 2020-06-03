@@ -40,7 +40,8 @@
     "collections": "^5.1.10",
     "flatbush": "^3.3.0",
     "igc-parser": "^0.5.0",
-    "rbush": "^3.0.1"
+    "rbush": "^3.0.1",
+    "sharedmap": "^1.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.1.0",

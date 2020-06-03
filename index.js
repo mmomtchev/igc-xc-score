@@ -28,7 +28,6 @@ if (config.scoring && !scoringRules[config.scoring]) {
     process.exit(2);
 }
 
-
 let inf, outf;
 if (config.pipe) {
     inf = 0;

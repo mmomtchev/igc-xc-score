@@ -2,6 +2,7 @@
 const WorkerThreads = require('worker_threads');
 const Worker = WorkerThreads.Worker;
 const SortedSet = require('collections/sorted-set');
+const SharedMap = require('sharedmap');
 const worker = require('./worker');
 const solution = require('./solution');
 const Solution = solution.Solution;
