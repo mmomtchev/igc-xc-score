@@ -45,7 +45,7 @@ The rationale behind this decision is that both of these problems are well-known
 * Finding the best start/finish points is a simple minimum/maximum search which is a *O(n)* problem
 * Both can be further optimized by keeping the intermediate results in an R-Tree or a Hashmap, shared among all the branches
 
-The only weakness of the current implementation are flights consisting of (nearly) perfectly straight lines. These are in fact impossible to optimize, producing a very large number of (nearly) identical solutions that can not be eliminated and therefore must be calculated in order to guarantee that the obtained result is indeed optimal.
+The only weakness of the current implementation are flights consisting of (nearly) perfectly straight lines. These are in fact impossible to optimize, producing a very large number of (nearly) identical solutions that can not be eliminated and therefore must be calculated in order to guarantee that the obtained result is indeed optimal. For those particular cases there is another possible approach with dynamic programming which has a bounded execution time, on the order of a few minutes for the longest flights. This approach is currently not used since it has a rather detrimental impact on the average execution time and has no real benefits aside some very rare, almost perfectly straight line flights.
 
 The branch selection is breadth-first biased when branching and depth-first biased when bounding.
 
