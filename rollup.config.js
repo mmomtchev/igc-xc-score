@@ -29,5 +29,52 @@ export default [
 				mangle: false
 			})
 		]
+	},
+	{
+		input: 'main.js',
+		output: {
+			file: 'index.cjs.js',
+			format: 'cjs',
+			compact: true,
+			exports: 'named'
+		},
+		external: builtins,
+		plugins: [
+			resolve({
+				preferBuiltins: true
+			}),
+			commonjs({
+				include: [
+					'*.js',
+					'*.json',
+					'node_modules/**',
+				],
+			}),
+			json(),
+			terser({
+				mangle: false
+			})
+		]
+	},
+	{
+		input: 'module.js',
+		output: {
+			file: 'index.es.js',
+			format: 'cjs',
+			compact: false,
+		},
+		external: builtins,
+		plugins: [
+			resolve({
+				preferBuiltins: true
+			}),
+			commonjs({
+				include: [
+					'*.js',
+					'*.json',
+					'node_modules/**',
+				],
+			})
+		]
 	}
 ];

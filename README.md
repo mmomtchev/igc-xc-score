@@ -113,16 +113,25 @@ cat flight.json | jq .properties
 ### The solver library
 
 Calling the solver from another Node.js program is easy, you should look at *index.js* and *test.js* for examples
+CJS
 ```JS
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
-const scoring = require('./scoring-rules.config');
-const solver = require('./solver');
+const { scoring, solver } = require('igc-xc-score');
 const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
-const result = solver(flight, scoring.FFVL, { quiet: true }).next().value;
+const result = solver(flight, scoring.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
+
+ESM
+```JS
+import { solver, scoringRules as scoring } from 'igc-xc-score';
+const result = solver(flight, scoring.FFVL).next().value;
+if (result.optimal)
+    console.log(`score is ${result.score}`)
+```
+
 *solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
 *Be advised that in JS, a for..of loop will ignore the final return value of a generator. Do not use a for..of loop. Look at index.js for a proper solution.*
 
