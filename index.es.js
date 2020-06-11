@@ -8581,7 +8581,7 @@ function* solver(flight$1, _scoringTypes, _config) {
         const tstart = Date.now();
         while (solutionQueue.length > 0) {
             if (processed % 100 === 0) {
-                if (process && process.memoryUsage) {
+                if (typeof process !== 'undefined' && process.memoryUsage) {
                     const mem = process.memoryUsage();
                     if (mem.heapUsed / mem.heapTotal > 0.98)
                         break;
