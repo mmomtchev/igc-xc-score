@@ -152,9 +152,6 @@ const default_opt = {
 
 When calling from the browser, in order to avoid blocking the main event loop, you should use *requestIdleCallback* when it is available. When it is not, *setTimeout* could be a good substitute. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
 ```JS
-const igcSolver = require('igc-xc-score/solver');
-const igcParser = require('igc-xc-score/igc-parser');
-const igcScoring = require('igc-xc-score/scoring-rules.config');
 function loop() {
     const s = this.next();
     if (!s.done) {
@@ -179,7 +176,14 @@ Probably the easiest way to embed the solver in a non-JS desktop application is 
 
 ### igc-parser
 
-I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
+I have included my own copy of igc-parser, otherwise available [here](https://github.com/Turbo87/igc-parser/), which is less zealous over the quality of the IGC files. You can use the original one or import/require my version which silently ignores IGC errors:
+```JS
+/* Use the built-in IGCParser in ES */
+import { solver as igcSolver, scoringRules as igcScoring, IGCParser as igcParser } from 'igc-xc-score';
+/* Use the built-in IGCParser in CJS */
+const { scoring, solver, IGCParser } = require('igc-xc-score');
+```
+Alas, lots of paragliding flight instruments and smartphone flight trackers produce invalid IGC files.
 
 ### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
 

@@ -13,8 +13,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
 import './igc-xc-score.css';
 
-import { solver as igcSolver, scoringRules as igcScoring } from '../index.es';
-import igcParser from '../igc-parser';
+import { solver as igcSolver, scoringRules as igcScoring, IGCParser as igcParser } from '../index.es';
 
 const flightStyle = {
     'flight': new Style({
