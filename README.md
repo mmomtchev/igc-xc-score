@@ -126,7 +126,9 @@ if (result.optimal)
 
 ESM
 ```JS
+import IGCParser from 'igc-parser';
 import { solver, scoringRules as scoring } from 'igc-xc-score';
+const flight = IGCParser.parse(igcFile, 'utf8'));
 const result = solver(flight, scoring.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)

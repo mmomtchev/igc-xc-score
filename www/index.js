@@ -14,7 +14,7 @@ import 'ol/ol.css';
 import './igc-xc-score.css';
 
 import { solver as igcSolver, scoringRules as igcScoring } from '../index.es';
-const igcParser = require('../igc-parser');
+import igcParser from '../igc-parser';
 
 const flightStyle = {
     'flight': new Style({
