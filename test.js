@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const IGCParser = require('./igc-parser');
 const solver = require('./solver');
 const util = require('./util');
@@ -17,7 +18,7 @@ const tests = {
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
         { file: 'line.igc', score: 53.34 },
-        { file: 'tri.igc', score: 17.51 },
+        { file: 'tri.igc', score: 17.51, md5: '661cf42732b3e85c7c078bebbb043151' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
         { file: 'zigzag.igc', score: 90.64 },
@@ -61,5 +62,17 @@ for (let rules of Object.keys(tests))
                 util.consoleColors.fg.red + 'x' + util.consoleColors.reset);
             if (process.argv[2] !== 'force')
                 process.exit(1);
+        }
+        if (test.md5) {
+            const hash = crypto.createHash('md5');
+            const geojson = best.geojson();
+            delete geojson.properties.processedTime;
+            hash.update(JSON.stringify(geojson));
+            const digest = hash.digest('hex');
+            if (digest !== test.md5) {
+                console.error(rules, test.file, digest, test.md5);
+                if (process.argv[2] !== 'force')
+                    process.exit(1);
+            }
         }
     }

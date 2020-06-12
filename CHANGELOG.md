@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Added a new code field to allow for easier automated processing of scoring output
  - Added JSDoc
+ - Added code coverage reporting
 
 
 ## [1.4.0] 2020-06-11
