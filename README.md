@@ -113,7 +113,8 @@ cat flight.json | jq .properties
 ### The solver library
 
 Calling the solver from another Node.js program is easy, you should look at *index.js* and *test.js* for examples
-CJS
+
+#### CJS
 ```JS
 const fs = require('fs');
 const IGCParser = require('./igc-parser');
@@ -124,7 +125,7 @@ if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
 
-ESM
+#### ESM
 ```JS
 import IGCParser from 'igc-parser';
 import { solver, scoringRules as scoring } from 'igc-xc-score';
