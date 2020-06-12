@@ -1,5 +1,9 @@
 # igc-xc-score
 
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![Node.js CI](https://github.com/mmomtchev/SharedMap/workflows/Node.js%20CI/badge.svg)](https://github.com/mmomtchev/igc-xc-score/actions?query=workflow%3A%22Node.js+CI%22)
+[![codecov](https://codecov.io/gh/mmomtchev/igc-xc-score/branch/master/graph/badge.svg)](https://codecov.io/gh/mmomtchev/igc-xc-score)
+
 igc-xc-score is a paragliding and hang-gliding XC scoring tool in vanilla JS.
 
 It can be used directly from the command-line, or as a library embedded in a web browser or an application.
