@@ -6513,9 +6513,7 @@ var RBush$1 = getCjsExportFromNamespace(rbush);
 const Flatbush$1 = _Flatbush.default ? _Flatbush.default : _Flatbush;
 
 
-
-const Box$1 = foundation.Box;
-const Point$1 = foundation.Point;
+const { Box: Box$1, Point: Point$1 } = foundation;
 
 /* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
  * http://www.penguin.cz/~ondrap/algorithm.pdf
@@ -6944,20 +6942,24 @@ var scoring = {
     scoreFAITriangle,
 };
 
-/*
+/**
  * These are the scoring types
+ * @enum {object[][]} scoringRules
  *
  * The differences are mostly in the mutipliers and the way the closing distances of the triangles are calculated
  * 
  * These are the tools that are already implemented in scoring.js/geom.js:
- * closingDistance is the triangle closing type, you choose between two types:
+ * @param {function} closingDistance is the triangle closing type, you choose between two types:
  *      closingWithLimit - closing distance is limited
  *      closingWithPenalty - closing distance is unlimited but incurs a penalty
- * closingDistanceFixed is the fixed closing distance that is always accepted
- * closingDistanceFree is the closing distance that does not incur any scoring penalty
- * closingDistanceRelative is the closing distance that is relative to the full triangle length but incurs a penalty
-*/
-const rules = {
+ * @param {number} closingDistanceFixed is the fixed closing distance that is always accepted
+ * @param {number} closingDistanceFree is the closing distance that does not incur any scoring penalty
+ * @param {number} closingDistanceRelative is the closing distance that is relative to the full triangle length but incurs a penalty
+ */
+const scoringRules = {
+    /**
+     * @constant {object[]}
+     */
     'FFVL': [
         {
             name: 'Distance 3 points',
@@ -6965,7 +6967,8 @@ const rules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'od'
         },
         {
             name: 'Triangle plat',
@@ -6977,7 +6980,8 @@ const rules = {
             closingDistanceFree: 3,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'Triangle FAI',
@@ -6990,9 +6994,13 @@ const rules = {
             closingDistanceFree: 3,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         }
     ],
+    /**
+     * @constant {object[]}
+     */
     'XContest': [
         {
             name: 'Free flight',
@@ -7000,7 +7008,8 @@ const rules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'od'
         },
         {
             name: 'Free triangle',
@@ -7010,7 +7019,8 @@ const rules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'FAI triangle',
@@ -7021,7 +7031,8 @@ const rules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         },
         {
             name: 'Closed free triangle',
@@ -7033,7 +7044,8 @@ const rules = {
             closingDistanceFree: 0,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'Closed FAI triangle',
@@ -7046,7 +7058,8 @@ const rules = {
             closingDistanceFree: 0,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         }
     ]
 };
@@ -7055,7 +7068,7 @@ function round2(score) {
     return parseFloat(parseFloat(score).toFixed(2));
 }
 
-var scoringRules_config = rules;
+var scoringRules_config = scoringRules;
 
 //TODO:
 // Remove Dict and use native Map as much as possible here
@@ -8098,10 +8111,7 @@ Iterator$1.prototype.next = function () {
 };
 
 let id = 0;
-
-const Box$2 = foundation.Box;
-const Point$2 = foundation.Point;
-const Range$1 = foundation.Range;
+const { Box: Box$2, Point: Point$2, Range: Range$1 } = foundation;
 
 class Solution {
     constructor(ranges, opt, parent) {
@@ -8340,7 +8350,8 @@ class Solution {
                 optimal: this.optimal,
                 processedTime: this.time / 1000,
                 processedSolutions: this.processed,
-                type: this.opt.scoring.name
+                type: this.opt.scoring.name,
+                code: this.opt.scoring.code
             },
             features
         };
@@ -8532,14 +8543,32 @@ var flight = {
     analyze
 };
 
+/**
+ * igc-xc-score Solver
+ * scoring library for paragliding flights
+ * 
+ * @module igc-xc-score
+ * @author Momtchil Momtchev <momtchil@momtchev.com>
+ */
+
+
 const Solution$1 = solution.Solution;
-
-const Range$2 = foundation.Range;
-const Point$4 = foundation.Point;
+const { Range: Range$2, Point: Point$4 } = foundation;
 
 
 
 
+/**
+ * This the solver
+ * @param {IGCFile} flight flight track data in the igc_parser format
+ * @param {object[]} [scoringTypes=undefined] undefined for FFVL or one of the elements of scoringRules
+ * @param {object=} config optional config parameters
+ * @param {number=} config.maxcycle maximum execution time of the solver in ms, each sucessive call will return a better solution, default undefined for unlimited
+ * @param {boolean=} config.noflight do not include the flight track data in the output GeoJSON, default false
+ * @param {boolean=} config.invalid include invalid GPS fixes when evaluating the flight, default false
+ * @param {boolean=} config.hp use high-precision distance calculation (Vincenty's), much slower for slightly higher precision, default false
+ * @param {boolean=} config.trim automatically detect launch and landing and trim the flight track, default false
+ */
 function* solver(flight$1, _scoringTypes, _config) {
     let reset;
 

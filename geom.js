@@ -3,9 +3,7 @@ const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
 const util = require('./util');
-const foundation = require('./foundation');
-const Box = foundation.Box;
-const Point = foundation.Point;
+const { Box, Point } = require('./foundation');
 
 /* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
  * http://www.penguin.cz/~ondrap/algorithm.pdf
