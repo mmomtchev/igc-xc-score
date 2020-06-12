@@ -242,7 +242,8 @@ class Solution {
                 optimal: this.optimal,
                 processedTime: this.time / 1000,
                 processedSolutions: this.processed,
-                type: this.opt.scoring.name
+                type: this.opt.scoring.name,
+                code: this.opt.scoring.code
             },
             features
         };

@@ -22,7 +22,8 @@ const rules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'od'
         },
         {
             name: 'Triangle plat',
@@ -34,7 +35,8 @@ const rules = {
             closingDistanceFree: 3,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'Triangle FAI',
@@ -47,7 +49,8 @@ const rules = {
             closingDistanceFree: 3,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         }
     ],
     'XContest': [
@@ -57,7 +60,8 @@ const rules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'od'
         },
         {
             name: 'Free triangle',
@@ -67,7 +71,8 @@ const rules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'FAI triangle',
@@ -78,7 +83,8 @@ const rules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         },
         {
             name: 'Closed free triangle',
@@ -90,7 +96,8 @@ const rules = {
             closingDistanceFree: 0,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'tri'
         },
         {
             name: 'Closed FAI triangle',
@@ -103,7 +110,8 @@ const rules = {
             closingDistanceFree: 0,
             closingDistanceRelative: 0.05,
             rounding: round2,
-            cardinality: 3
+            cardinality: 3,
+            code: 'fai'
         }
     ]
 };
