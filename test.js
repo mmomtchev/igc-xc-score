@@ -17,7 +17,7 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34 },
+        { file: 'line.igc', score: 53.34, md5: '19a44dd18a1cbbfdc98a064a400a367d' },
         { file: 'tri.igc', score: 17.51, md5: '661cf42732b3e85c7c078bebbb043151' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },

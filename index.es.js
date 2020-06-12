@@ -6332,6 +6332,7 @@ class Point {
         return feature;
     }
 
+    /* c8 ignore next 3 */
     toString() {
         return JSON.stringify(this.geojson());
     }
@@ -6358,6 +6359,7 @@ class Point {
         return d;
     }
 
+    /* c8 ignore next 5 */
     distanceEarthRev(dx, dy) {
         const lon = this.x + util.degrees((dx / util.REarth) / Math.cos(util.radians(this.y)));
         const lat = this.y + util.degrees(dy / util.REarth);
@@ -6394,6 +6396,7 @@ class Range {
         return this.a <= p && p <= this.b;
     }
 
+    /* c8 ignore next 3 */
     toString() {
         return `${this.a}:${this.b}`;
     }
@@ -6437,6 +6440,7 @@ class Box {
         return h * w;
     }
 
+    /* c8 ignore next 25 */
     distance(other) {
         if (this.intersects(other))
             return 0;
@@ -6483,6 +6487,7 @@ class Box {
         return feature;
     }
 
+    /* c8 ignore next 11 */
     geojson_collection(boxes) {
         let features = [];
         for (let b in boxes) {
@@ -8140,6 +8145,7 @@ class Solution {
         this.bound = undefined;
         this.id = id++;
         if (this.opt.config && this.opt.config.debug) {
+            /* c8 ignore next 2 */
             this.parent = parent;
             this.trace();
         }
@@ -8211,6 +8217,7 @@ class Solution {
     geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
+            /* c8 ignore next 8 */
             for (let r in this.ranges)
                 features.push((new Box$2(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -8358,6 +8365,7 @@ class Solution {
         return collection;
     }
 
+    /* c8 ignore next 14 */
     toString() {
         let s = `${this.opt.scoring.name}`;
         if (this.score)
@@ -8374,6 +8382,7 @@ class Solution {
         return s;
     }
 
+    /* c8 ignore next 21 */
     trace(msg) {
         if (!this.opt.config.trace || !process.stdout)
             return;

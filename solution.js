@@ -29,6 +29,7 @@ class Solution {
         this.bound = undefined;
         this.id = id++;
         if (this.opt.config && this.opt.config.debug) {
+            /* c8 ignore next 2 */
             this.parent = parent;
             this.trace();
         }
@@ -100,6 +101,7 @@ class Solution {
     geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
+            /* c8 ignore next 8 */
             for (let r in this.ranges)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -247,6 +249,7 @@ class Solution {
         return collection;
     }
 
+    /* c8 ignore next 14 */
     toString() {
         let s = `${this.opt.scoring.name}`;
         if (this.score)
@@ -263,6 +266,7 @@ class Solution {
         return s;
     }
 
+    /* c8 ignore next 21 */
     trace(msg) {
         if (!this.opt.config.trace || !process.stdout)
             return;
