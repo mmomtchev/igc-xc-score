@@ -24,7 +24,7 @@ interface ScoreInfo {
 interface Scoring {
     name: string,
     code: string,
-    mutiplier: number
+    multiplier: number
 };
 
 interface Opt {
