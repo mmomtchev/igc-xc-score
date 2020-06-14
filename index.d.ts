@@ -16,14 +16,15 @@ interface ClosingPoints {
 
 interface ScoreInfo {
     cp?: ClosingPoints,
-    tp?: Point[3],
+    tp?: Point[],
     distance: number,
     score: number
 };
 
 interface Scoring {
-    name: string;
-    code: string
+    name: string,
+    code: string,
+    mutiplier: number
 };
 
 interface Opt {
@@ -43,4 +44,4 @@ interface Solution {
 };
 
 export function solver(flight: IGCFile, scoringRules: object, config: { [key: string]: any }) : Iterator<Solution, Solution>;
-export const scoringRules: { [key: string]: object[]; };
+export const scoringRules: { [key: string]: object[] };
