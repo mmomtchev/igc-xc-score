@@ -3,51 +3,51 @@ export as namespace XCScoring;
 import { IGCFile } from 'igc-parser';
 
 interface Point {
-    x: number
-    y: number
-    r: number
-};
+	x: number;
+	y: number;
+	r: number;
+}
 
 interface ClosingPoints {
-    d: number,
-    in: Point,
-    out: Point
-};
+	d: number;
+	in: Point;
+	out: Point;
+}
 
 interface EndPoints {
-	start: Point,
-	finish: Point
-};
+	start: Point;
+	finish: Point;
+}
 
 interface ScoreInfo {
-    cp?: ClosingPoints,
-	ep?: EndPoints,
-    tp?: Point[],
-    distance: number,
-    score: number
-};
+	cp?: ClosingPoints;
+	ep?: EndPoints;
+	tp?: Point[];
+	distance: number;
+	score: number;
+}
 
 interface Scoring {
-    name: string,
-    code: string,
-    multiplier: number
-};
+	name: string;
+	code: string;
+	multiplier: number;
+}
 
 interface Opt {
-    scoring: Scoring
-};
+	scoring: Scoring;
+}
 
 interface Solution {
     bound: number;
-    currentUpperBound: number,
-    id: number|string,
-    opt: Opt,
-    optimal?: boolean,
-    processed?: number,
-    score?: number,
-    scoreInfo?: ScoreInfo,
-    time?: number
-};
+	currentUpperBound: number;
+	id: number | string;
+	opt: Opt;
+	optimal?: boolean;
+	processed?: number;
+	score?: number;
+	scoreInfo?: ScoreInfo;
+	time?: number;
+}
 
 export function solver(flight: IGCFile, scoringRules: object, config: { [key: string]: any }) : Iterator<Solution, Solution>;
 export const scoringRules: { [key: string]: object[] };
