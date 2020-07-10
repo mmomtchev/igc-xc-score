@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] WIP
+
+### Added
+ - Added a new hybrid type of flight - Open Triangle - that is scored as a 3 TP distance flight but has a triangle closing rule (no such rules at the moment)
+ - Added support for 3 TP distance flights with a multiplier different than 1 (no such rules at the moment)
+ - Exported the binaries to allow using through npm -g
+
+### Changed
+ - Apply the closing penalty before applying the multiplier as per XContest rules (section #4.1) and FFVL CFD rules (section #6) - this change is very important as it has an impact on the scoring (especially for XContest, the impact on the FFVL scores is next to none)
+ - Folded FlatTriangle bound/score into FAITriangle bound/score resulting an universal Triangle bound/score code
+
 ## [1.4.1] 2020-06-12
 
 ### Added

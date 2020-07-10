@@ -14,8 +14,14 @@ interface ClosingPoints {
     out: Point
 };
 
+interface EndPoints {
+	start: Point,
+	finish: Point
+};
+
 interface ScoreInfo {
     cp?: ClosingPoints,
+	ep?: EndPoints,
     tp?: Point[],
     distance: number,
     score: number

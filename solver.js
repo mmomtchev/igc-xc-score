@@ -117,7 +117,7 @@ function* solver(flight, _scoringTypes, _config) {
             best.score = best.opt.scoring.rounding(best.score);
             if (best.scoreInfo) {
                 best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp.d)
+                if (best.scoreInfo.cp)
                     best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
             }
             reset = true;

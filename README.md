@@ -109,7 +109,7 @@ trim=false              # auto-trim the flight log to its launch and landing poi
 
 Using with node (**developer**)
 ```bash
-node igc-xc-score.min flight.igc out=flight.json quiet=true
+node igc-xc-score flight.igc out=flight.json quiet=true
 node index flight.igc
 cat flight.json | jq .properties
 ```
@@ -200,10 +200,10 @@ Using the JS code in an older embedded engine (Rhino and Chakra for example) wil
 ```bash
 npm i nexe babel-cli babel-plugin-transform-runtime babel-polyfill babel-preset-env babel-preset-es2015 babel-preset-stage-0
 echo '{"presets":["es2015","stage-0"],"plugins":[["transform-runtime",{"regenerator":true}]]}' > .babelrc
-babel igc-xc-score.min.js --minified -o igc-xc-score.es2015.min.js
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-linux -t linux-x64-4.9.1
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-macos -t mac-x64-4.9.1
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-win.exe -t windows-x64-4.8.4
+babel igc-xc-score.js --minified -o igc-xc-score.es2015.js
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-linux -t linux-x64-4.9.1
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-macos -t mac-x64-4.9.1
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-win.exe -t windows-x64-4.8.4
 ```
 This will lower the executable size down to about 10Mb on Windows and 15Mb on Linux with almost no loss of performance at all. Further reduction is possible if you build yourself a Node 0.14 package.
 

@@ -6829,37 +6829,6 @@ var geom = {
     init
 };
 
-function boundFlatTriangle(ranges, boxes, opt) {
-    const maxDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-
-    let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt);
-        if (!cp)
-            return 0;
-        return (maxDistance * opt.scoring.multiplier) - closingPenalty(cp.d, opt);
-    }
-
-    return maxDistance * opt.scoring.multiplier;
-}
-
-function scoreFlatTriangle(tp, opt) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
-    const distance = d0 + d1 + d2;
-
-    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
-    if (!cp)
-        return { score: 0 };
-
-    let score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
-
-    return { distance, score, tp, cp };
-}
-
 function closingPenalty(cd, opt) {
     return (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0);
 }
@@ -6877,7 +6846,7 @@ function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
-    return maxDistance;
+    return maxDistance * opt.scoring.multiplier;
 }
 
 function scoreDistance3Points(tp, opt) {
@@ -6887,13 +6856,11 @@ function scoreDistance3Points(tp, opt) {
     const all = [pin, tp[0], tp[1], tp[2], pout];
     for (let i of [0, 1, 2, 3])
         distance += all[i].distanceEarth(all[i + 1]);
-    return { distance, score: distance, tp: tp, cp: { in: pin, out: pout, d: 0 } };
+    const score = distance * opt.scoring.multiplier;
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
 }
 
-function boundFAITriangle(ranges, boxes, opt) {
-    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
+function maxFAIDistance(maxTriDistance, boxes, opt) {
     const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
@@ -6905,33 +6872,100 @@ function boundFAITriangle(ranges, boxes, opt) {
         maxBC / opt.scoring.minSide, maxCA / opt.scoring.minSide, maxTriDistance);
     if (maxDistance < minTriDistance)
         return 0;
+    return maxDistance;
+}
+
+function boundOpenTriangle(ranges, boxes, opt) {
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+    if (opt.scoring.minSide !== undefined) {
+        if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
+            return 0;
+    }
+
+    let cp = { d: 0 };
+    if (ranges[0].b < ranges[2].a) {
+        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxTriDistance, opt);
+        if (!cp)
+            return 0;
+        return (maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    }
+
+    return maxD3PDistance * opt.scoring.multiplier;
+}
+
+function scoreOpenTriangle(tp, opt) {
+    const d0 = tp[0].distanceEarth(tp[1]);
+    const d1 = tp[1].distanceEarth(tp[2]);
+    const d2 = tp[2].distanceEarth(tp[0]);
+    const triDistance = d0 + d1 + d2;
+
+    if (opt.scoring.minSide !== undefined) {
+        const minSide = opt.scoring.minSide * triDistance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
+
+    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, triDistance, opt);
+    if (!cp)
+        return { score: 0 };
+
+    let d3pDistance = 0;
+    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
+    const all = [pin, tp[0], tp[1], tp[2], pout];
+    for (let i of [0, 1, 2, 3])
+        d3pDistance += all[i].distanceEarth(all[i + 1]);
+    
+    const distance = d3pDistance;
+    const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
+}
+
+function boundTriangle(ranges, boxes, opt) {
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+
+    const maxDistance = (opt.scoring.minSide !== undefined)
+        ? maxFAIDistance(maxTriDistance, boxes, opt)
+        : maxTriDistance;
+    
+    if (maxDistance === 0)
+        return 0;
 
     let cp = { d: 0 };
     if (ranges[0].b < ranges[2].a) {
         cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt);
         if (!cp)
             return 0;
-        return (maxDistance * opt.scoring.multiplier) - closingPenalty(cp.d, opt);
+        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
     }
 
     return maxDistance * opt.scoring.multiplier;
 }
 
-function scoreFAITriangle(tp, opt) {
+function scoreTriangle(tp, opt) {
     const d0 = tp[0].distanceEarth(tp[1]);
     const d1 = tp[1].distanceEarth(tp[2]);
     const d2 = tp[2].distanceEarth(tp[0]);
     const distance = d0 + d1 + d2;
-    let score = 0;
-    const minSide = opt.scoring.minSide * distance;
-    if (d0 >= minSide && d1 >= minSide && d2 >= minSide)
-        score = distance * opt.scoring.multiplier;
+    
+    if (opt.scoring.minSide !== undefined) {
+        const minSide = opt.scoring.minSide * distance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
 
     let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
     if (!cp)
         return { score: 0 };
 
-    score -= closingPenalty(cp.d, opt);
+    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
 
     return { distance, score, tp, cp };
 }
@@ -6939,12 +6973,12 @@ function scoreFAITriangle(tp, opt) {
 var scoring = {
     closingWithLimit,
     closingWithPenalty,
-    boundFlatTriangle,
-    scoreFlatTriangle,
+    boundTriangle,
+    scoreTriangle,
     boundDistance3Points,
     scoreDistance3Points,
-    boundFAITriangle,
-    scoreFAITriangle,
+    boundOpenTriangle,
+    scoreOpenTriangle
 };
 
 /**
@@ -6978,8 +7012,8 @@ const scoringRules = {
         {
             name: 'Triangle plat',
             multiplier: 1.2,
-            bound: scoring.boundFlatTriangle,
-            score: scoring.scoreFlatTriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 3,
             closingDistanceFree: 3,
@@ -6991,8 +7025,8 @@ const scoringRules = {
         {
             name: 'Triangle FAI',
             multiplier: 1.4,
-            bound: scoring.boundFAITriangle,
-            score: scoring.scoreFAITriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             minSide: 0.28,
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 3,
@@ -7019,8 +7053,8 @@ const scoringRules = {
         {
             name: 'Free triangle',
             multiplier: 1.2,
-            bound: scoring.boundFlatTriangle,
-            score: scoring.scoreFlatTriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
             rounding: round2,
@@ -7030,8 +7064,8 @@ const scoringRules = {
         {
             name: 'FAI triangle',
             multiplier: 1.4,
-            bound: scoring.boundFAITriangle,
-            score: scoring.scoreFAITriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             minSide: 0.28,
             closingDistance: scoring.closingWithLimit,
             closingDistanceRelative: 0.2,
@@ -7042,8 +7076,8 @@ const scoringRules = {
         {
             name: 'Closed free triangle',
             multiplier: 1.4,
-            bound: scoring.boundFlatTriangle,
-            score: scoring.scoreFlatTriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0,
             closingDistanceFree: 0,
@@ -7055,8 +7089,8 @@ const scoringRules = {
         {
             name: 'Closed FAI triangle',
             multiplier: 1.6,
-            bound: scoring.boundFAITriangle,
-            score: scoring.scoreFAITriangle,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
             minSide: 0.28,
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0,
@@ -8159,10 +8193,10 @@ class Solution {
         for (let r in this.ranges)
             if (this.ranges[r].count() > 1 && this.boxes[r].area() > this.boxes[div].area() * 8)
                 div = parseInt(r);
-        
+
         if (this.ranges[div].count() == 1)
             return [];
-        
+
         let subsolutions = [];
         for (let i of [this.ranges[div].left(), this.ranges[div].right()]) {
             let subranges = [];
@@ -8187,11 +8221,11 @@ class Solution {
                 this.score = 0;
                 return;
             }
-    
+
         let tp = [];
         for (let r in this.ranges)
             tp[r] = new Point$2(this.opt.flight.filtered, this.ranges[r].center());
-        
+
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
         this.trace();
@@ -8236,7 +8270,7 @@ class Solution {
                         r: tp[r].r,
                         timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
-                if (r < 2 || this.opt.scoring.closingDistance)
+                if (r < 2 || this.scoreInfo.cp)
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
@@ -8259,14 +8293,15 @@ class Solution {
             if (this.scoreInfo.cp !== undefined) {
                 const cp = this.scoreInfo.cp;
                 const tp = this.scoreInfo.tp;
-                for (let r of ['in', 'out'])
-                    features.push(cp[r]
-                        .geojson('cp_' + r, {
-                            id: 'cp_' + r,
-                            r: cp[r].r,
-                            timestamp: this.opt.flight.filtered[cp[r].r].timestamp
-                        }));
-                if (this.opt.scoring.closingDistance)
+                const ep = this.scoreInfo.ep;
+                if (cp && cp['in'] && cp['out']) {
+                    for (let r of ['in', 'out'])
+                        features.push(cp[r]
+                            .geojson('cp_' + r, {
+                                id: 'cp_' + r,
+                                r: cp[r].r,
+                                timestamp: this.opt.flight.filtered[cp[r].r].timestamp
+                            }));
                     features.push({
                         type: 'Feature',
                         id: 'closing',
@@ -8282,19 +8317,27 @@ class Solution {
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
-                else {
+                }
+                if (ep && ep['start'] && ep['finish']) {
+                    for (let r of ['start', 'finish'])
+                        features.push(ep[r]
+                            .geojson('ep_' + r, {
+                                id: 'ep_' + r,
+                                r: ep[r].r,
+                                timestamp: this.opt.flight.filtered[ep[r].r].timestamp
+                            }));
                     features.push({
                         type: 'Feature',
                         id: 'seg_in',
                         properties: {
                             id: 'seg_in',
-                            'stroke': 'green',
+                            'stroke': 'gold',
                             'stroke-width': 3,
-                            d: cp['in'].distanceEarth(tp[0])
+                            d: ep['start'].distanceEarth(tp[0])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[cp['in'].x, cp['in'].y], [tp[0].x, tp[0].y]],
+                            coordinates: [[ep['start'].x, ep['start'].y], [tp[0].x, tp[0].y]],
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
@@ -8303,13 +8346,13 @@ class Solution {
                         id: 'seg_out',
                         properties: {
                             id: 'seg_out',
-                            'stroke': 'green',
+                            'stroke': 'gold',
                             'stroke-width': 3,
-                            d: cp['out'].distanceEarth(tp[2])
+                            d: ep['finish'].distanceEarth(tp[2])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[cp['out'].x, cp['out'].y], [tp[2].x, tp[2].y]],
+                            coordinates: [[tp[2].x, tp[2].y], [ep['finish'].x, ep['finish'].y]],
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
@@ -8403,7 +8446,7 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({ debug: true })));
     }
 }
 
@@ -8670,7 +8713,7 @@ function* solver(flight$1, _scoringTypes, _config) {
             best.score = best.opt.scoring.rounding(best.score);
             if (best.scoreInfo) {
                 best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp.d)
+                if (best.scoreInfo.cp)
                     best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
             }
             reset = true;

@@ -13,12 +13,12 @@ const defaultConfig = {
 
 const tests = {
     FFVL: [
-        { file: 'bigflat.igc', score: 225.21 },
+        { file: 'bigflat.igc', score: 224.09 },
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34, md5: '19a44dd18a1cbbfdc98a064a400a367d' },
-        { file: 'tri.igc', score: 17.51, md5: '661cf42732b3e85c7c078bebbb043151' },
+        { file: 'line.igc', score: 53.34, md5: 'f32c3095836f79986e9fc7ceb763c94d' },
+        { file: 'tri.igc', score: 17.51, md5: '061d2a5effd9d54099ae56965888ffce' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
         { file: 'zigzag.igc', score: 90.64 },
@@ -29,21 +29,22 @@ const tests = {
         { file: 'hiking-up.igc', score: 40.53 },
         { file: 'hiking-up-2.igc', score: 125.94 },
         { file: 'lunch-break.igc', score: 73.92 },
-        { file: 'dup-fixes.igc', score: 89.8 }
+        { file: 'dup-fixes.igc', score: 89.1 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
         { file: 'trifai-xcontest-362.70.igc', score: 363.43 },
         { file: 'trifai-xcontest-362.70.igc', score: 363.42, config: { hp: true } },
         { file: 'freeflight-xcontest-66.46.igc', score: 66.5 },
-        { file: 'flat-xcontest-100.59.igc', score: 102.27 },
-        { file: 'flat-xcontest-8.01.igc', score: 8.08 },
-        { file: 'trifai-xcontest-189.65.igc', score: 191.89 },
-        { file: 'trifai-xcontest-189.65.igc', score: 191.88, config: { hp: true } },
-        { file: 'trifai-xcontest-452.21.igc', score: 455.38 },
-        { file: 'trifai-xcontest-452.21.igc', score: 455.37, config: { hp: true } },
-        { file: 'trifai-xcontest-307.57.igc', score: 308.33 },
-        { file: 'freeflight-xcontest-465.33.igc', score: 465.58 }
+        { file: 'flat-xcontest-100.59.igc', score: 100.76 },
+        { file: 'flat-xcontest-8.01.igc', score: 8.01 },
+        { file: 'trifai-xcontest-189.65.igc', score: 189.96 },
+        { file: 'trifai-xcontest-189.65.igc', score: 189.96, config: { hp: true } },
+        { file: 'trifai-xcontest-452.21.igc', score: 453.04 },
+        { file: 'trifai-xcontest-452.21.igc', score: 453.02, config: { hp: true } },
+        { file: 'trifai-xcontest-307.57.igc', score: 308.26 },
+        { file: 'freeflight-xcontest-465.33.igc', score: 465.58 },
+        { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
     ]
 };
 

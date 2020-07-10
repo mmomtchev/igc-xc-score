@@ -6,6 +6,11 @@ const Solution = require('./solution').Solution;
 const util = require('./util');
 const scoringRules = require('./scoring-rules.config');
 
+function displayDistance(labela, labelb, a, b) {
+    console.log(labela.padStart(6, ' '), labelb.padStart(6, ' '),
+        ''.padStart(4, ' '), a.distanceEarth(b).toFixed(2) + 'km');
+}
+
 let config = {};
 for (let arg of process.argv.slice(3)) {
     const kv = arg.split('=');
@@ -98,13 +103,22 @@ try {
             console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1}, ${flight.filtered[l.landing].time}`);
         }
         if (best.scoreInfo !== undefined) {
-            console.log(`Best solution is ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
-                + ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
-                + ` ${util.consoleColors.fg.green}${best.score} points,`
-                + ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
-                + (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
-                + (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
-                + util.consoleColors.reset);
+            if (best.scoreInfo.ep && best.scoreInfo.ep['start'])
+                displayDistance('start', 'tp0', best.scoreInfo.ep['start'], best.scoreInfo.tp[0]);
+            for (let i of [0, 1])
+                displayDistance(`tp${i}`, `tp${i + 1}`, best.scoreInfo.tp[i], best.scoreInfo.tp[i + 1]);
+            if (best.scoreInfo.ep && best.scoreInfo.ep['finish'])
+                displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
+            else
+                displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
+            console.log('Best solution is'
+				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
+				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
+				+ ` ${util.consoleColors.fg.green}${best.score} points,`
+				+ ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
+				+ (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
+				+ (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
+				+ util.consoleColors.reset);
         } else
             console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);
     }

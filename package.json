@@ -1,6 +1,6 @@
 {
   "name": "igc-xc-score",
-  "version": "1.4.1",
+  "version": "1.5.0-git",
   "description": "igc-xc-score is a paragliding and hang-gliding XC scoring program in vanilla JS",
   "main": "index.cjs.js",
   "module": "index.es.js",
@@ -8,21 +8,24 @@
     "test": "test",
     "example": "www"
   },
+  "bin": {
+    "igc-xc-score": "./igc-xc-score.js"
+  },
   "scripts": {
     "test": "node test && npm run eslint",
     "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js foundation.js util.js vincentys.js flight.js main.js",
     "doc": "jsdoc -d doc solver.js scoring-rules.config.js",
-    "nexe_linux": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
-    "nexe_win": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
-    "nexe_mac": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
+    "nexe_linux": "nexe -i igc-xc-score.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
+    "nexe_win": "nexe -i igc-xc-score.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
+    "nexe_mac": "nexe -i igc-xc-score.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
     "nexe_all": "npm run nexe_linux && npm run nexe_win && npm run nexe_mac",
     "www": "webpack && cp www/index.html www/pacman.svg dist/www",
     "build": "rollup -c && npm run nexe_all && npm run www && npm run doc",
-    "c8": "node_modules/.bin/c8 --exclude igc-parser.js node test",
-    "lcov": "node_modules/.bin/c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
+    "c8": "npx c8 --exclude igc-parser.js node test",
+    "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | env CODECOV_TOKEN='4d5a31d4-9b2f-4a62-9db9-2c49eef14ea0' bash",
     "preversion": "npm test",
-    "version": "npm run build && git add package.json igc-xc-score.min.js index.es.js index.cjs.js doc",
+    "version": "npm run build && git add package.json igc-xc-score.js index.es.js index.cjs.js doc",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -66,6 +69,7 @@
     "ol": "^6.3.1",
     "popper.js": "^1.16.1",
     "rollup": "^2.6.1",
+    "rollup-plugin-executable": "^1.6.0",
     "rollup-plugin-terser": "^5.3.0",
     "style-loader": "^1.1.4",
     "webpack": "^4.43.0",

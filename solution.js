@@ -43,10 +43,10 @@ class Solution {
         for (let r in this.ranges)
             if (this.ranges[r].count() > 1 && this.boxes[r].area() > this.boxes[div].area() * 8)
                 div = parseInt(r);
-        
+
         if (this.ranges[div].count() == 1)
             return [];
-        
+
         let subsolutions = [];
         for (let i of [this.ranges[div].left(), this.ranges[div].right()]) {
             let subranges = [];
@@ -71,11 +71,11 @@ class Solution {
                 this.score = 0;
                 return;
             }
-    
+
         let tp = [];
         for (let r in this.ranges)
             tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
-        
+
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
         this.trace();
@@ -120,7 +120,7 @@ class Solution {
                         r: tp[r].r,
                         timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
-                if (r < 2 || this.opt.scoring.closingDistance)
+                if (r < 2 || this.scoreInfo.cp)
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
@@ -143,14 +143,15 @@ class Solution {
             if (this.scoreInfo.cp !== undefined) {
                 const cp = this.scoreInfo.cp;
                 const tp = this.scoreInfo.tp;
-                for (let r of ['in', 'out'])
-                    features.push(cp[r]
-                        .geojson('cp_' + r, {
-                            id: 'cp_' + r,
-                            r: cp[r].r,
-                            timestamp: this.opt.flight.filtered[cp[r].r].timestamp
-                        }));
-                if (this.opt.scoring.closingDistance)
+                const ep = this.scoreInfo.ep;
+                if (cp && cp['in'] && cp['out']) {
+                    for (let r of ['in', 'out'])
+                        features.push(cp[r]
+                            .geojson('cp_' + r, {
+                                id: 'cp_' + r,
+                                r: cp[r].r,
+                                timestamp: this.opt.flight.filtered[cp[r].r].timestamp
+                            }));
                     features.push({
                         type: 'Feature',
                         id: 'closing',
@@ -166,19 +167,27 @@ class Solution {
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
-                else {
+                }
+                if (ep && ep['start'] && ep['finish']) {
+                    for (let r of ['start', 'finish'])
+                        features.push(ep[r]
+                            .geojson('ep_' + r, {
+                                id: 'ep_' + r,
+                                r: ep[r].r,
+                                timestamp: this.opt.flight.filtered[ep[r].r].timestamp
+                            }));
                     features.push({
                         type: 'Feature',
                         id: 'seg_in',
                         properties: {
                             id: 'seg_in',
-                            'stroke': 'green',
+                            'stroke': 'gold',
                             'stroke-width': 3,
-                            d: cp['in'].distanceEarth(tp[0])
+                            d: ep['start'].distanceEarth(tp[0])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[cp['in'].x, cp['in'].y], [tp[0].x, tp[0].y]],
+                            coordinates: [[ep['start'].x, ep['start'].y], [tp[0].x, tp[0].y]],
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
@@ -187,13 +196,13 @@ class Solution {
                         id: 'seg_out',
                         properties: {
                             id: 'seg_out',
-                            'stroke': 'green',
+                            'stroke': 'gold',
                             'stroke-width': 3,
-                            d: cp['out'].distanceEarth(tp[2])
+                            d: ep['finish'].distanceEarth(tp[2])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[cp['out'].x, cp['out'].y], [tp[2].x, tp[2].y]],
+                            coordinates: [[tp[2].x, tp[2].y], [ep['finish'].x, ep['finish'].y]],
                             style: { 'stroke': 'green', 'stroke-width': 3 }
                         }
                     });
@@ -287,7 +296,7 @@ class Solution {
         if (this.score)
             r += `score: ${this.score} `;
         process.stdout.write('\n' + r + '\n');
-        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({debug: true})));
+        this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({ debug: true })));
     }
 }
 
