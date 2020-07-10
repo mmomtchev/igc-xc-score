@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added a new hybrid type of flight - Open Triangle - that is scored as a 3 TP distance flight but has a triangle closing rule (no such rules at the moment)
  - Added support for 3 TP distance flights with a multiplier different than 1 (no such rules at the moment)
  - Exported the binaries to allow using through npm -g
+ - Display individual leg lengths in the command line version
 
 ### Changed
  - Apply the closing penalty before applying the multiplier as per XContest rules (section #4.1) and FFVL CFD rules (section #6) - this change is very important as it has an impact on the scoring (especially for XContest, the impact on the FFVL scores is next to none)
  - Folded FlatTriangle bound/score into FAITriangle bound/score resulting an universal Triangle bound/score code
+ - Return the start/finish points for 3 TP distance flights in new scoreInfo fields ep['start'] and ep['finish'] to avoid confusion with the cp['in'] and cp['out'] fields that will now always contain the closing distance of the triangle
 
 ## [1.4.1] 2020-06-12
 
