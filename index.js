@@ -1,6 +1,6 @@
 'use strict';
 const fs = require('fs');
-const IGCParser = require('./igc-parser');
+const IGCParser = require('igc-parser');
 const solver = require('./solver');
 const Solution = require('./solution').Solution;
 const util = require('./util');
@@ -57,7 +57,7 @@ if (config.pipe) {
     outf = config.out;
 }
 try {
-    const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'));
+    const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'), { lenient: true });
     config.env = { fs };
 
     let best;

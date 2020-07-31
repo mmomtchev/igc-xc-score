@@ -121,9 +121,9 @@ Calling the solver from another Node.js program is easy, you should look at *ind
 #### CJS
 ```JS
 const fs = require('fs');
-const IGCParser = require('./igc-parser');
+const IGCParser = require('igc-parser');
 const { scoring, solver } = require('igc-xc-score');
-const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
+const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
 const result = solver(flight, scoring.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
@@ -133,13 +133,14 @@ if (result.optimal)
 ```JS
 import IGCParser from 'igc-parser';
 import { solver, scoringRules as scoring } from 'igc-xc-score';
-const flight = IGCParser.parse(igcFile, 'utf8'));
+const flight = IGCParser.parse(igcFile, { lenient: true });
 const result = solver(flight, scoring.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
 
 *solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
+I strongly recommend you to use the *lenient=true* option of igc-parser as a large portion of the IGC files in the paragliding world are coming from devices that do not fully adhere to the IGC standard - especially the smartphone apps some pilots use.
 *Be advised that in JS, a for..of loop will ignore the final return value of a generator. Do not use a for..of loop. Look at index.js for a proper solution.*
 
 It supports resetting or it will automatically reset itself if an optimal solution has been found.
@@ -178,17 +179,6 @@ window.requestIdleCallback(() => {
 ### Integrating with a non-JS desktop application
 
 Probably the easiest way to embed the solver in a non-JS desktop application is to use the provided executable in pipe (stdin/stdout) mode. It expects an IGC file as its and input and it will output the possible solutions in GeoJSON format. See the section below on flight instruments if the file size is a problem.
-
-### igc-parser
-
-I have included my own copy of igc-parser, otherwise available [here](https://github.com/Turbo87/igc-parser/), which is less zealous over the quality of the IGC files. You can use the original one or import/require my version which silently ignores IGC errors:
-```JS
-/* Use the built-in IGCParser in ES */
-import { solver as igcSolver, scoringRules as igcScoring, IGCParser as igcParser } from 'igc-xc-score';
-/* Use the built-in IGCParser in CJS */
-const { scoring, solver, IGCParser } = require('igc-xc-score');
-```
-Alas, lots of paragliding flight instruments and smartphone flight trackers produce invalid IGC files.
 
 ### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
 

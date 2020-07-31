@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const IGCParser = require('./igc-parser');
+const IGCParser = require('igc-parser');
 const solver = require('./solver');
 const util = require('./util');
 const scoringRules = require('./scoring-rules.config');
@@ -50,7 +50,7 @@ const tests = {
 
 for (let rules of Object.keys(tests))
     for (let test of tests[rules]) {
-        const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
+        const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
         const ts = Date.now();
         const best = solver(flight, scoringRules[rules], { ...defaultConfig, ...test.config }).next().value;
         if (best.score == test.score)

@@ -13,7 +13,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
 import './igc-xc-score.css';
 
-import { solver as igcSolver, scoringRules as igcScoring, IGCParser as igcParser } from '../index.es';
+import { solver as igcSolver, scoringRules as igcScoring } from '../index.es';
+import { IGCParser as igcParser } from 'igc-parser';
 
 const flightStyle = {
     'flight': new Style({
@@ -208,7 +209,7 @@ $('#igc-upload').on('change', () => {
             $('#spinner').show();
             const igcData = reader.result;
             $('#status').html(`igc loaded, ${igcData.length} bytes read`);
-            igcFlight = igcParser.parse(igcData, 'utf8');
+            igcFlight = igcParser.parse(igcData, { lenient: true });
             $('#status').html(`igc parsed, ${igcFlight.fixes.length} GPS records found`);
             let minlat, maxlat, minlon, maxlon;
             [minlat, maxlat, minlon, maxlon] = [Infinity, -Infinity, Infinity, -Infinity];

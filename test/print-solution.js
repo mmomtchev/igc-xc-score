@@ -1,6 +1,6 @@
 'use strict';
 const fs = require('fs');
-const IGCParser = require('../igc-parser');
+const IGCParser = require('igc-parser');
 const Solution = require('../solution').Solution;
 const util = require('../util');
 const Range = util.Range;
