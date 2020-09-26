@@ -1,23 +1,31 @@
 {
   "name": "igc-xc-score",
-  "version": "1.99-multithreaded",
+  "version": "1.99.0",
   "description": "igc-xc-score is a paragliding and hang-gliding XC scoring program in vanilla JS",
-  "main": "index.js",
+  "main": "index.cjs.js",
+  "module": "index.es.js",
   "directories": {
     "test": "test",
     "example": "www"
   },
+  "bin": {
+    "igc-xc-score": "./igc-xc-score.js"
+  },
   "scripts": {
     "test": "node test && npm run eslint",
-    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js foundation.js util.js vincentys.js flight.js",
-    "nexe_linux": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
-    "nexe_win": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
-    "nexe_mac": "nexe -i igc-xc-score.min.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
+    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js foundation.js util.js vincentys.js flight.js main.js",
+    "doc": "jsdoc -d doc solver.js scoring-rules.config.js",
+    "nexe_linux": "nexe -i igc-xc-score.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
+    "nexe_win": "nexe -i igc-xc-score.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
+    "nexe_mac": "nexe -i igc-xc-score.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
     "nexe_all": "npm run nexe_linux && npm run nexe_win && npm run nexe_mac",
     "www": "webpack && cp www/index.html www/pacman.svg dist/www",
-    "build": "rollup -c && npm run nexe_all && npm run www",
+    "build": "rollup -c && npm run nexe_all && npm run www && npm run doc",
+    "c8": "npx c8 --exclude igc-parser.js node test",
+    "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
+    "codecov": "curl -s https://codecov.io/bash | env CODECOV_TOKEN='4d5a31d4-9b2f-4a62-9db9-2c49eef14ea0' bash",
     "preversion": "npm test",
-    "version": "npm run build && git add package.json igc-xc-score.min.js",
+    "version": "npm run build && git add package.json igc-xc-score.js index.es.js index.cjs.js doc",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -37,7 +45,7 @@
   },
   "homepage": "https://github.com/mmomtchev/igc-xc-score#readme",
   "dependencies": {
-    "collections": "^5.1.10",
+    "collections": "^5.1.11",
     "flatbush": "^3.3.0",
     "igc-parser": "^0.5.0",
     "rbush": "^3.0.1",
@@ -45,24 +53,28 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.1.0",
-    "@rollup/plugin-json": "^4.0.3",
+    "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^7.1.3",
-    "bootstrap": "^4.4.1",
-    "css-loader": "^3.5.2",
+    "bootstrap": "^4.5.0",
+    "c8": "^7.2.0",
+    "css-loader": "^3.6.0",
+    "elliptic": ">=6.5.3",
     "eslint": "^6.8.0",
     "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "jquery": "^3.5.0",
-    "nexe": "^3.3.2",
+    "jquery": "^3.5.1",
+    "jsdoc": "^3.6.4",
+    "nexe": "^3.3.7",
     "ol": "^6.3.1",
     "popper.js": "^1.16.1",
-    "rollup": "^2.6.1",
-    "rollup-plugin-terser": "^5.3.0",
-    "style-loader": "^1.1.4",
+    "rollup": "^2.21.0",
+    "rollup-plugin-executable": "^1.6.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "style-loader": "^1.2.1",
     "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.12"
   }
 }

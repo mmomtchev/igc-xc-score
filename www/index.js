@@ -13,9 +13,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
 import './igc-xc-score.css';
 
-const igcSolver = require('../solver');
-const igcParser = require('../igc-parser');
-const igcScoring = require('../scoring-rules.config');
+import { solver as igcSolver, scoringRules as igcScoring } from '../index.es';
+import { IGCParser as igcParser } from 'igc-parser';
 
 const flightStyle = {
     'flight': new Style({
@@ -29,6 +28,13 @@ const flightStyle = {
             radius: 8,
             fill: null,
             stroke: new Stroke({ color: 'indigo', width: 6 })
+        })
+    }),
+    'ep_[start|finish]': new Style({
+        image: new CircleStyle({
+            radius: 8,
+            fill: null,
+            stroke: new Stroke({ color: 'darkslateblue', width: 6 })
         })
     }),
     'cp_[in|out]': new Style({
@@ -91,23 +97,24 @@ function loop() {
         runningProcess = undefined;
         $('#spinner').hide();
         display(s.value.geojson());
-        let r = [`<td class="label">Best possible</td><td class="data">${s.value.score} points</td>`,
+        let r = [
+            `<td class="label">Best possible</td><td class="data">${s.value.score} points</td>`,
             `<td class="label">${s.value.opt.scoring.name}</td>`
-            + `<td class="data">${s.value.scoreInfo.distance}km</td>`,
+            + `<td class="data">${s.value.scoreInfo.distance}km</td>`
         ];
-        if (s.value.opt.scoring.closingDistance)
+        if (s.value.scoreInfo.cp)
             r.push(`<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d}km</td>`);
         let d = [];
-        if (!s.value.opt.scoring.closingDistance)
-            d.push(['in:0', s.value.scoreInfo.cp['in'], s.value.scoreInfo.tp[0]]);
+        if (s.value.scoreInfo.ep)
+            d.push(['in:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
         for (let i of [0, 1, 2])
-            if (i != 2 || s.value.opt.scoring.closingDistance)
+            if (i != 2 || !s.value.scoreInfo.ep)
                 d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % 3]]);
-        if (!s.value.opt.scoring.closingDistance)
-            d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.cp['out']]);
+        if (s.value.scoreInfo.ep)
+            d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
 
         for (let i of d)
-            r.push(`<td class="label">d${i[0]}</td><td class="data">${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+            r.push(`<td class="label">d ${i[0]}</td><td class="data">${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
         $('#status').html('<table class="table"><tr>' + r.join('</tr><tr>'));
     }
 }
@@ -179,13 +186,17 @@ function runProcessing() {
     });
 }
 
+$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
+
+Object.keys(igcScoring).map(scoring => {
+    $('#igc-scoringRulesList').append(`<button class="dropdown-item ctrl-scoringRules" id="${scoring}">${scoring}</button>`);
+});
+$('#igc-scoringRules').html(Object.keys(igcScoring)[0]);
 $('.ctrl-scoringRules').on('click', (event) => {
     $('#igc-scoringRules').html($(event.target).html());
     runProcessing();
 });
 $('.ctrl-process').on('click', runProcessing);
-
-$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
 
 let igcFlight;
 
@@ -198,7 +209,7 @@ $('#igc-upload').on('change', () => {
             $('#spinner').show();
             const igcData = reader.result;
             $('#status').html(`igc loaded, ${igcData.length} bytes read`);
-            igcFlight = igcParser.parse(igcData, 'utf8');
+            igcFlight = igcParser.parse(igcData, { lenient: true });
             $('#status').html(`igc parsed, ${igcFlight.fixes.length} GPS records found`);
             let minlat, maxlat, minlon, maxlon;
             [minlat, maxlat, minlon, maxlon] = [Infinity, -Infinity, Infinity, -Infinity];

@@ -1,5 +1,9 @@
 # igc-xc-score
 
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![Node.js CI](https://github.com/mmomtchev/SharedMap/workflows/Node.js%20CI/badge.svg)](https://github.com/mmomtchev/igc-xc-score/actions?query=workflow%3A%22Node.js+CI%22)
+[![codecov](https://codecov.io/gh/mmomtchev/igc-xc-score/branch/master/graph/badge.svg)](https://codecov.io/gh/mmomtchev/igc-xc-score)
+
 igc-xc-score is a paragliding and hang-gliding XC scoring tool in vanilla JS.
 
 It can be used directly from the command-line, or as a library embedded in a web browser or an application.
@@ -45,13 +49,13 @@ The rationale behind this decision is that both of these problems are well-known
 * Finding the best start/finish points is a simple minimum/maximum search which is a *O(n)* problem
 * Both can be further optimized by keeping the intermediate results in an R-Tree or a Hashmap, shared among all the branches
 
-The only weakness of the current implementation are flights consisting of (nearly) perfectly straight lines. These are in fact impossible to optimize, producing a very large number of (nearly) identical solutions that can not be eliminated and therefore must be calculated in order to guarantee that the obtained result is indeed optimal.
+The only weakness of the current implementation are flights consisting of (nearly) perfectly straight lines. These are in fact impossible to optimize, producing a very large number of (nearly) identical solutions that can not be eliminated and therefore must be calculated in order to guarantee that the obtained result is indeed optimal. For those particular cases there is another possible approach with dynamic programming which has a bounded execution time, on the order of a few minutes for the longest flights. This approach is currently not used since it has a rather detrimental impact on the average execution time and has no real benefits aside some very rare, almost perfectly straight line flights.
 
 The branch selection is breadth-first biased when branching and depth-first biased when bounding.
 
 ### Distance between two points on the surface of a WGS84 ellipsoid
 
-The FAI recommended method for computing distance is distance on the surface of a WGS84 ellipsoid. Finding the distance between two points on a WGS84 ellipsoid is not a trivial problem. The ellipsoid surface equations do not have a [closed-form expression](https://en.wikipedia.org/wiki/Elliptic_integral) and the distance can not be directly calculated. The currently de-facto standard method for computing it is called [Vincenty's algorithm](https://en.wikipedia.org/wiki/Vincenty%27s_formulae) and it is an iterative solution which makes it computationally very expensive. It is available through the **hp=true** option, giving twice slower execution speed for a much higher precision - which is currently hard-coded at 60cm over the WGS84 reference ellipsoid. If the **hp=true** option is not used, I have settled over a simplified direct formula obtained by Taylor series expansion of the ellipsoid surface equations. This method, which requires 5 cosinus and 1 square root computation, can be found in FCC's recommendations for computing distances not exceeding 500km. *Keep in mind that this distance is the distance of one leg, and not the whole flight*. It has a typical error of 5m and a maximum error of 10m for 100km which should be acceptable for most paragliding and hang-gliding flights. On flights with exceptionnally long legs (such as the French national distance record), the error can be as high as 25m, which is more than the standard GPS error. The method is described here: [Code of Federal Regulations (Annual Edition). Title 47: Telecommunication.](https://www.govinfo.gov/content/pkg/CFR-2016-title47-vol4/pdf/CFR-2016-title47-vol4-sec73-208.pdf) and on also on [Wikipedia](https://en.wikipedia.org/wiki/Geographical_distance). This is the very same formula that was famously mistaken in an [earlier edition](https://www.tvtechnology.com/news/fcc-invents-negative-distance) of the document.
+The FAI recommended method for computing distance is distance on the surface of a WGS84 ellipsoid. Finding the distance between two points on a WGS84 ellipsoid is not a trivial problem. The ellipsoid surface equations do not have a [closed-form expression](https://en.wikipedia.org/wiki/Elliptic_integral) ([video](https://www.youtube.com/watch?v=5nW3nJhBHL0&t=1041s&ab_channel=Stand-upMaths)) and the distance can not be directly calculated. The currently de-facto standard method for computing it is called [Vincenty's algorithm](https://en.wikipedia.org/wiki/Vincenty%27s_formulae) and it is an iterative solution which makes it computationally very expensive. It is available through the **hp=true** option, giving twice slower execution speed for a much higher precision - which is currently hard-coded at 60cm over the WGS84 reference ellipsoid. If the **hp=true** option is not used, I have settled over a simplified direct formula obtained by Taylor series expansion of the ellipsoid surface equations. This method, which requires 5 cosinus and 1 square root computation, can be found in FCC's recommendations for computing distances not exceeding 500km. *Keep in mind that this distance is the distance of one leg, and not the whole flight*. It has a typical error of 5m and a maximum error of 10m for 100km which should be acceptable for most paragliding and hang-gliding flights. On flights with exceptionnally long legs (such as the French national distance record), the error can be as high as 25m, which is more than the standard GPS error. The method is described here: [Code of Federal Regulations (Annual Edition). Title 47: Telecommunication.](https://www.govinfo.gov/content/pkg/CFR-2016-title47-vol4/pdf/CFR-2016-title47-vol4-sec73-208.pdf) and on also on [Wikipedia](https://en.wikipedia.org/wiki/Geographical_distance). This is the very same formula that was famously mistaken in an [earlier edition](https://www.tvtechnology.com/news/fcc-invents-negative-distance) of the document.
 
 As a side note, while the GPS naviation system coordinates are relative to WGS84, which remains the current widely approved standard, the internal model used has been upgraded to the more recent EGM96, which is a higher-order model (a geoid). The typical error of WGS84 when compared to EGM96 is less than 1m (on the horizontal) which is less than the typical GPS receiver error. Thus WGS84, which is mathematically much simpler to use, will probably stay in use for most practical applications.
 
@@ -105,7 +109,7 @@ trim=false              # auto-trim the flight log to its launch and landing poi
 
 Using with node (**developer**)
 ```bash
-node igc-xc-score.min flight.igc out=flight.json quiet=true
+node igc-xc-score flight.igc out=flight.json quiet=true
 node index flight.igc
 cat flight.json | jq .properties
 ```
@@ -113,17 +117,30 @@ cat flight.json | jq .properties
 ### The solver library
 
 Calling the solver from another Node.js program is easy, you should look at *index.js* and *test.js* for examples
+
+#### CJS
 ```JS
 const fs = require('fs');
-const IGCParser = require('./igc-parser');
-const scoring = require('./scoring-rules.config');
-const solver = require('./solver');
-const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'));
-const result = solver(flight, scoring.FFVL, { quiet: true }).next().value;
+const IGCParser = require('igc-parser');
+const { scoring, solver } = require('igc-xc-score');
+const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
+const result = solver(flight, scoring.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
+
+#### ESM
+```JS
+import IGCParser from 'igc-parser';
+import { solver, scoringRules as scoring } from 'igc-xc-score';
+const flight = IGCParser.parse(igcFile, { lenient: true });
+const result = solver(flight, scoring.FFVL).next().value;
+if (result.optimal)
+    console.log(`score is ${result.score}`)
+```
+
 *solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
+I strongly recommend you to use the *lenient=true* option of igc-parser as a large portion of the IGC files in the paragliding world are coming from devices that do not fully adhere to the IGC standard - especially the smartphone apps some pilots use.
 *Be advised that in JS, a for..of loop will ignore the final return value of a generator. Do not use a for..of loop. Look at index.js for a proper solution.*
 
 It supports resetting or it will automatically reset itself if an optimal solution has been found.
@@ -141,9 +158,6 @@ const default_opt = {
 
 When calling from the browser, in order to avoid blocking the main event loop, you should use *requestIdleCallback* when it is available. When it is not, *setTimeout* could be a good substitute. It is best to fire the optimizer in small bursts of 50ms to 200ms each in order to keep the browser responsive. The human perception of simultaneity is limited to about 100ms, so this is a good starting point.
 ```JS
-const igcSolver = require('igc-xc-score/solver');
-const igcParser = require('igc-xc-score/igc-parser');
-const igcScoring = require('igc-xc-score/scoring-rules.config');
 function loop() {
     const s = this.next();
     if (!s.done) {
@@ -166,10 +180,6 @@ window.requestIdleCallback(() => {
 
 Probably the easiest way to embed the solver in a non-JS desktop application is to use the provided executable in pipe (stdin/stdout) mode. It expects an IGC file as its and input and it will output the possible solutions in GeoJSON format. See the section below on flight instruments if the file size is a problem.
 
-### igc-parser
-
-I have included my own copy of igc-parser which is available [here](https://github.com/Turbo87/igc-parser/) which is less zealous over the quality of the IGC files.
-
 ### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
 
 Depending on the exact nature of your device, you might be able to use the full version. Android-based devices should be more than capable of running the original JS code.
@@ -180,10 +190,10 @@ Using the JS code in an older embedded engine (Rhino and Chakra for example) wil
 ```bash
 npm i nexe babel-cli babel-plugin-transform-runtime babel-polyfill babel-preset-env babel-preset-es2015 babel-preset-stage-0
 echo '{"presets":["es2015","stage-0"],"plugins":[["transform-runtime",{"regenerator":true}]]}' > .babelrc
-babel igc-xc-score.min.js --minified -o igc-xc-score.es2015.min.js
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-linux -t linux-x64-4.9.1
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-macos -t mac-x64-4.9.1
-cat igc-xc-score.es2015.min.js | nexe -o igc-xc-score-node4-win.exe -t windows-x64-4.8.4
+babel igc-xc-score.js --minified -o igc-xc-score.es2015.js
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-linux -t linux-x64-4.9.1
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-macos -t mac-x64-4.9.1
+cat igc-xc-score.es2015.js | nexe -o igc-xc-score-node4-win.exe -t windows-x64-4.8.4
 ```
 This will lower the executable size down to about 10Mb on Windows and 15Mb on Linux with almost no loss of performance at all. Further reduction is possible if you build yourself a Node 0.14 package.
 

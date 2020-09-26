@@ -1,15 +1,17 @@
 'use strict';
+/**
+ * igc-xc-score Solver
+ * scoring library for paragliding flights
+ * 
+ * @module igc-xc-score
+ * @author Momtchil Momtchev <momtchil@momtchev.com>
+ */
 const WorkerThreads = require('worker_threads');
 const Worker = WorkerThreads.Worker;
 const SortedSet = require('collections/sorted-set');
-const SharedMap = require('sharedmap');
 const worker = require('./worker');
-const solution = require('./solution');
-const Solution = solution.Solution;
-const foundation = require('./foundation');
-const Box = foundation.Box;
-const Point = foundation.Point;
-const Range = foundation.Range;
+const Solution = require('./solution').Solution;
+const { Range, Point, Box } = require('./foundation');
 const scoringRules = require('./scoring-rules.config');
 
 const NWORKERS = require('os').cpus().length;
@@ -20,7 +22,7 @@ function enqueueSolution(s) {
     this.postMessage(s);
     this.qlen++;
     if (this.q === undefined) {
-        this.q = new Promise((res, rej) => {
+        this.q = new Promise((res) => {
             this.resolve = res;
         });
     }
@@ -46,7 +48,7 @@ function dequeueSolutions(msgs) {
     if (this.qlen < MINQ) {
         const willResolve = this.resolve;
         if (this.qlen > 0)
-            this.q = new Promise((res, rej) => {
+            this.q = new Promise((res) => {
                 this.resolve = res;
             });
         else
@@ -55,6 +57,17 @@ function dequeueSolutions(msgs) {
     }
 }
 
+/**
+ * This the solver
+ * @param {IGCFile} flight flight track data in the igc_parser format
+ * @param {object[]} [scoringTypes=undefined] undefined for FFVL or one of the elements of scoringRules
+ * @param {object=} config optional config parameters
+ * @param {number=} config.maxcycle maximum execution time of the solver in ms, each sucessive call will return a better solution, default undefined for unlimited
+ * @param {boolean=} config.noflight do not include the flight track data in the output GeoJSON, default false
+ * @param {boolean=} config.invalid include invalid GPS fixes when evaluating the flight, default false
+ * @param {boolean=} config.hp use high-precision distance calculation (Vincenty's), much slower for slightly higher precision, default false
+ * @param {boolean=} config.trim automatically detect launch and landing and trim the flight track, default false
+ */
 async function* solver(flight, _scoringRules, _config) {
     let reset;
 
@@ -86,6 +99,8 @@ async function* solver(flight, _scoringRules, _config) {
     let solutionQueue = new SortedSet(solutionRoots, Solution.prototype.contentEquals, Solution.prototype.contentCompare);
     let processed = 0;
 
+    if (flight.errors)
+        delete flight.errors;
     let workers;
     if (config.env && config.env.WorkerThreads) {
         workers = new Array(NWORKERS).fill(undefined);
@@ -100,16 +115,16 @@ async function* solver(flight, _scoringRules, _config) {
     let tcum = 0;
     do {
         const tstart = Date.now();
-        while (solutionQueue.length > 0 || workers.filter(x => x.q).length > 0) {
+        while (solutionQueue.length > 0 || (workers && workers.filter(x => x.q).length > 0)) {
             if (processed % 100 === 0) {
-                if (process && process.memoryUsage) {
+                if (typeof process !== 'undefined' && process.memoryUsage) {
                     const mem = process.memoryUsage();
                     if (mem.heapUsed / mem.heapTotal > 0.98)
                         break;
                 }
             }
 
-            if (solutionQueue.length > 0 && workers.filter(x => x.q).length < NWORKERS) {
+            if (solutionQueue.length > 0 && workers && workers.filter(x => x.q).length < NWORKERS) {
                 let current = solutionQueue.pop();
                 if (current.scoring(config).rounding(current.bound) <= best.scoring(config).rounding(best.score)) {
                     solutionQueue.clear();
@@ -121,7 +136,7 @@ async function* solver(flight, _scoringRules, _config) {
                 processed++;
             }
 
-            if (workers.filter(x => x.q).length == NWORKERS || solutionQueue.length == 0) {
+            if (workers && workers.filter(x => x.q).length == NWORKERS || solutionQueue.length == 0) {
                 const w = await Promise.race(workers.filter(x => x.q).map(x => x.q));
                 for (let r of w.results) {
                     r.trace('dequeue', config);
@@ -132,6 +147,24 @@ async function* solver(flight, _scoringRules, _config) {
                     solutionQueue.push(r);
                 }
                 w.results = [];
+            }
+
+            if (!workers) {
+                let current = solutionQueue.pop();
+                if (current.scoring(config).rounding(current.bound) <= best.scoring(config).rounding(best.score)) {
+                    solutionQueue.clear();
+                    continue;
+                }
+                let children = current.do_branch(config);
+                for (let c of children) {
+                    c.do_bound(config);
+                    c.do_score(config);
+                    if (c.score > best.score)
+                        best = c;
+                    if (c.bound <= best.score)
+                        continue;
+                    solutionQueue.push(c);
+                }
             }
 
             if (solutionQueue.length > 10000 && solutionQueue.findLeast().value.bound <= best.score) {
@@ -161,7 +194,7 @@ async function* solver(flight, _scoringRules, _config) {
             best.score = best.scoring().rounding(best.score);
             if (best.scoreInfo) {
                 best.scoreInfo.distance = best.scoring().rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp.d)
+                if (best.scoreInfo.cp)
                     best.scoreInfo.cp.d = best.scoring().rounding(best.scoreInfo.cp.d);
             }
             reset = true;

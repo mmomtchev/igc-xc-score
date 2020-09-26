@@ -1,37 +1,6 @@
 'use strict';
 const geom = require('./geom');
 
-function boundFlatTriangle(ranges, boxes, opt, config, scoring) {
-    const maxDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-
-    let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt, config, scoring);
-        if (!cp)
-            return 0;
-        return (maxDistance * scoring.multiplier) - closingPenalty(cp.d, opt, config, scoring);
-    }
-
-    return maxDistance * scoring.multiplier;
-}
-
-function scoreFlatTriangle(tp, opt, config, scoring) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
-    const distance = d0 + d1 + d2;
-
-    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt, config, scoring);
-    if (!cp)
-        return { score: 0 };
-
-    let score = distance * scoring.multiplier - closingPenalty(cp.d, opt, config, scoring);
-
-    return { distance, score, tp, cp };
-}
-
 function closingPenalty(cd, opt, config, scoring) {
     return (cd > (scoring.closingDistanceFree || 0) ? cd : 0);
 }
@@ -49,7 +18,7 @@ function boundDistance3Points(ranges, boxes, opt, config, scoring) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt, config, scoring);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt, config, scoring);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
-    return maxDistance;
+    return maxDistance * scoring.multiplier;
 }
 
 function scoreDistance3Points(tp, opt, config, scoring) {
@@ -59,13 +28,11 @@ function scoreDistance3Points(tp, opt, config, scoring) {
     const all = [pin, tp[0], tp[1], tp[2], pout];
     for (let i of [0, 1, 2, 3])
         distance += all[i].distanceEarth(all[i + 1]);
-    return { distance, score: distance, tp: tp, cp: { in: pin, out: pout, d: 0 } };
+    const score = distance * scoring.multiplier;
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
 }
 
-function boundFAITriangle(ranges, boxes, opt, config, scoring) {
-    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
+function maxFAIDistance(maxTriDistance, boxes, opt, config, scoring) {
     const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
@@ -77,33 +44,100 @@ function boundFAITriangle(ranges, boxes, opt, config, scoring) {
         maxBC / scoring.minSide, maxCA / scoring.minSide, maxTriDistance);
     if (maxDistance < minTriDistance)
         return 0;
+    return maxDistance;
+}
+
+function boundOpenTriangle(ranges, boxes, opt, config, scoring) {
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+    if (scoring.minSide !== undefined) {
+        if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
+            return 0;
+    }
+
+    let cp = { d: 0 };
+    if (ranges[0].b < ranges[2].a) {
+        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxTriDistance, opt);
+        if (!cp)
+            return 0;
+        return (maxD3PDistance - closingPenalty(cp.d, opt, config, scoring)) * scoring.multiplier;
+    }
+
+    return maxD3PDistance * scoring.multiplier;
+}
+
+function scoreOpenTriangle(tp, opt, config, scoring) {
+    const d0 = tp[0].distanceEarth(tp[1]);
+    const d1 = tp[1].distanceEarth(tp[2]);
+    const d2 = tp[2].distanceEarth(tp[0]);
+    const triDistance = d0 + d1 + d2;
+
+    if (scoring.minSide !== undefined) {
+        const minSide = scoring.minSide * triDistance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
+
+    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, triDistance, opt);
+    if (!cp)
+        return { score: 0 };
+
+    let d3pDistance = 0;
+    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
+    const all = [pin, tp[0], tp[1], tp[2], pout];
+    for (let i of [0, 1, 2, 3])
+        d3pDistance += all[i].distanceEarth(all[i + 1]);
+    
+    const distance = d3pDistance;
+    const score = distance * scoring.multiplier - closingPenalty(cp.d, opt);
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
+}
+
+function boundTriangle(ranges, boxes, opt, config, scoring) {
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+
+    const maxDistance = (scoring.minSide !== undefined)
+        ? maxFAIDistance(maxTriDistance, boxes, opt, config, scoring)
+        : maxTriDistance;
+    
+    if (maxDistance === 0)
+        return 0;
 
     let cp = { d: 0 };
     if (ranges[0].b < ranges[2].a) {
         cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt, config, scoring);
         if (!cp)
             return 0;
-        return (maxDistance * scoring.multiplier) - closingPenalty(cp.d, opt, config, scoring);
+        return (maxDistance - closingPenalty(cp.d, opt, config, scoring)) * scoring.multiplier;
     }
 
     return maxDistance * scoring.multiplier;
 }
 
-function scoreFAITriangle(tp, opt, config, scoring) {
+function scoreTriangle(tp, opt, config, scoring) {
     const d0 = tp[0].distanceEarth(tp[1]);
     const d1 = tp[1].distanceEarth(tp[2]);
     const d2 = tp[2].distanceEarth(tp[0]);
     const distance = d0 + d1 + d2;
-    let score = 0;
-    const minSide = scoring.minSide * distance;
-    if (d0 >= minSide && d1 >= minSide && d2 >= minSide)
-        score = distance * scoring.multiplier;
+    
+    if (scoring.minSide !== undefined) {
+        const minSide = scoring.minSide * distance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
 
     let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt, config, scoring);
     if (!cp)
         return { score: 0 };
 
-    score -= closingPenalty(cp.d, opt, config, scoring);
+    let score = (distance - closingPenalty(cp.d, opt, config, scoring)) * scoring.multiplier;
 
     return { distance, score, tp, cp };
 }
@@ -111,10 +145,10 @@ function scoreFAITriangle(tp, opt, config, scoring) {
 module.exports = {
     closingWithLimit,
     closingWithPenalty,
-    boundFlatTriangle,
-    scoreFlatTriangle,
+    boundTriangle,
+    scoreTriangle,
     boundDistance3Points,
     scoreDistance3Points,
-    boundFAITriangle,
-    scoreFAITriangle,
+    boundOpenTriangle,
+    scoreOpenTriangle
 };

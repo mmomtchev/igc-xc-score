@@ -5,10 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.99.0] 2020-05-22
+## [1.99.0] Unreleased
 
 ### Added
  - Experimental multithreading support on Node.js. Overly complex code and slower for all but the most complex flights and the most high-end CPUs
+
+## [1.5.1] Unreleased
+
+### Removed
+ - The included modified copy of igc-parser has been marked as obsolete, replaced by the official lenient=true option; using it still works but it will be removed in the next minor release
+
+## [1.5.0] 2020-07-10
+
+### Added
+ - Added a new hybrid type of flight - Open Triangle - that is scored as a 3 TP distance flight but has a triangle closing rule (no such rules at the moment)
+ - Added support for 3 TP distance flights with a multiplier different than 1 (no such rules at the moment)
+ - Exported the binaries to allow using through npm -g
+ - Display individual leg lengths in the command line version
+
+### Changed
+ - Apply the closing penalty before applying the multiplier as per XContest rules (section #4.1) and FFVL CFD rules (section #6) - this change is very important as it has an impact on the scoring (especially for XContest, the impact on the FFVL scores is next to none)
+ - Folded FlatTriangle bound/score into FAITriangle bound/score resulting an universal Triangle bound/score code
+ - Return the start/finish points for 3 TP distance flights in new scoreInfo fields ep['start'] and ep['finish'] to avoid confusion with the cp['in'] and cp['out'] fields that will now always contain the closing distance of the triangle
+
+## [1.4.1] 2020-06-12
+
+### Added
+ - Added a new code field to allow for easier automated processing of scoring output
+ - Added JSDoc
+ - Added code coverage reporting
+ - Added TypeScript definitions for the solver
+
+
+## [1.4.0] 2020-06-11
+
+### Added
+ - Add three separate and well-defined interfaces: CLI, CJS and ESM
 
 
 ## [1.3.0] 2020-05-07

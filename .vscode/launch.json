@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "TRI",
             "type": "node",
@@ -75,21 +74,28 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "WORK",
+            "name": "TEST",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
-            "args": [
-                "test/work.igc",
-                "out=out.json",
-                "maxtime=10",
-                "debug=true",
-                "verbose=true",
-                "trim=true"
-            ],
+            "program": "${workspaceFolder}/test",
             "console": "integratedTerminal"
         },
-        {
+		{
+			"name": "WORK",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceFolder}/index",
+			"args": [
+				"test/work.igc",
+				"out=out.json",
+				"maxtime=10",
+				"debug=true",
+				"verbose=true",
+				"trim=true"
+			],
+			"console": "integratedTerminal"
+		},
+		{
             "name": "Launch demo",
             "type": "chrome",
             "request": "launch",
