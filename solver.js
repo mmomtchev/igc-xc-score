@@ -99,8 +99,8 @@ async function* solver(flight, _scoringRules, _config) {
     let solutionQueue = new SortedSet(solutionRoots, Solution.prototype.contentEquals, Solution.prototype.contentCompare);
     let processed = 0;
 
-    if (flight.errors)
-        delete flight.errors;
+    //delete flight.errors;
+    flight.errors = new Error('err');
     let workers;
     if (config.env && config.env.WorkerThreads) {
         workers = new Array(NWORKERS).fill(undefined);
