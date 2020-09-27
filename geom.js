@@ -185,7 +185,8 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     }
     rtree.finish();
 
-    const precomputedNext = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing })[0];
+    const precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
+    const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
     for (let i = p2; i < lastUnknown; i++) {
