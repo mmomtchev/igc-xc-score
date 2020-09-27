@@ -103,7 +103,7 @@ async function* solver(flight, _scoringRules, _config) {
     let processed = 0;
 
     if (flight.errors)
-	delete flight.errors;
+        delete flight.errors;
     let workers;
     if (config.env && config.env.WorkerThreads) {
         workers = new Array(NWORKERS).fill(undefined);
