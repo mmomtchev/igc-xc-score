@@ -82,4 +82,9 @@ const tests = {
                 }
             }
         }
-})();
+})().then(() => {
+    process.exit(0);
+}).catch((e) => {
+    console.error('Failing with exception ', e);
+    process.exit(1);
+});
