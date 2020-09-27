@@ -1,5 +1,6 @@
 const _Flatbush = require('flatbush');
 const SharedMap = require('sharedmap');
+const { GatedObjectAsync, GatedObjectSync, GatedObjectPolling } = require('../GatedObject/index');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
 const util = require('./util');
@@ -172,8 +173,13 @@ function maxDistanceNRectangles(boxes) {
     return distanceMax;
 }
 
+let timer1 = 0, timer2 = 0, timer3 = 0, timer4 = 0;
+let counter1 = 0, counter2 = 0, counter3 = 0, counter4 = 0;
 function findClosestPairIn2Segments(p1, p2, opt, config) {
+    timer1 -= Date.now();
     const precomputed = config.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 })[0];
+    timer1 += Date.now();
+    counter1++;
     if (precomputed !== undefined)
         return precomputed.o;
 
@@ -185,7 +191,10 @@ function findClosestPairIn2Segments(p1, p2, opt, config) {
     }
     rtree.finish();
 
+    timer3 -= Date.now();
     const precomputedNext = config.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing })[0];
+    timer3 += Date.now();
+    counter3++;
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
     for (let i = p2; i < lastUnknown; i++) {
@@ -204,7 +213,7 @@ function findClosestPairIn2Segments(p1, p2, opt, config) {
     if (precomputedNext !== undefined) {
         const pout = precomputedNext.o.out;
         const pin = precomputedNext.o.in;
-        const d = pout.distanceEarth(pin);
+        const d = Point.prototype.distanceEarth.call(pout, pin);
         if (d < min.d) {
             min.d = d;
             min.out = pout;
@@ -212,9 +221,23 @@ function findClosestPairIn2Segments(p1, p2, opt, config) {
         }
     }
 
+    timer2 -= Date.now();
     config.flight.closestPairs.insert({ minX: p1, minY: p2, maxX: p1, maxY: p2, o: min });
+    timer2 += Date.now();
+    counter2++;
     return min;
 }
+
+
+function printTimers() {
+    if (counter1) {
+        console.log('timer1', (timer1 / counter1).toFixed(2), timer1, counter1);
+        console.log('timer2', (timer2 / counter2).toFixed(2), timer2, counter2);
+        console.log('timer3', (timer3 / counter3).toFixed(2), timer3, counter3);
+        console.log('timer4', (timer4 / counter4).toFixed(2), timer4, counter4);
+    }
+}
+//setInterval(printTimers, 500);
 
 function findFurthestPointInSegment(sega, segb, target, opt, config) {
     let points;
@@ -284,7 +307,11 @@ function findFurthestPointInSegment(sega, segb, target, opt, config) {
 }
 
 function isTriangleClosed(p1, p2, distance, opt, config, scoring) {
+    timer4 -= Date.now();
     const fastCandidates = config.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
+    timer4 += Date.now();
+    counter4++;
+
     for (let f of fastCandidates)
         if (f.o.d <= scoring.closingDistanceFree)
             return f.o;
@@ -297,7 +324,10 @@ function isTriangleClosed(p1, p2, distance, opt, config, scoring) {
 }
 
 function init(config) {
-    config.flight.closestPairs = new RBush();
+    if (!config.flight.closestPairs) {
+        config.flight.closestPairs = new GatedObjectSync('return new(require("rbush"))(16)');
+    } else
+        config.flight.closestPairs = new GatedObjectSync(config.flight.closestPairs);
 
     if (config.flight.furthestPoints) {
         for (let map of config.flight.furthestPoints) {

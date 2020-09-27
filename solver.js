@@ -14,8 +14,8 @@ const Solution = require('./solution').Solution;
 const { Range, Point, Box } = require('./foundation');
 const scoringRules = require('./scoring-rules.config');
 
-const NWORKERS = require('os').cpus().length;
-const MAXQ = 5;
+const NWORKERS = require('os').cpus().length * 2;
+const MAXQ = 2;
 const MINQ = Infinity;
 
 function enqueueSolution(s) {
@@ -107,19 +107,23 @@ async function* solver(flight, _scoringRules, _config) {
     let workers;
     if (config.env && config.env.WorkerThreads) {
         workers = new Array(NWORKERS).fill(undefined);
+        const closestPairs = config.flight.closestPairs;
         for (let w in workers) {
+            config.flight.closestPairs = closestPairs.clone();
             workers[w] = new Worker('./worker.js', {
                 workerData: {
                     flight: config.flight,
                     rules: config.rules,
                     hp: config.hp
-                }
+                },
+                transferList: [config.flight.closestPairs.port]
             });
             workers[w].on('message', dequeueSolutions.bind(workers[w]));
             workers[w].on('messageerror', (e) => console.error('msgerr', e));
             workers[w].qlen = 0;
             workers[w].results = [];
         }
+        config.flight.closestPairs = closestPairs;
     }
 
     let tcum = 0;
@@ -191,6 +195,7 @@ async function* solver(flight, _scoringRules, _config) {
                         continue;
                     solutionQueue.push(c);
                 }
+                await new Promise(res => { setTimeout(res, 1); });
             }
 
             if (solutionQueue.length > 10000 && solutionQueue.findLeast().value.bound <= best.score) {
