@@ -18,7 +18,7 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34, md5: '93261059dcfcf8f68a2971ad68596bfa' },
+        { file: 'line.igc', score: 53.34, md5: '23584c29d94bc9ec136cb1861276258f' },
         { file: 'tri.igc', score: 17.51, md5: 'c4ae239fff97533b9f42bd32469e8435' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
@@ -30,7 +30,8 @@ const tests = {
         { file: 'hiking-up.igc', score: 40.53 },
         { file: 'hiking-up-2.igc', score: 125.94 },
         { file: 'lunch-break.igc', score: 73.92 },
-        { file: 'dup-fixes.igc', score: 89.1 }
+        { file: 'dup-fixes.igc', score: 89.1 },
+        { file: 'd3p-anti-cache.igc', score: 58.53 }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
