@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const IGCParser = require('igc-parser');
 const solver = require('./solver');
 const util = require('./util');
+const Point = require('./foundation').Point;
 const scoringRules = require('./scoring-rules.config');
 
 const defaultConfig = {
@@ -17,8 +18,8 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34, md5: 'f32c3095836f79986e9fc7ceb763c94d' },
-        { file: 'tri.igc', score: 17.51, md5: 'c4ae239fff97533b9f42bd32469e8435' },
+        { file: 'line.igc', score: 53.34, md5: 'c2ccab5a140f47440fb51a0e1621efec' },
+        { file: 'tri.igc', score: 17.51, md5: '52b4d196fab385e0c1c083e03603af29' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
         { file: 'zigzag.igc', score: 90.64 },
@@ -35,7 +36,7 @@ const tests = {
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
         { file: 'trifai-xcontest-362.70.igc', score: 363.43 },
         { file: 'trifai-xcontest-362.70.igc', score: 363.42, config: { hp: true } },
-        { file: 'freeflight-xcontest-66.46.igc', score: 66.5 },
+        { file: 'freeflight-xcontest-66.46.igc', score: 66.48 },
         { file: 'flat-xcontest-100.59.igc', score: 100.76 },
         { file: 'flat-xcontest-8.01.igc', score: 8.01 },
         { file: 'trifai-xcontest-189.65.igc', score: 189.96 },
@@ -64,9 +65,9 @@ for (let rules of Object.keys(tests))
             if (process.argv[2] !== 'force')
                 process.exit(1);
         }
+        const geojson = best.geojson();
         if (test.md5) {
             const hash = crypto.createHash('md5');
-            const geojson = best.geojson();
             delete geojson.properties.processedTime;
             hash.update(JSON.stringify(geojson));
             const digest = hash.digest('hex');
@@ -74,6 +75,19 @@ for (let rules of Object.keys(tests))
                 console.error(rules, test.file, digest, test.md5);
                 if (process.argv[2] !== 'force')
                     process.exit(1);
+            }
+        }
+        for (let f of geojson.features) {
+            if (f.properties.id.match(/^seg/)) {
+                const p0 = new Point(f.geometry.coordinates[0][0], f.geometry.coordinates[0][1]);
+                const p1 = new Point(f.geometry.coordinates[1][0], f.geometry.coordinates[1][1]);
+                const dReported = geojson.properties.d;
+                const dComputed = p0.distanceEarth(p1);
+                if (Math.abs(dReported - dComputed) > 0.001) {
+                    console.error('incorrect distance reported', p0, p1, dReported.toFixed(4), dComputed.toFixed(4));
+                    if (process.argv[2] !== 'force')
+                        process.exit(1);
+                }
             }
         }
     }

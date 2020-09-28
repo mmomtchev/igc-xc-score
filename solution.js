@@ -140,7 +140,7 @@ class Solution {
         } catch (e) {
         }
         try {
-            if (this.scoreInfo.cp !== undefined) {
+            if (this.scoreInfo.ep !== undefined || this.scoreInfo.cp !== undefined) {
                 const cp = this.scoreInfo.cp;
                 const tp = this.scoreInfo.tp;
                 const ep = this.scoreInfo.ep;

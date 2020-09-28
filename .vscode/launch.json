@@ -8,7 +8,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/index",
             "args": [
-                "test/tri.igc"
+                "test/tri.igc",
+                "out=out.json"
             ],
             "console": "integratedTerminal"
         },
@@ -82,7 +83,7 @@
             "args": [
                 "test/work.igc",
                 "out=out.json",
-                "maxtime=10",
+                "maxtime=100",
                 "debug=true",
                 "verbose=true",
                 "trim=true"

@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.1] Unreleased
 
+### Added
+ - Unit testing of all distances reported
+ - Restore the seg_in / seg_out lines in the geojson output
+
 ### Removed
  - The included modified copy of igc-parser has been marked as obsolete, replaced by the official lenient=true option; using it still works but it will be removed in the next minor release (from [@vicb](https://github.com/vicb))
 
 ### Changed
  - Significantly faster processing of triangles
+ - Fixed a rare case of incorrect reporting of seg_in / seg_out distances with correct points placement (up to 20m error)
 
 ## [1.5.0] 2020-07-10
 
