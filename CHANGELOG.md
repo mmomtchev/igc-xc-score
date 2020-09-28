@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Significantly faster processing of triangles
  - Fixed a rare case of incorrect reporting of seg_in / seg_out distances with correct points placement (up to 20m error)
+ - Significantly faster processing of 3 TP distances
 
 ## [1.5.0] 2020-07-10
 

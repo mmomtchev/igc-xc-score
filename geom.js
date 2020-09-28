@@ -1,7 +1,7 @@
-const Map = require('collections/map');
 const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
+const RBush3D = require('./rbush3d').RBush3D;
 const util = require('./util');
 const { Box, Point } = require('./foundation');
 
@@ -229,26 +229,35 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
         throw new TypeError('target must be either Point or Box');
     
     let pos;
-    if (sega === opt.launch)
+    let zSearch;
+    if (sega === opt.launch) {
         pos = 0;
-    else if (segb === opt.landing)
+        zSearch = { minZ: +opt.launch, maxZ: +segb };
+    } else if (segb === opt.landing) {
         pos = 1;
-    else
+        zSearch = { minZ: +sega, maxZ: +opt.landing };
+    } else
         throw new RangeError('this function supports seeking only from the launch or the landing point');
 
     let distanceMax = -Infinity;
     let fpoint;
     for (let v of points) {
-        const precomputed = opt.flight.furthestPoints[pos].get(v.x + ':' + v.y, -Infinity);
+        const precomputedAll = opt.flight.furthestPoints[pos].search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, ...zSearch });
+        //if (precomputedAll.length > 1)
+        //    throw 'should not happen';
+        const precomputed = precomputedAll[0] ? precomputedAll[0].o.r : -Infinity;
+            
         let distanceVMax = -Infinity;
         let fVpoint;
         if (sega <= precomputed && precomputed <= segb) {
             fVpoint = opt.flight.flightPoints[precomputed];
             distanceVMax = v.distanceEarth(fVpoint);
-        }
-        let intersecting = false;
-        let canCache = false;
-        if (fVpoint === undefined) {
+        } else {
+            if (precomputed !== -Infinity)
+                throw 'should not happen';
+            let intersecting = false;
+            let canCache = false;
+
             for (let p = sega; p <= segb; p++) {
                 const f = opt.flight.flightPoints[p];
                 if (target instanceof Box && target.intersects(f)) {
@@ -272,8 +281,25 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
                     }
                 }
             }
-            if (canCache)
-                opt.flight.furthestPoints[pos].set(v.x + ':' + v.y, fVpoint.r);
+            if (canCache) {
+                let xCache, yCache, zCache;
+                if (sega === opt.launch) {
+                    zCache = { minZ: +fVpoint.r, maxZ: +segb };
+                } else if (segb === opt.landing) {
+                    zCache = { minZ: +sega, maxZ: +fVpoint.r };
+                }
+                if (fVpoint.x > v.x) {
+                    xCache = { minX: -Infinity, maxX: v.x };
+                } else {
+                    xCache = { minX: v.x, maxX: Infinity };
+                }
+                if (fVpoint.y > v.y) {
+                    yCache = { minY: -Infinity, maxY: v.y };
+                } else {
+                    yCache = { minY: v.y, maxY: Infinity };
+                }
+                opt.flight.furthestPoints[pos].insert({ ...xCache, ...yCache, ...zCache, o: fVpoint });
+            }
         }
         if (distanceVMax > distanceMax) {
             distanceMax = distanceVMax;
@@ -301,7 +327,7 @@ function isTriangleClosed(p1, p2, distance, opt) {
 
 function init(opt) {
     opt.flight.closestPairs = new RBush();
-    opt.flight.furthestPoints = [new Map(), new Map()];
+    opt.flight.furthestPoints = [new RBush3D(), new RBush3D()];
     opt.flight.flightPoints = new Array(opt.flight.filtered.length);
     for (let r in opt.flight.filtered)
         opt.flight.flightPoints[r] = new Point(opt.flight.filtered, r);
