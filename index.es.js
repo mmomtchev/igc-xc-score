@@ -509,11 +509,6 @@ function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-var quickselect$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    'default': quickselect
-});
-
 class RBush {
     constructor(maxEntries = 9) {
         // max entries in a node is 9 by default; min node fill is 40% for best performance
@@ -1044,9 +1039,70 @@ function getCjsExportFromNamespace (n) {
 	return n && n['default'] || n;
 }
 
-var quickselect$2 = getCjsExportFromNamespace(quickselect$1);
+var quickselect$1 = createCommonjsModule(function (module, exports) {
+(function (global, factory) {
+	 module.exports = factory() ;
+}(commonjsGlobal, (function () {
+function quickselect(arr, k, left, right, compare) {
+    quickselectStep(arr, k, left || 0, right || (arr.length - 1), compare || defaultCompare);
+}
 
-var rbush3d = createCommonjsModule(function (module, exports) {
+function quickselectStep(arr, k, left, right, compare) {
+
+    while (right > left) {
+        if (right - left > 600) {
+            var n = right - left + 1;
+            var m = k - left + 1;
+            var z = Math.log(n);
+            var s = 0.5 * Math.exp(2 * z / 3);
+            var sd = 0.5 * Math.sqrt(z * s * (n - s) / n) * (m - n / 2 < 0 ? -1 : 1);
+            var newLeft = Math.max(left, Math.floor(k - m * s / n + sd));
+            var newRight = Math.min(right, Math.floor(k + (n - m) * s / n + sd));
+            quickselectStep(arr, k, newLeft, newRight, compare);
+        }
+
+        var t = arr[k];
+        var i = left;
+        var j = right;
+
+        swap(arr, left, k);
+        if (compare(arr[right], t) > 0) swap(arr, left, right);
+
+        while (i < j) {
+            swap(arr, i, j);
+            i++;
+            j--;
+            while (compare(arr[i], t) < 0) i++;
+            while (compare(arr[j], t) > 0) j--;
+        }
+
+        if (compare(arr[left], t) === 0) swap(arr, left, j);
+        else {
+            j++;
+            swap(arr, j, right);
+        }
+
+        if (j <= k) left = j + 1;
+        if (k <= j) right = j - 1;
+    }
+}
+
+function swap(arr, i, j) {
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+}
+
+function defaultCompare(a, b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
+return quickselect;
+
+})));
+});
+
+var dist = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 var nodePool = [];
@@ -1210,7 +1266,7 @@ var multiSelect = function (arr, left, right, n, compare) {
         if (right - left <= n)
             continue;
         mid = left + Math.ceil((right - left) / n / 2) * n;
-        quickselect$2(arr, mid, left, right, compare);
+        quickselect$1(arr, mid, left, right, compare);
         stack.push(left, mid, mid, right);
     }
 };
@@ -1238,7 +1294,7 @@ var RBush3D = (function () {
             return result;
         var nodesToSearch = [];
         while (node) {
-            for (var i = 0, len = node.children ? node.children.length : 0; i < len; i++) {
+            for (var i = 0, len = node.children.length; i < len; i++) {
                 var child = node.children[i];
                 if (exports.intersects(bbox, child)) {
                     if (isLeafChild(node))
@@ -1624,10 +1680,10 @@ var RBush3D = (function () {
 exports.RBush3D = RBush3D;
 });
 
-unwrapExports(rbush3d);
-var rbush3d_1 = rbush3d.intersects;
-var rbush3d_2 = rbush3d.boxRayIntersects;
-var rbush3d_3 = rbush3d.RBush3D;
+unwrapExports(dist);
+var dist_1 = dist.intersects;
+var dist_2 = dist.boxRayIntersects;
+var dist_3 = dist.RBush3D;
 
 const REarth = 6371;
 
@@ -1959,7 +2015,7 @@ var RBush$1 = getCjsExportFromNamespace(rbush);
 
 const Flatbush$1 = _Flatbush.default ? _Flatbush.default : _Flatbush;
 
-const RBush3D = rbush3d.RBush3D;
+const RBush3D = dist.RBush3D;
 
 const { Box: Box$1, Point: Point$1 } = foundation;
 
@@ -2201,18 +2257,19 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     let fpoint;
     for (let v of points) {
         const precomputedAll = opt.flight.furthestPoints[pos].search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, ...zSearch });
-        //if (precomputedAll.length > 1)
-        //    throw 'should not happen';
-        const precomputed = precomputedAll[0] ? precomputedAll[0].o.r : -Infinity;
-            
         let distanceVMax = -Infinity;
         let fVpoint;
-        if (sega <= precomputed && precomputed <= segb) {
-            fVpoint = opt.flight.flightPoints[precomputed];
-            distanceVMax = v.distanceEarth(fVpoint);
-        } else {
-            if (precomputed !== -Infinity)
-                throw 'should not happen';
+        for (let precomp of precomputedAll) {
+            if (sega <= precomp.o.r && precomp.o.r <= segb) {
+                const d = v.distanceEarth(precomp.o);
+                if (d > distanceVMax) {
+                    fVpoint = precomp.o;
+                    distanceVMax = d;
+                }
+            }
+        }
+
+        if (fVpoint === undefined) {
             let intersecting = false;
             let canCache = false;
 
@@ -2247,15 +2304,19 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
                     zCache = { minZ: +sega, maxZ: +fVpoint.r };
                 }
                 if (fVpoint.x > v.x) {
-                    xCache = { minX: -Infinity, maxX: v.x };
+                    xCache = { minX: -1000, maxX: v.x };
                 } else {
-                    xCache = { minX: v.x, maxX: Infinity };
+                    xCache = { minX: v.x, maxX: 1000 };
                 }
                 if (fVpoint.y > v.y) {
-                    yCache = { minY: -Infinity, maxY: v.y };
+                    yCache = { minY: -1000, maxY: v.y };
                 } else {
-                    yCache = { minY: v.y, maxY: Infinity };
+                    yCache = { minY: v.y, maxY: 1000 };
                 }
+                const old = opt.flight.furthestPoints[pos].search({ ...xCache, ...yCache, ...zCache });
+                for (let o of old)
+                    if (o.o.r == fVpoint.r)
+                        opt.flight.furthestPoints[pos].remove(o);
                 opt.flight.furthestPoints[pos].insert({ ...xCache, ...yCache, ...zCache, o: fVpoint });
             }
         }

@@ -21,8 +21,8 @@
     "nexe_all": "npm run nexe_linux && npm run nexe_win && npm run nexe_mac",
     "www": "webpack && cp www/index.html www/pacman.svg dist/www",
     "build": "rollup -c && npm run nexe_all && npm run www && npm run doc",
-    "c8": "npx c8 --exclude igc-parser.js,rbush3d.js node test",
-    "lcov": "npx c8 --exclude igc-parser.js,rbush3d.js report --reporter=text-lcov > coverage/tests.lcov",
+    "c8": "npx c8 --exclude igc-parser.js node test",
+    "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | env CODECOV_TOKEN='4d5a31d4-9b2f-4a62-9db9-2c49eef14ea0' bash",
     "preversion": "npm test",
     "version": "npm run build && git add package.json igc-xc-score.js index.es.js index.cjs.js doc",
@@ -48,7 +48,8 @@
     "collections": "^5.1.11",
     "flatbush": "^3.3.0",
     "igc-parser": "^0.5.0",
-    "rbush": "^3.0.1"
+    "rbush": "^3.0.1",
+    "rbush-3d": "0.0.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.1.0",

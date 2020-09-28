@@ -1,7 +1,7 @@
 const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
-const RBush3D = require('./rbush3d').RBush3D;
+const RBush3D = require('rbush-3d').RBush3D;
 const util = require('./util');
 const { Box, Point } = require('./foundation');
 
@@ -243,18 +243,19 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     let fpoint;
     for (let v of points) {
         const precomputedAll = opt.flight.furthestPoints[pos].search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, ...zSearch });
-        //if (precomputedAll.length > 1)
-        //    throw 'should not happen';
-        const precomputed = precomputedAll[0] ? precomputedAll[0].o.r : -Infinity;
-            
         let distanceVMax = -Infinity;
         let fVpoint;
-        if (sega <= precomputed && precomputed <= segb) {
-            fVpoint = opt.flight.flightPoints[precomputed];
-            distanceVMax = v.distanceEarth(fVpoint);
-        } else {
-            if (precomputed !== -Infinity)
-                throw 'should not happen';
+        for (let precomp of precomputedAll) {
+            if (sega <= precomp.o.r && precomp.o.r <= segb) {
+                const d = v.distanceEarth(precomp.o);
+                if (d > distanceVMax) {
+                    fVpoint = precomp.o;
+                    distanceVMax = d;
+                }
+            }
+        }
+
+        if (fVpoint === undefined) {
             let intersecting = false;
             let canCache = false;
 
@@ -289,15 +290,19 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
                     zCache = { minZ: +sega, maxZ: +fVpoint.r };
                 }
                 if (fVpoint.x > v.x) {
-                    xCache = { minX: -Infinity, maxX: v.x };
+                    xCache = { minX: -1000, maxX: v.x };
                 } else {
-                    xCache = { minX: v.x, maxX: Infinity };
+                    xCache = { minX: v.x, maxX: 1000 };
                 }
                 if (fVpoint.y > v.y) {
-                    yCache = { minY: -Infinity, maxY: v.y };
+                    yCache = { minY: -1000, maxY: v.y };
                 } else {
-                    yCache = { minY: v.y, maxY: Infinity };
+                    yCache = { minY: v.y, maxY: 1000 };
                 }
+                const old = opt.flight.furthestPoints[pos].search({ ...xCache, ...yCache, ...zCache });
+                for (let o of old)
+                    if (o.o.r == fVpoint.r)
+                        opt.flight.furthestPoints[pos].remove(o);
                 opt.flight.furthestPoints[pos].insert({ ...xCache, ...yCache, ...zCache, o: fVpoint });
             }
         }
