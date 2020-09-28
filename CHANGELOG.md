@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.1] Unreleased
 
 ### Removed
- - The included modified copy of igc-parser has been marked as obsolete, replaced by the official lenient=true option; using it still works but it will be removed in the next minor release
+ - The included modified copy of igc-parser has been marked as obsolete, replaced by the official lenient=true option; using it still works but it will be removed in the next minor release (from [@vicb](https://github.com/vicb))
+
+### Changed
+ - Significantly faster processing of triangles
 
 ## [1.5.0] 2020-07-10
 

@@ -18,7 +18,7 @@ const tests = {
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
         { file: 'line.igc', score: 53.34, md5: 'f32c3095836f79986e9fc7ceb763c94d' },
-        { file: 'tri.igc', score: 17.51, md5: '061d2a5effd9d54099ae56965888ffce' },
+        { file: 'tri.igc', score: 17.51, md5: 'c4ae239fff97533b9f42bd32469e8435' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
         { file: 'zigzag.igc', score: 90.64 },

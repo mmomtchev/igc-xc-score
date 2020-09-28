@@ -173,7 +173,9 @@ function maxDistanceNRectangles(boxes) {
 }
 
 function findClosestPairIn2Segments(p1, p2, opt) {
-    const precomputed = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 })[0];
+    let precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 });
+    let precomputed = precomputedAll.reduce((a, x) => (!a || x.in > a.in) ? x : a, undefined);
+    precomputed = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, precomputed);
     if (precomputed !== undefined)
         return precomputed.o;
 
@@ -185,7 +187,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     }
     rtree.finish();
 
-    const precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
+    precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
     const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
@@ -213,7 +215,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
         }
     }
 
-    opt.flight.closestPairs.insert({ minX: p1, minY: p2, maxX: p1, maxY: p2, o: min });
+    opt.flight.closestPairs.insert({ minX: min.in.r, minY: p2, maxX: p1, maxY: min.out.r, o: min });
     return min;
 }
 
