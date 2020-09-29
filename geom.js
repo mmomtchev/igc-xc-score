@@ -2,7 +2,6 @@ const Map = require('collections/map');
 const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
-const RBush3D = require('rbush-3d').RBush3D;
 const util = require('./util');
 const { Box, Point } = require('./foundation');
 
@@ -233,10 +232,10 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     let zSearch;
     if (sega === opt.launch) {
         pos = 0;
-        zSearch = { minZ: +segb, maxZ: +segb };
+        zSearch = +segb;
     } else if (segb === opt.landing) {
         pos = 1;
-        zSearch = { minZ: +sega, maxZ: +sega };
+        zSearch = +sega;
     } else
         throw new RangeError('this function supports seeking only from the launch or the landing point');
 
@@ -246,14 +245,19 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
         let distanceVMax = -Infinity;
         let fVpoint;
 
-        const precomputed = opt.flight.furthestPoints[pos].search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, ...zSearch });
-        if (precomputed.length > 1)
-            throw new Error('furthestPoints cache inconsistency');
+        let precomputed;
+        const precomputedAll = opt.flight.furthestPoints[pos].get(v.x + ':' + v.y);
+        for (const p of precomputedAll || []) {
+            if (zSearch >= p.min && zSearch <= p.max) {
+                precomputed = p;
+                break;
+            }
+        }
 
-        if (precomputed[0])
-            if (sega <= precomputed[0].o.r && precomputed[0].o.r <= segb) {
-                distanceVMax = v.distanceEarth(precomputed[0].o);
-                fVpoint = precomputed[0].o;
+        if (precomputed)
+            if (sega <= precomputed.o.r && precomputed.o.r <= segb) {
+                distanceVMax = v.distanceEarth(precomputed.o);
+                fVpoint = precomputed.o;
             } else
                 throw new Error('furthestPoints cache inconsistency');
 
@@ -287,18 +291,22 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
             if (canCache) {
                 let zCache;
                 if (sega === opt.launch) {
-                    zCache = { minZ: +fVpoint.r, maxZ: +segb };
+                    zCache = { min: +fVpoint.r, max: +segb };
                 } else if (segb === opt.landing) {
-                    zCache = { minZ: +sega, maxZ: +fVpoint.r };
+                    zCache = { min: +sega, max: +fVpoint.r };
                 }
 
-                const old = opt.flight.furthestPoints[pos].search({ minX: v.x, maxX: v.x, minY: v.y, maxY: v.y, ...zCache });
-                if (old[0]) {
-                    if (old[0].o.r != fVpoint.r)
-                        throw new Error('furthestPoints cache inconsistency');
-                    opt.flight.furthestPoints[pos].remove(old[0]);
+                let c = precomputedAll;
+                if (!c) {
+                    c = [];
+                    opt.flight.furthestPoints[pos].set(v.x + ':' + v.y, c);
                 }
-                opt.flight.furthestPoints[pos].insert({ minX: v.x, maxX: v.x, minY: v.y, maxY: v.y, ...zCache, o: fVpoint });
+                const existing = c.filter(x => x.o.r == fVpoint.r && !(zCache.max <= x.min || zCache.min >= x.max))[0];
+                if (existing) {
+                    existing.min = Math.min(zCache.min, existing.min);
+                    existing.max = Math.max(zCache.max, existing.max);
+                } else
+                    c.push({ ...zCache, o: fVpoint });
             }
         }
         if (distanceVMax > distanceMax) {
@@ -327,7 +335,7 @@ function isTriangleClosed(p1, p2, distance, opt) {
 
 function init(opt) {
     opt.flight.closestPairs = new RBush();
-    opt.flight.furthestPoints = [new RBush3D(), new RBush3D()];
+    opt.flight.furthestPoints = [new Map(), new Map()];
     opt.flight.flightPoints = new Array(opt.flight.filtered.length);
     for (let r in opt.flight.filtered)
         opt.flight.flightPoints[r] = new Point(opt.flight.filtered, r);
