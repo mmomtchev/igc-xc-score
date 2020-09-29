@@ -1,3 +1,4 @@
+const Map = require('collections/map');
 const _Flatbush = require('flatbush');
 const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
 const RBush = require('rbush');
@@ -232,10 +233,10 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     let zSearch;
     if (sega === opt.launch) {
         pos = 0;
-        zSearch = { minZ: +opt.launch, maxZ: +segb };
+        zSearch = { minZ: +segb, maxZ: +segb };
     } else if (segb === opt.landing) {
         pos = 1;
-        zSearch = { minZ: +sega, maxZ: +opt.landing };
+        zSearch = { minZ: +sega, maxZ: +sega };
     } else
         throw new RangeError('this function supports seeking only from the launch or the landing point');
 
@@ -291,6 +292,12 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
                     zCache = { minZ: +sega, maxZ: +fVpoint.r };
                 }
 
+                const old = opt.flight.furthestPoints[pos].search({ minX: v.x, maxX: v.x, minY: v.y, maxY: v.y, ...zCache });
+                if (old[0]) {
+                    if (old[0].o.r != fVpoint.r)
+                        throw new Error('furthestPoints cache inconsistency');
+                    opt.flight.furthestPoints[pos].remove(old[0]);
+                }
                 opt.flight.furthestPoints[pos].insert({ minX: v.x, maxX: v.x, minY: v.y, maxY: v.y, ...zCache, o: fVpoint });
             }
         }
