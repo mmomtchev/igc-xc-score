@@ -2,1034 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-class FlatQueue {
-
-    constructor() {
-        this.ids = [];
-        this.values = [];
-        this.length = 0;
-    }
-
-    clear() {
-        this.length = 0;
-    }
-
-    push(id, value) {
-        let pos = this.length++;
-        this.ids[pos] = id;
-        this.values[pos] = value;
-
-        while (pos > 0) {
-            const parent = (pos - 1) >> 1;
-            const parentValue = this.values[parent];
-            if (value >= parentValue) break;
-            this.ids[pos] = this.ids[parent];
-            this.values[pos] = parentValue;
-            pos = parent;
-        }
-
-        this.ids[pos] = id;
-        this.values[pos] = value;
-    }
-
-    pop() {
-        if (this.length === 0) return undefined;
-
-        const top = this.ids[0];
-        this.length--;
-
-        if (this.length > 0) {
-            const id = this.ids[0] = this.ids[this.length];
-            const value = this.values[0] = this.values[this.length];
-            const halfLength = this.length >> 1;
-            let pos = 0;
-
-            while (pos < halfLength) {
-                let left = (pos << 1) + 1;
-                const right = left + 1;
-                let bestIndex = this.ids[left];
-                let bestValue = this.values[left];
-                const rightValue = this.values[right];
-
-                if (right < this.length && rightValue < bestValue) {
-                    left = right;
-                    bestIndex = this.ids[right];
-                    bestValue = rightValue;
-                }
-                if (bestValue >= value) break;
-
-                this.ids[pos] = bestIndex;
-                this.values[pos] = bestValue;
-                pos = left;
-            }
-
-            this.ids[pos] = id;
-            this.values[pos] = value;
-        }
-
-        return top;
-    }
-
-    peek() {
-        return this.ids[0];
-    }
-
-    peekValue() {
-        return this.values[0];
-    }
-}
-
-const ARRAY_TYPES = [
-    Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-    Int32Array, Uint32Array, Float32Array, Float64Array
-];
-
-const VERSION = 3; // serialized format version
-
-class Flatbush {
-
-    static from(data) {
-        if (!(data instanceof ArrayBuffer)) {
-            throw new Error('Data must be an instance of ArrayBuffer.');
-        }
-        const [magic, versionAndType] = new Uint8Array(data, 0, 2);
-        if (magic !== 0xfb) {
-            throw new Error('Data does not appear to be in a Flatbush format.');
-        }
-        if (versionAndType >> 4 !== VERSION) {
-            throw new Error(`Got v${versionAndType >> 4} data when expected v${VERSION}.`);
-        }
-        const [nodeSize] = new Uint16Array(data, 2, 1);
-        const [numItems] = new Uint32Array(data, 4, 1);
-
-        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
-    }
-
-    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
-        if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
-
-        this.numItems = +numItems;
-        this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
-
-        // calculate the total number of nodes in the R-tree to allocate space for
-        // and the index of each tree level (used in search later)
-        let n = numItems;
-        let numNodes = n;
-        this._levelBounds = [n * 4];
-        do {
-            n = Math.ceil(n / this.nodeSize);
-            numNodes += n;
-            this._levelBounds.push(numNodes * 4);
-        } while (n !== 1);
-
-        this.ArrayType = ArrayType || Float64Array;
-        this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
-
-        const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
-        const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
-
-        if (arrayTypeIndex < 0) {
-            throw new Error(`Unexpected typed array class: ${ArrayType}.`);
-        }
-
-        if (data && (data instanceof ArrayBuffer)) {
-            this.data = data;
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
-
-            this._pos = numNodes * 4;
-            this.minX = this._boxes[this._pos - 4];
-            this.minY = this._boxes[this._pos - 3];
-            this.maxX = this._boxes[this._pos - 2];
-            this.maxY = this._boxes[this._pos - 1];
-
-        } else {
-            this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
-            this._pos = 0;
-            this.minX = Infinity;
-            this.minY = Infinity;
-            this.maxX = -Infinity;
-            this.maxY = -Infinity;
-
-            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
-            new Uint16Array(this.data, 2, 1)[0] = nodeSize;
-            new Uint32Array(this.data, 4, 1)[0] = numItems;
-        }
-
-        // a priority queue for k-nearest-neighbors queries
-        this._queue = new FlatQueue();
-    }
-
-    add(minX, minY, maxX, maxY) {
-        const index = this._pos >> 2;
-        this._indices[index] = index;
-        this._boxes[this._pos++] = minX;
-        this._boxes[this._pos++] = minY;
-        this._boxes[this._pos++] = maxX;
-        this._boxes[this._pos++] = maxY;
-
-        if (minX < this.minX) this.minX = minX;
-        if (minY < this.minY) this.minY = minY;
-        if (maxX > this.maxX) this.maxX = maxX;
-        if (maxY > this.maxY) this.maxY = maxY;
-
-        return index;
-    }
-
-    finish() {
-        if (this._pos >> 2 !== this.numItems) {
-            throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
-        }
-
-        if (this.numItems <= this.nodeSize) {
-            // only one node, skip sorting and just fill the root box
-            this._boxes[this._pos++] = this.minX;
-            this._boxes[this._pos++] = this.minY;
-            this._boxes[this._pos++] = this.maxX;
-            this._boxes[this._pos++] = this.maxY;
-            return;
-        }
-
-        const width = this.maxX - this.minX;
-        const height = this.maxY - this.minY;
-        const hilbertValues = new Uint32Array(this.numItems);
-        const hilbertMax = (1 << 16) - 1;
-
-        // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0; i < this.numItems; i++) {
-            let pos = 4 * i;
-            const minX = this._boxes[pos++];
-            const minY = this._boxes[pos++];
-            const maxX = this._boxes[pos++];
-            const maxY = this._boxes[pos++];
-            const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
-            const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
-            hilbertValues[i] = hilbert(x, y);
-        }
-
-        // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
-
-        // generate nodes at each tree level, bottom-up
-        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
-            const end = this._levelBounds[i];
-
-            // generate a parent node for each block of consecutive <nodeSize> nodes
-            while (pos < end) {
-                const nodeIndex = pos;
-
-                // calculate bbox for the new node
-                let nodeMinX = Infinity;
-                let nodeMinY = Infinity;
-                let nodeMaxX = -Infinity;
-                let nodeMaxY = -Infinity;
-                for (let i = 0; i < this.nodeSize && pos < end; i++) {
-                    nodeMinX = Math.min(nodeMinX, this._boxes[pos++]);
-                    nodeMinY = Math.min(nodeMinY, this._boxes[pos++]);
-                    nodeMaxX = Math.max(nodeMaxX, this._boxes[pos++]);
-                    nodeMaxY = Math.max(nodeMaxY, this._boxes[pos++]);
-                }
-
-                // add the new node to the tree data
-                this._indices[this._pos >> 2] = nodeIndex;
-                this._boxes[this._pos++] = nodeMinX;
-                this._boxes[this._pos++] = nodeMinY;
-                this._boxes[this._pos++] = nodeMaxX;
-                this._boxes[this._pos++] = nodeMaxY;
-            }
-        }
-    }
-
-    search(minX, minY, maxX, maxY, filterFn) {
-        if (this._pos !== this._boxes.length) {
-            throw new Error('Data not yet indexed - call index.finish().');
-        }
-
-        let nodeIndex = this._boxes.length - 4;
-        const queue = [];
-        const results = [];
-
-        while (nodeIndex !== undefined) {
-            // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
-
-            // search through child nodes
-            for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2] | 0;
-
-                // check if node bbox intersects with query bbox
-                if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
-                if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
-                if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
-                if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
-
-                if (nodeIndex < this.numItems * 4) {
-                    if (filterFn === undefined || filterFn(index)) {
-                        results.push(index); // leaf item
-                    }
-
-                } else {
-                    queue.push(index); // node; add it to the search queue
-                }
-            }
-
-            nodeIndex = queue.pop();
-        }
-
-        return results;
-    }
-
-    neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
-        if (this._pos !== this._boxes.length) {
-            throw new Error('Data not yet indexed - call index.finish().');
-        }
-
-        let nodeIndex = this._boxes.length - 4;
-        const q = this._queue;
-        const results = [];
-        const maxDistSquared = maxDistance * maxDistance;
-
-        while (nodeIndex !== undefined) {
-            // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
-
-            // add child nodes to the queue
-            for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2] | 0;
-
-                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
-                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
-                const dist = dx * dx + dy * dy;
-
-                if (nodeIndex < this.numItems * 4) { // leaf node
-                    if (filterFn === undefined || filterFn(index)) {
-                        // put a negative index if it's an item rather than a node, to recognize later
-                        q.push(-index - 1, dist);
-                    }
-                } else {
-                    q.push(index, dist);
-                }
-            }
-
-            // pop items from the queue
-            while (q.length && q.peek() < 0) {
-                const dist = q.peekValue();
-                if (dist > maxDistSquared) {
-                    q.clear();
-                    return results;
-                }
-                results.push(-q.pop() - 1);
-
-                if (results.length === maxResults) {
-                    q.clear();
-                    return results;
-                }
-            }
-
-            nodeIndex = q.pop();
-        }
-
-        q.clear();
-        return results;
-    }
-}
-
-function axisDist(k, min, max) {
-    return k < min ? min - k : k <= max ? 0 : k - max;
-}
-
-// binary search for the first value in the array bigger than the given
-function upperBound(value, arr) {
-    let i = 0;
-    let j = arr.length - 1;
-    while (i < j) {
-        const m = (i + j) >> 1;
-        if (arr[m] > value) {
-            j = m;
-        } else {
-            i = m + 1;
-        }
-    }
-    return arr[i];
-}
-
-// custom quicksort that partially sorts bbox data alongside the hilbert values
-function sort(values, boxes, indices, left, right, nodeSize) {
-    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
-
-    const pivot = values[(left + right) >> 1];
-    let i = left - 1;
-    let j = right + 1;
-
-    while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
-        if (i >= j) break;
-        swap(values, boxes, indices, i, j);
-    }
-
-    sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, j + 1, right, nodeSize);
-}
-
-// swap two values and two corresponding boxes
-function swap(values, boxes, indices, i, j) {
-    const temp = values[i];
-    values[i] = values[j];
-    values[j] = temp;
-
-    const k = 4 * i;
-    const m = 4 * j;
-
-    const a = boxes[k];
-    const b = boxes[k + 1];
-    const c = boxes[k + 2];
-    const d = boxes[k + 3];
-    boxes[k] = boxes[m];
-    boxes[k + 1] = boxes[m + 1];
-    boxes[k + 2] = boxes[m + 2];
-    boxes[k + 3] = boxes[m + 3];
-    boxes[m] = a;
-    boxes[m + 1] = b;
-    boxes[m + 2] = c;
-    boxes[m + 3] = d;
-
-    const e = indices[i];
-    indices[i] = indices[j];
-    indices[j] = e;
-}
-
-// Fast Hilbert curve algorithm by http://threadlocalmutex.com/
-// Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
-function hilbert(x, y) {
-    let a = x ^ y;
-    let b = 0xFFFF ^ a;
-    let c = 0xFFFF ^ (x | y);
-    let d = x & (y ^ 0xFFFF);
-
-    let A = a | (b >> 1);
-    let B = (a >> 1) ^ a;
-    let C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
-    let D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
-
-    a = A; b = B; c = C; d = D;
-    A = ((a & (a >> 2)) ^ (b & (b >> 2)));
-    B = ((a & (b >> 2)) ^ (b & ((a ^ b) >> 2)));
-    C ^= ((a & (c >> 2)) ^ (b & (d >> 2)));
-    D ^= ((b & (c >> 2)) ^ ((a ^ b) & (d >> 2)));
-
-    a = A; b = B; c = C; d = D;
-    A = ((a & (a >> 4)) ^ (b & (b >> 4)));
-    B = ((a & (b >> 4)) ^ (b & ((a ^ b) >> 4)));
-    C ^= ((a & (c >> 4)) ^ (b & (d >> 4)));
-    D ^= ((b & (c >> 4)) ^ ((a ^ b) & (d >> 4)));
-
-    a = A; b = B; c = C; d = D;
-    C ^= ((a & (c >> 8)) ^ (b & (d >> 8)));
-    D ^= ((b & (c >> 8)) ^ ((a ^ b) & (d >> 8)));
-
-    a = C ^ (C >> 1);
-    b = D ^ (D >> 1);
-
-    let i0 = x ^ y;
-    let i1 = b | (0xFFFF ^ (i0 | a));
-
-    i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
-    i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
-    i0 = (i0 | (i0 << 2)) & 0x33333333;
-    i0 = (i0 | (i0 << 1)) & 0x55555555;
-
-    i1 = (i1 | (i1 << 8)) & 0x00FF00FF;
-    i1 = (i1 | (i1 << 4)) & 0x0F0F0F0F;
-    i1 = (i1 | (i1 << 2)) & 0x33333333;
-    i1 = (i1 | (i1 << 1)) & 0x55555555;
-
-    return ((i1 << 1) | i0) >>> 0;
-}
-
-var flatbush = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    'default': Flatbush
-});
-
-function quickselect(arr, k, left, right, compare) {
-    quickselectStep(arr, k, left || 0, right || (arr.length - 1), compare || defaultCompare);
-}
-
-function quickselectStep(arr, k, left, right, compare) {
-
-    while (right > left) {
-        if (right - left > 600) {
-            var n = right - left + 1;
-            var m = k - left + 1;
-            var z = Math.log(n);
-            var s = 0.5 * Math.exp(2 * z / 3);
-            var sd = 0.5 * Math.sqrt(z * s * (n - s) / n) * (m - n / 2 < 0 ? -1 : 1);
-            var newLeft = Math.max(left, Math.floor(k - m * s / n + sd));
-            var newRight = Math.min(right, Math.floor(k + (n - m) * s / n + sd));
-            quickselectStep(arr, k, newLeft, newRight, compare);
-        }
-
-        var t = arr[k];
-        var i = left;
-        var j = right;
-
-        swap$1(arr, left, k);
-        if (compare(arr[right], t) > 0) swap$1(arr, left, right);
-
-        while (i < j) {
-            swap$1(arr, i, j);
-            i++;
-            j--;
-            while (compare(arr[i], t) < 0) i++;
-            while (compare(arr[j], t) > 0) j--;
-        }
-
-        if (compare(arr[left], t) === 0) swap$1(arr, left, j);
-        else {
-            j++;
-            swap$1(arr, j, right);
-        }
-
-        if (j <= k) left = j + 1;
-        if (k <= j) right = j - 1;
-    }
-}
-
-function swap$1(arr, i, j) {
-    var tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-}
-
-function defaultCompare(a, b) {
-    return a < b ? -1 : a > b ? 1 : 0;
-}
-
-class RBush {
-    constructor(maxEntries = 9) {
-        // max entries in a node is 9 by default; min node fill is 40% for best performance
-        this._maxEntries = Math.max(4, maxEntries);
-        this._minEntries = Math.max(2, Math.ceil(this._maxEntries * 0.4));
-        this.clear();
-    }
-
-    all() {
-        return this._all(this.data, []);
-    }
-
-    search(bbox) {
-        let node = this.data;
-        const result = [];
-
-        if (!intersects(bbox, node)) return result;
-
-        const toBBox = this.toBBox;
-        const nodesToSearch = [];
-
-        while (node) {
-            for (let i = 0; i < node.children.length; i++) {
-                const child = node.children[i];
-                const childBBox = node.leaf ? toBBox(child) : child;
-
-                if (intersects(bbox, childBBox)) {
-                    if (node.leaf) result.push(child);
-                    else if (contains(bbox, childBBox)) this._all(child, result);
-                    else nodesToSearch.push(child);
-                }
-            }
-            node = nodesToSearch.pop();
-        }
-
-        return result;
-    }
-
-    collides(bbox) {
-        let node = this.data;
-
-        if (!intersects(bbox, node)) return false;
-
-        const nodesToSearch = [];
-        while (node) {
-            for (let i = 0; i < node.children.length; i++) {
-                const child = node.children[i];
-                const childBBox = node.leaf ? this.toBBox(child) : child;
-
-                if (intersects(bbox, childBBox)) {
-                    if (node.leaf || contains(bbox, childBBox)) return true;
-                    nodesToSearch.push(child);
-                }
-            }
-            node = nodesToSearch.pop();
-        }
-
-        return false;
-    }
-
-    load(data) {
-        if (!(data && data.length)) return this;
-
-        if (data.length < this._minEntries) {
-            for (let i = 0; i < data.length; i++) {
-                this.insert(data[i]);
-            }
-            return this;
-        }
-
-        // recursively build the tree with the given data from scratch using OMT algorithm
-        let node = this._build(data.slice(), 0, data.length - 1, 0);
-
-        if (!this.data.children.length) {
-            // save as is if tree is empty
-            this.data = node;
-
-        } else if (this.data.height === node.height) {
-            // split root if trees have the same height
-            this._splitRoot(this.data, node);
-
-        } else {
-            if (this.data.height < node.height) {
-                // swap trees if inserted one is bigger
-                const tmpNode = this.data;
-                this.data = node;
-                node = tmpNode;
-            }
-
-            // insert the small tree into the large tree at appropriate level
-            this._insert(node, this.data.height - node.height - 1, true);
-        }
-
-        return this;
-    }
-
-    insert(item) {
-        if (item) this._insert(item, this.data.height - 1);
-        return this;
-    }
-
-    clear() {
-        this.data = createNode([]);
-        return this;
-    }
-
-    remove(item, equalsFn) {
-        if (!item) return this;
-
-        let node = this.data;
-        const bbox = this.toBBox(item);
-        const path = [];
-        const indexes = [];
-        let i, parent, goingUp;
-
-        // depth-first iterative tree traversal
-        while (node || path.length) {
-
-            if (!node) { // go up
-                node = path.pop();
-                parent = path[path.length - 1];
-                i = indexes.pop();
-                goingUp = true;
-            }
-
-            if (node.leaf) { // check current node
-                const index = findItem(item, node.children, equalsFn);
-
-                if (index !== -1) {
-                    // item found, remove the item and condense tree upwards
-                    node.children.splice(index, 1);
-                    path.push(node);
-                    this._condense(path);
-                    return this;
-                }
-            }
-
-            if (!goingUp && !node.leaf && contains(node, bbox)) { // go down
-                path.push(node);
-                indexes.push(i);
-                i = 0;
-                parent = node;
-                node = node.children[0];
-
-            } else if (parent) { // go right
-                i++;
-                node = parent.children[i];
-                goingUp = false;
-
-            } else node = null; // nothing found
-        }
-
-        return this;
-    }
-
-    toBBox(item) { return item; }
-
-    compareMinX(a, b) { return a.minX - b.minX; }
-    compareMinY(a, b) { return a.minY - b.minY; }
-
-    toJSON() { return this.data; }
-
-    fromJSON(data) {
-        this.data = data;
-        return this;
-    }
-
-    _all(node, result) {
-        const nodesToSearch = [];
-        while (node) {
-            if (node.leaf) result.push(...node.children);
-            else nodesToSearch.push(...node.children);
-
-            node = nodesToSearch.pop();
-        }
-        return result;
-    }
-
-    _build(items, left, right, height) {
-
-        const N = right - left + 1;
-        let M = this._maxEntries;
-        let node;
-
-        if (N <= M) {
-            // reached leaf level; return leaf
-            node = createNode(items.slice(left, right + 1));
-            calcBBox(node, this.toBBox);
-            return node;
-        }
-
-        if (!height) {
-            // target height of the bulk-loaded tree
-            height = Math.ceil(Math.log(N) / Math.log(M));
-
-            // target number of root entries to maximize storage utilization
-            M = Math.ceil(N / Math.pow(M, height - 1));
-        }
-
-        node = createNode([]);
-        node.leaf = false;
-        node.height = height;
-
-        // split the items into M mostly square tiles
-
-        const N2 = Math.ceil(N / M);
-        const N1 = N2 * Math.ceil(Math.sqrt(M));
-
-        multiSelect(items, left, right, N1, this.compareMinX);
-
-        for (let i = left; i <= right; i += N1) {
-
-            const right2 = Math.min(i + N1 - 1, right);
-
-            multiSelect(items, i, right2, N2, this.compareMinY);
-
-            for (let j = i; j <= right2; j += N2) {
-
-                const right3 = Math.min(j + N2 - 1, right2);
-
-                // pack each entry recursively
-                node.children.push(this._build(items, j, right3, height - 1));
-            }
-        }
-
-        calcBBox(node, this.toBBox);
-
-        return node;
-    }
-
-    _chooseSubtree(bbox, node, level, path) {
-        while (true) {
-            path.push(node);
-
-            if (node.leaf || path.length - 1 === level) break;
-
-            let minArea = Infinity;
-            let minEnlargement = Infinity;
-            let targetNode;
-
-            for (let i = 0; i < node.children.length; i++) {
-                const child = node.children[i];
-                const area = bboxArea(child);
-                const enlargement = enlargedArea(bbox, child) - area;
-
-                // choose entry with the least area enlargement
-                if (enlargement < minEnlargement) {
-                    minEnlargement = enlargement;
-                    minArea = area < minArea ? area : minArea;
-                    targetNode = child;
-
-                } else if (enlargement === minEnlargement) {
-                    // otherwise choose one with the smallest area
-                    if (area < minArea) {
-                        minArea = area;
-                        targetNode = child;
-                    }
-                }
-            }
-
-            node = targetNode || node.children[0];
-        }
-
-        return node;
-    }
-
-    _insert(item, level, isNode) {
-        const bbox = isNode ? item : this.toBBox(item);
-        const insertPath = [];
-
-        // find the best node for accommodating the item, saving all nodes along the path too
-        const node = this._chooseSubtree(bbox, this.data, level, insertPath);
-
-        // put the item into the node
-        node.children.push(item);
-        extend(node, bbox);
-
-        // split on node overflow; propagate upwards if necessary
-        while (level >= 0) {
-            if (insertPath[level].children.length > this._maxEntries) {
-                this._split(insertPath, level);
-                level--;
-            } else break;
-        }
-
-        // adjust bboxes along the insertion path
-        this._adjustParentBBoxes(bbox, insertPath, level);
-    }
-
-    // split overflowed node into two
-    _split(insertPath, level) {
-        const node = insertPath[level];
-        const M = node.children.length;
-        const m = this._minEntries;
-
-        this._chooseSplitAxis(node, m, M);
-
-        const splitIndex = this._chooseSplitIndex(node, m, M);
-
-        const newNode = createNode(node.children.splice(splitIndex, node.children.length - splitIndex));
-        newNode.height = node.height;
-        newNode.leaf = node.leaf;
-
-        calcBBox(node, this.toBBox);
-        calcBBox(newNode, this.toBBox);
-
-        if (level) insertPath[level - 1].children.push(newNode);
-        else this._splitRoot(node, newNode);
-    }
-
-    _splitRoot(node, newNode) {
-        // split root node
-        this.data = createNode([node, newNode]);
-        this.data.height = node.height + 1;
-        this.data.leaf = false;
-        calcBBox(this.data, this.toBBox);
-    }
-
-    _chooseSplitIndex(node, m, M) {
-        let index;
-        let minOverlap = Infinity;
-        let minArea = Infinity;
-
-        for (let i = m; i <= M - m; i++) {
-            const bbox1 = distBBox(node, 0, i, this.toBBox);
-            const bbox2 = distBBox(node, i, M, this.toBBox);
-
-            const overlap = intersectionArea(bbox1, bbox2);
-            const area = bboxArea(bbox1) + bboxArea(bbox2);
-
-            // choose distribution with minimum overlap
-            if (overlap < minOverlap) {
-                minOverlap = overlap;
-                index = i;
-
-                minArea = area < minArea ? area : minArea;
-
-            } else if (overlap === minOverlap) {
-                // otherwise choose distribution with minimum area
-                if (area < minArea) {
-                    minArea = area;
-                    index = i;
-                }
-            }
-        }
-
-        return index || M - m;
-    }
-
-    // sorts node children by the best axis for split
-    _chooseSplitAxis(node, m, M) {
-        const compareMinX = node.leaf ? this.compareMinX : compareNodeMinX;
-        const compareMinY = node.leaf ? this.compareMinY : compareNodeMinY;
-        const xMargin = this._allDistMargin(node, m, M, compareMinX);
-        const yMargin = this._allDistMargin(node, m, M, compareMinY);
-
-        // if total distributions margin value is minimal for x, sort by minX,
-        // otherwise it's already sorted by minY
-        if (xMargin < yMargin) node.children.sort(compareMinX);
-    }
-
-    // total margin of all possible split distributions where each node is at least m full
-    _allDistMargin(node, m, M, compare) {
-        node.children.sort(compare);
-
-        const toBBox = this.toBBox;
-        const leftBBox = distBBox(node, 0, m, toBBox);
-        const rightBBox = distBBox(node, M - m, M, toBBox);
-        let margin = bboxMargin(leftBBox) + bboxMargin(rightBBox);
-
-        for (let i = m; i < M - m; i++) {
-            const child = node.children[i];
-            extend(leftBBox, node.leaf ? toBBox(child) : child);
-            margin += bboxMargin(leftBBox);
-        }
-
-        for (let i = M - m - 1; i >= m; i--) {
-            const child = node.children[i];
-            extend(rightBBox, node.leaf ? toBBox(child) : child);
-            margin += bboxMargin(rightBBox);
-        }
-
-        return margin;
-    }
-
-    _adjustParentBBoxes(bbox, path, level) {
-        // adjust bboxes along the given tree path
-        for (let i = level; i >= 0; i--) {
-            extend(path[i], bbox);
-        }
-    }
-
-    _condense(path) {
-        // go through the path, removing empty nodes and updating bboxes
-        for (let i = path.length - 1, siblings; i >= 0; i--) {
-            if (path[i].children.length === 0) {
-                if (i > 0) {
-                    siblings = path[i - 1].children;
-                    siblings.splice(siblings.indexOf(path[i]), 1);
-
-                } else this.clear();
-
-            } else calcBBox(path[i], this.toBBox);
-        }
-    }
-}
-
-function findItem(item, items, equalsFn) {
-    if (!equalsFn) return items.indexOf(item);
-
-    for (let i = 0; i < items.length; i++) {
-        if (equalsFn(item, items[i])) return i;
-    }
-    return -1;
-}
-
-// calculate node's bbox from bboxes of its children
-function calcBBox(node, toBBox) {
-    distBBox(node, 0, node.children.length, toBBox, node);
-}
-
-// min bounding rectangle of node children from k to p-1
-function distBBox(node, k, p, toBBox, destNode) {
-    if (!destNode) destNode = createNode(null);
-    destNode.minX = Infinity;
-    destNode.minY = Infinity;
-    destNode.maxX = -Infinity;
-    destNode.maxY = -Infinity;
-
-    for (let i = k; i < p; i++) {
-        const child = node.children[i];
-        extend(destNode, node.leaf ? toBBox(child) : child);
-    }
-
-    return destNode;
-}
-
-function extend(a, b) {
-    a.minX = Math.min(a.minX, b.minX);
-    a.minY = Math.min(a.minY, b.minY);
-    a.maxX = Math.max(a.maxX, b.maxX);
-    a.maxY = Math.max(a.maxY, b.maxY);
-    return a;
-}
-
-function compareNodeMinX(a, b) { return a.minX - b.minX; }
-function compareNodeMinY(a, b) { return a.minY - b.minY; }
-
-function bboxArea(a)   { return (a.maxX - a.minX) * (a.maxY - a.minY); }
-function bboxMargin(a) { return (a.maxX - a.minX) + (a.maxY - a.minY); }
-
-function enlargedArea(a, b) {
-    return (Math.max(b.maxX, a.maxX) - Math.min(b.minX, a.minX)) *
-           (Math.max(b.maxY, a.maxY) - Math.min(b.minY, a.minY));
-}
-
-function intersectionArea(a, b) {
-    const minX = Math.max(a.minX, b.minX);
-    const minY = Math.max(a.minY, b.minY);
-    const maxX = Math.min(a.maxX, b.maxX);
-    const maxY = Math.min(a.maxY, b.maxY);
-
-    return Math.max(0, maxX - minX) *
-           Math.max(0, maxY - minY);
-}
-
-function contains(a, b) {
-    return a.minX <= b.minX &&
-           a.minY <= b.minY &&
-           b.maxX <= a.maxX &&
-           b.maxY <= a.maxY;
-}
-
-function intersects(a, b) {
-    return b.minX <= a.maxX &&
-           b.minY <= a.maxY &&
-           b.maxX >= a.minX &&
-           b.maxY >= a.minY;
-}
-
-function createNode(children) {
-    return {
-        children,
-        height: 1,
-        leaf: true,
-        minX: Infinity,
-        minY: Infinity,
-        maxX: -Infinity,
-        maxY: -Infinity
-    };
-}
-
-// sort an array so that items come in groups of n unsorted items, with groups sorted between each other;
-// combines selection algorithm with binary divide & conquer approach
-
-function multiSelect(arr, left, right, n, compare) {
-    const stack = [left, right];
-
-    while (stack.length) {
-        right = stack.pop();
-        left = stack.pop();
-
-        if (right - left <= n) continue;
-
-        const mid = left + Math.ceil((right - left) / n / 2) * n;
-        quickselect(arr, mid, left, right, compare);
-
-        stack.push(left, mid, mid, right);
-    }
-}
-
-var rbush = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    'default': RBush
-});
-
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-function unwrapExports (x) {
-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
-}
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -1038,1597 +11,6 @@ function createCommonjsModule(fn, module) {
 function getCjsExportFromNamespace (n) {
 	return n && n['default'] || n;
 }
-
-var quickselect$1 = createCommonjsModule(function (module, exports) {
-(function (global, factory) {
-	 module.exports = factory() ;
-}(commonjsGlobal, (function () {
-function quickselect(arr, k, left, right, compare) {
-    quickselectStep(arr, k, left || 0, right || (arr.length - 1), compare || defaultCompare);
-}
-
-function quickselectStep(arr, k, left, right, compare) {
-
-    while (right > left) {
-        if (right - left > 600) {
-            var n = right - left + 1;
-            var m = k - left + 1;
-            var z = Math.log(n);
-            var s = 0.5 * Math.exp(2 * z / 3);
-            var sd = 0.5 * Math.sqrt(z * s * (n - s) / n) * (m - n / 2 < 0 ? -1 : 1);
-            var newLeft = Math.max(left, Math.floor(k - m * s / n + sd));
-            var newRight = Math.min(right, Math.floor(k + (n - m) * s / n + sd));
-            quickselectStep(arr, k, newLeft, newRight, compare);
-        }
-
-        var t = arr[k];
-        var i = left;
-        var j = right;
-
-        swap(arr, left, k);
-        if (compare(arr[right], t) > 0) swap(arr, left, right);
-
-        while (i < j) {
-            swap(arr, i, j);
-            i++;
-            j--;
-            while (compare(arr[i], t) < 0) i++;
-            while (compare(arr[j], t) > 0) j--;
-        }
-
-        if (compare(arr[left], t) === 0) swap(arr, left, j);
-        else {
-            j++;
-            swap(arr, j, right);
-        }
-
-        if (j <= k) left = j + 1;
-        if (k <= j) right = j - 1;
-    }
-}
-
-function swap(arr, i, j) {
-    var tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-}
-
-function defaultCompare(a, b) {
-    return a < b ? -1 : a > b ? 1 : 0;
-}
-
-return quickselect;
-
-})));
-});
-
-var dist = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-var nodePool = [];
-var freeNode = function (node) { return nodePool.push(node); };
-var freeAllNode = function (node) {
-    if (node) {
-        freeNode(node);
-        if (!isLeaf(node)) {
-            node.children.forEach(freeAllNode);
-        }
-    }
-};
-var allowNode = function (children) {
-    var node = nodePool.pop();
-    if (node) {
-        node.children = children;
-        node.height = 1;
-        node.leaf = true;
-        node.minX = Infinity;
-        node.minY = Infinity;
-        node.minZ = Infinity;
-        node.maxX = -Infinity;
-        node.maxY = -Infinity;
-        node.maxZ = -Infinity;
-    }
-    else {
-        node = {
-            children: children,
-            height: 1,
-            leaf: true,
-            minX: Infinity,
-            minY: Infinity,
-            minZ: Infinity,
-            maxX: -Infinity,
-            maxY: -Infinity,
-            maxZ: -Infinity,
-        };
-    }
-    return node;
-};
-var distNodePool = [];
-var freeDistNode = function (node) { return distNodePool.push(node); };
-var allowDistNode = function (dist, node) {
-    var heapNode = distNodePool.pop();
-    if (heapNode) {
-        heapNode.dist = dist;
-        heapNode.node = node;
-    }
-    else {
-        heapNode = { dist: dist, node: node };
-    }
-    return heapNode;
-};
-var isLeaf = function (node) {
-    return node.leaf;
-};
-var isLeafChild = function (node, child) {
-    return node.leaf;
-};
-var findItem = function (item, items, equalsFn) {
-    if (!equalsFn)
-        return items.indexOf(item);
-    for (var i = 0; i < items.length; i++) {
-        if (equalsFn(item, items[i]))
-            return i;
-    }
-    return -1;
-};
-var calcBBox = function (node) {
-    distBBox(node, 0, node.children.length, node);
-};
-var distBBox = function (node, k, p, destNode) {
-    var dNode = destNode;
-    if (dNode) {
-        dNode.minX = Infinity;
-        dNode.minY = Infinity;
-        dNode.minZ = Infinity;
-        dNode.maxX = -Infinity;
-        dNode.maxY = -Infinity;
-        dNode.maxZ = -Infinity;
-    }
-    else {
-        dNode = allowNode([]);
-    }
-    for (var i = k, child = void 0; i < p; i++) {
-        child = node.children[i];
-        extend(dNode, child);
-    }
-    return dNode;
-};
-var extend = function (a, b) {
-    a.minX = Math.min(a.minX, b.minX);
-    a.minY = Math.min(a.minY, b.minY);
-    a.minZ = Math.min(a.minZ, b.minZ);
-    a.maxX = Math.max(a.maxX, b.maxX);
-    a.maxY = Math.max(a.maxY, b.maxY);
-    a.maxZ = Math.max(a.maxZ, b.maxZ);
-    return a;
-};
-var bboxVolume = function (a) {
-    return (a.maxX - a.minX) *
-        (a.maxY - a.minY) *
-        (a.maxZ - a.minZ);
-};
-var bboxMargin = function (a) {
-    return (a.maxX - a.minX) +
-        (a.maxY - a.minY) +
-        (a.maxZ - a.minZ);
-};
-var enlargedVolume = function (a, b) {
-    var minX = Math.min(a.minX, b.minX), minY = Math.min(a.minY, b.minY), minZ = Math.min(a.minZ, b.minZ), maxX = Math.max(a.maxX, b.maxX), maxY = Math.max(a.maxY, b.maxY), maxZ = Math.max(a.maxZ, b.maxZ);
-    return (maxX - minX) *
-        (maxY - minY) *
-        (maxZ - minZ);
-};
-var intersectionVolume = function (a, b) {
-    var minX = Math.max(a.minX, b.minX), minY = Math.max(a.minY, b.minY), minZ = Math.max(a.minZ, b.minZ), maxX = Math.min(a.maxX, b.maxX), maxY = Math.min(a.maxY, b.maxY), maxZ = Math.min(a.maxZ, b.maxZ);
-    return Math.max(0, maxX - minX) *
-        Math.max(0, maxY - minY) *
-        Math.max(0, maxZ - minZ);
-};
-var contains = function (a, b) {
-    return a.minX <= b.minX &&
-        a.minY <= b.minY &&
-        a.minZ <= b.minZ &&
-        b.maxX <= a.maxX &&
-        b.maxY <= a.maxY &&
-        b.maxZ <= a.maxZ;
-};
-exports.intersects = function (a, b) {
-    return b.minX <= a.maxX &&
-        b.minY <= a.maxY &&
-        b.minZ <= a.maxZ &&
-        b.maxX >= a.minX &&
-        b.maxY >= a.minY &&
-        b.maxZ >= a.minZ;
-};
-exports.boxRayIntersects = function (box, ox, oy, oz, idx, idy, idz) {
-    var tx0 = (box.minX - ox) * idx;
-    var tx1 = (box.maxX - ox) * idx;
-    var ty0 = (box.minY - oy) * idy;
-    var ty1 = (box.maxY - oy) * idy;
-    var tz0 = (box.minZ - oz) * idz;
-    var tz1 = (box.maxZ - oz) * idz;
-    var z0 = Math.min(tz0, tz1);
-    var z1 = Math.max(tz0, tz1);
-    var y0 = Math.min(ty0, ty1);
-    var y1 = Math.max(ty0, ty1);
-    var x0 = Math.min(tx0, tx1);
-    var x1 = Math.max(tx0, tx1);
-    var tmin = Math.max(0, x0, y0, z0);
-    var tmax = Math.min(x1, y1, z1);
-    return tmax >= tmin ? tmin : Infinity;
-};
-var multiSelect = function (arr, left, right, n, compare) {
-    var stack = [left, right];
-    var mid;
-    while (stack.length) {
-        right = stack.pop();
-        left = stack.pop();
-        if (right - left <= n)
-            continue;
-        mid = left + Math.ceil((right - left) / n / 2) * n;
-        quickselect$1(arr, mid, left, right, compare);
-        stack.push(left, mid, mid, right);
-    }
-};
-var compareMinX = function (a, b) { return a.minX - b.minX; };
-var compareMinY = function (a, b) { return a.minY - b.minY; };
-var compareMinZ = function (a, b) { return a.minZ - b.minZ; };
-var RBush3D = (function () {
-    function RBush3D(maxEntries) {
-        if (maxEntries === void 0) { maxEntries = 16; }
-        this.maxEntries = Math.max(maxEntries, 8);
-        this.minEntries = Math.max(4, Math.ceil(this.maxEntries * 0.4));
-        this.clear();
-    }
-    RBush3D.alloc = function () {
-        return this.pool.pop() || new this();
-    };
-    RBush3D.free = function (rbush) {
-        rbush.clear();
-        this.pool.push(rbush);
-    };
-    RBush3D.prototype.search = function (bbox) {
-        var node = this.data;
-        var result = [];
-        if (!exports.intersects(bbox, node))
-            return result;
-        var nodesToSearch = [];
-        while (node) {
-            for (var i = 0, len = node.children.length; i < len; i++) {
-                var child = node.children[i];
-                if (exports.intersects(bbox, child)) {
-                    if (isLeafChild(node))
-                        result.push(child);
-                    else if (contains(bbox, child))
-                        this._all(child, result);
-                    else
-                        nodesToSearch.push(child);
-                }
-            }
-            node = nodesToSearch.pop();
-        }
-        return result;
-    };
-    RBush3D.prototype.collides = function (bbox) {
-        var node = this.data;
-        if (!exports.intersects(bbox, node))
-            return false;
-        var nodesToSearch = [];
-        while (node) {
-            for (var i = 0, len = node.children.length; i < len; i++) {
-                var child = node.children[i];
-                if (exports.intersects(bbox, child)) {
-                    if (isLeafChild(node) || contains(bbox, child))
-                        return true;
-                    nodesToSearch.push(child);
-                }
-            }
-            node = nodesToSearch.pop();
-        }
-        return false;
-    };
-    RBush3D.prototype.raycastInv = function (ox, oy, oz, idx, idy, idz, maxLen) {
-        if (maxLen === void 0) { maxLen = Infinity; }
-        var node = this.data;
-        if (idx === Infinity && idy === Infinity && idz === Infinity)
-            return allowDistNode(Infinity, undefined);
-        if (exports.boxRayIntersects(node, ox, oy, oz, idx, idy, idz) === Infinity)
-            return allowDistNode(Infinity, undefined);
-        var heap = [allowDistNode(0, node)];
-        var swap = function (a, b) {
-            var t = heap[a];
-            heap[a] = heap[b];
-            heap[b] = t;
-        };
-        var pop = function () {
-            var top = heap[0];
-            var newLen = heap.length - 1;
-            heap[0] = heap[newLen];
-            heap.length = newLen;
-            var idx = 0;
-            while (true) {
-                var left = (idx << 1) | 1;
-                if (left >= newLen)
-                    break;
-                var right = left + 1;
-                if (right < newLen && heap[right].dist < heap[left].dist) {
-                    left = right;
-                }
-                if (heap[idx].dist < heap[left].dist)
-                    break;
-                swap(idx, left);
-                idx = left;
-            }
-            freeDistNode(top);
-            return top.node;
-        };
-        var push = function (dist, node) {
-            var idx = heap.length;
-            heap.push(allowDistNode(dist, node));
-            while (idx > 0) {
-                var p = (idx - 1) >> 1;
-                if (heap[p].dist <= heap[idx].dist)
-                    break;
-                swap(idx, p);
-                idx = p;
-            }
-        };
-        var dist = maxLen;
-        var result;
-        while (heap.length && heap[0].dist < dist) {
-            node = pop();
-            for (var i = 0, len = node.children.length; i < len; i++) {
-                var child = node.children[i];
-                var d = exports.boxRayIntersects(child, ox, oy, oz, idx, idy, idz);
-                if (!isLeafChild(node)) {
-                    push(d, child);
-                }
-                else if (d < dist) {
-                    if (d === 0) {
-                        return allowDistNode(d, child);
-                    }
-                    dist = d;
-                    result = child;
-                }
-            }
-        }
-        return allowDistNode(dist < maxLen ? dist : Infinity, result);
-    };
-    RBush3D.prototype.raycast = function (ox, oy, oz, dx, dy, dz, maxLen) {
-        if (maxLen === void 0) { maxLen = Infinity; }
-        return this.raycastInv(ox, oy, oz, 1 / dx, 1 / dy, 1 / dz, maxLen);
-    };
-    RBush3D.prototype.all = function () {
-        return this._all(this.data, []);
-    };
-    RBush3D.prototype.load = function (data) {
-        if (!(data && data.length))
-            return this;
-        if (data.length < this.minEntries) {
-            for (var i = 0, len = data.length; i < len; i++) {
-                this.insert(data[i]);
-            }
-            return this;
-        }
-        var node = this.build(data.slice(), 0, data.length - 1, 0);
-        if (!this.data.children.length) {
-            this.data = node;
-        }
-        else if (this.data.height === node.height) {
-            this.splitRoot(this.data, node);
-        }
-        else {
-            if (this.data.height < node.height) {
-                var tmpNode = this.data;
-                this.data = node;
-                node = tmpNode;
-            }
-            this._insert(node, this.data.height - node.height - 1, true);
-        }
-        return this;
-    };
-    RBush3D.prototype.insert = function (item) {
-        if (item)
-            this._insert(item, this.data.height - 1);
-        return this;
-    };
-    RBush3D.prototype.clear = function () {
-        if (this.data) {
-            freeAllNode(this.data);
-        }
-        this.data = allowNode([]);
-        return this;
-    };
-    RBush3D.prototype.remove = function (item, equalsFn) {
-        if (!item)
-            return this;
-        var node = this.data;
-        var i = 0;
-        var goingUp = false;
-        var index;
-        var parent;
-        var path = [];
-        var indexes = [];
-        while (node || path.length) {
-            if (!node) {
-                node = path.pop();
-                i = indexes.pop();
-                parent = path[path.length - 1];
-                goingUp = true;
-            }
-            if (isLeaf(node)) {
-                index = findItem(item, node.children, equalsFn);
-                if (index !== -1) {
-                    node.children.splice(index, 1);
-                    path.push(node);
-                    this.condense(path);
-                    return this;
-                }
-            }
-            if (!goingUp && !isLeaf(node) && contains(node, item)) {
-                path.push(node);
-                indexes.push(i);
-                i = 0;
-                parent = node;
-                node = node.children[0];
-            }
-            else if (parent) {
-                i++;
-                node = parent.children[i];
-                goingUp = false;
-            }
-            else {
-                node = undefined;
-            }
-        }
-        return this;
-    };
-    RBush3D.prototype.toJSON = function () {
-        return this.data;
-    };
-    RBush3D.prototype.fromJSON = function (data) {
-        freeAllNode(this.data);
-        this.data = data;
-        return this;
-    };
-    RBush3D.prototype.build = function (items, left, right, height) {
-        var N = right - left + 1;
-        var M = this.maxEntries;
-        var node;
-        if (N <= M) {
-            node = allowNode(items.slice(left, right + 1));
-            calcBBox(node);
-            return node;
-        }
-        if (!height) {
-            height = Math.ceil(Math.log(N) / Math.log(M));
-            M = Math.ceil(N / Math.pow(M, height - 1));
-        }
-        node = allowNode([]);
-        node.leaf = false;
-        node.height = height;
-        var N3 = Math.ceil(N / M), N2 = N3 * Math.ceil(Math.pow(M, 2 / 3)), N1 = N3 * Math.ceil(Math.pow(M, 1 / 3));
-        multiSelect(items, left, right, N1, compareMinX);
-        for (var i = left; i <= right; i += N1) {
-            var right2 = Math.min(i + N1 - 1, right);
-            multiSelect(items, i, right2, N2, compareMinY);
-            for (var j = i; j <= right2; j += N2) {
-                var right3 = Math.min(j + N2 - 1, right2);
-                multiSelect(items, j, right3, N3, compareMinZ);
-                for (var k = j; k <= right3; k += N3) {
-                    var right4 = Math.min(k + N3 - 1, right3);
-                    node.children.push(this.build(items, k, right4, height - 1));
-                }
-            }
-        }
-        calcBBox(node);
-        return node;
-    };
-    RBush3D.prototype._all = function (node, result) {
-        var nodesToSearch = [];
-        while (node) {
-            if (isLeaf(node))
-                result.push.apply(result, node.children);
-            else
-                nodesToSearch.push.apply(nodesToSearch, node.children);
-            node = nodesToSearch.pop();
-        }
-        return result;
-    };
-    RBush3D.prototype.chooseSubtree = function (bbox, node, level, path) {
-        var minVolume;
-        var minEnlargement;
-        var targetNode;
-        while (true) {
-            path.push(node);
-            if (isLeaf(node) || path.length - 1 === level)
-                break;
-            minVolume = minEnlargement = Infinity;
-            for (var i = 0, len = node.children.length; i < len; i++) {
-                var child = node.children[i];
-                var volume = bboxVolume(child);
-                var enlargement = enlargedVolume(bbox, child) - volume;
-                if (enlargement < minEnlargement) {
-                    minEnlargement = enlargement;
-                    minVolume = volume < minVolume ? volume : minVolume;
-                    targetNode = child;
-                }
-                else if (enlargement === minEnlargement) {
-                    if (volume < minVolume) {
-                        minVolume = volume;
-                        targetNode = child;
-                    }
-                }
-            }
-            node = targetNode || node.children[0];
-        }
-        return node;
-    };
-    RBush3D.prototype.split = function (insertPath, level) {
-        var node = insertPath[level];
-        var M = node.children.length;
-        var m = this.minEntries;
-        this.chooseSplitAxis(node, m, M);
-        var splitIndex = this.chooseSplitIndex(node, m, M);
-        var newNode = allowNode(node.children.splice(splitIndex, node.children.length - splitIndex));
-        newNode.height = node.height;
-        newNode.leaf = node.leaf;
-        calcBBox(node);
-        calcBBox(newNode);
-        if (level)
-            insertPath[level - 1].children.push(newNode);
-        else
-            this.splitRoot(node, newNode);
-    };
-    RBush3D.prototype.splitRoot = function (node, newNode) {
-        this.data = allowNode([node, newNode]);
-        this.data.height = node.height + 1;
-        this.data.leaf = false;
-        calcBBox(this.data);
-    };
-    RBush3D.prototype.chooseSplitIndex = function (node, m, M) {
-        var minOverlap = Infinity;
-        var minVolume = Infinity;
-        var index;
-        for (var i = m; i <= M - m; i++) {
-            var bbox1 = distBBox(node, 0, i);
-            var bbox2 = distBBox(node, i, M);
-            var overlap = intersectionVolume(bbox1, bbox2);
-            var volume = bboxVolume(bbox1) + bboxVolume(bbox2);
-            if (overlap < minOverlap) {
-                minOverlap = overlap;
-                index = i;
-                minVolume = volume < minVolume ? volume : minVolume;
-            }
-            else if (overlap === minOverlap) {
-                if (volume < minVolume) {
-                    minVolume = volume;
-                    index = i;
-                }
-            }
-        }
-        return index;
-    };
-    RBush3D.prototype.chooseSplitAxis = function (node, m, M) {
-        var xMargin = this.allDistMargin(node, m, M, compareMinX);
-        var yMargin = this.allDistMargin(node, m, M, compareMinY);
-        var zMargin = this.allDistMargin(node, m, M, compareMinZ);
-        if (xMargin < yMargin && xMargin < zMargin) {
-            node.children.sort(compareMinX);
-        }
-        else if (yMargin < xMargin && yMargin < zMargin) {
-            node.children.sort(compareMinY);
-        }
-    };
-    RBush3D.prototype.allDistMargin = function (node, m, M, compare) {
-        node.children.sort(compare);
-        var leftBBox = distBBox(node, 0, m);
-        var rightBBox = distBBox(node, M - m, M);
-        var margin = bboxMargin(leftBBox) + bboxMargin(rightBBox);
-        for (var i = m; i < M - m; i++) {
-            var child = node.children[i];
-            extend(leftBBox, child);
-            margin += bboxMargin(leftBBox);
-        }
-        for (var i = M - m - 1; i >= m; i--) {
-            var child = node.children[i];
-            extend(rightBBox, child);
-            margin += bboxMargin(rightBBox);
-        }
-        return margin;
-    };
-    RBush3D.prototype.adjustParentBBoxes = function (bbox, path, level) {
-        for (var i = level; i >= 0; i--) {
-            extend(path[i], bbox);
-        }
-    };
-    RBush3D.prototype.condense = function (path) {
-        for (var i = path.length - 1, siblings = void 0; i >= 0; i--) {
-            if (path[i].children.length === 0) {
-                if (i > 0) {
-                    siblings = path[i - 1].children;
-                    siblings.splice(siblings.indexOf(path[i]), 1);
-                    freeNode(path[i]);
-                }
-                else {
-                    this.clear();
-                }
-            }
-            else {
-                calcBBox(path[i]);
-            }
-        }
-    };
-    RBush3D.prototype._insert = function (item, level, isNode) {
-        var insertPath = [];
-        var node = this.chooseSubtree(item, this.data, level, insertPath);
-        node.children.push(item);
-        extend(node, item);
-        while (level >= 0) {
-            if (insertPath[level].children.length > this.maxEntries) {
-                this.split(insertPath, level);
-                level--;
-            }
-            else
-                break;
-        }
-        this.adjustParentBBoxes(item, insertPath, level);
-    };
-    RBush3D.pool = [];
-    return RBush3D;
-}());
-exports.RBush3D = RBush3D;
-});
-
-unwrapExports(dist);
-var dist_1 = dist.intersects;
-var dist_2 = dist.boxRayIntersects;
-var dist_3 = dist.RBush3D;
-
-const REarth = 6371;
-
-const WGS84 = {
-    a: 6378.137,
-    b: 6356.752314245,
-    f: 1 / 298.257223563
-};
-
-function radians(degrees) {
-    return degrees / (180 / Math.PI);
-}
-
-function degrees(radians) {
-    return radians * (180 / Math.PI);
-}
-
-const consoleColors = {
-    reset: '\x1b[0m',
-    bright: '\x1b[1m',
-    dim: '\x1b[2m',
-    underscore: '\x1b[4m',
-    blink: '\x1b[5m',
-    reverse: '\x1b[7m',
-    hidden: '\x1b[8m',
-    fg: {
-        black: '\x1b[30m',
-        red: '\x1b[31m',
-        green: '\x1b[32m',
-        yellow: '\x1b[33m',
-        blue: '\x1b[34m',
-        magenta: '\x1b[35m',
-        cyan: '\x1b[36m',
-        white: '\x1b[37m',
-        crimson: '\x1b[38m'
-    },
-    bg: {
-        black: '\x1b[40m',
-        red: '\x1b[41m',
-        green: '\x1b[42m',
-        yellow: '\x1b[43m',
-        blue: '\x1b[44m',
-        magenta: '\x1b[45m',
-        cyan: '\x1b[46m',
-        white: '\x1b[47m',
-        crimson: '\x1b[48m'
-    }
-};
-
-var util = {
-    radians,
-    degrees,
-    REarth,
-    WGS84,
-    consoleColors
-};
-
-// Vincenty's Algorithm, courtesy of Movable Type Ltd
-// https://www.movable-type.co.uk/scripts/latlong-vincenty.html
-// Published and included here under an MIT licence
-function inverse(p1, p2) {
-    const φ1 = util.radians(p1.y), λ1 = util.radians(p1.x);
-    const φ2 = util.radians(p2.y), λ2 = util.radians(p2.x);
-
-    const { a, b, f } = util.WGS84;
-
-    const L = λ2 - λ1; // L = difference in longitude, U = reduced latitude, defined by tan U = (1-f)·tanφ.
-    const tanU1 = (1 - f) * Math.tan(φ1), cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1)), sinU1 = tanU1 * cosU1;
-    const tanU2 = (1 - f) * Math.tan(φ2), cosU2 = 1 / Math.sqrt((1 + tanU2 * tanU2)), sinU2 = tanU2 * cosU2;
-
-    const antipodal = Math.abs(L) > Math.PI / 2 || Math.abs(φ2 - φ1) > Math.PI / 2;
-
-    let λ = L, sinλ = null, cosλ = null; // λ = difference in longitude on an auxiliary sphere
-    let σ = antipodal ? Math.PI : 0, sinσ = 0, cosσ = antipodal ? -1 : 1, sinSqσ = null; // σ = angular distance P₁ P₂ on the sphere
-    let cos2σₘ = 1;                      // σₘ = angular distance on the sphere from the equator to the midpoint of the line
-    let sinα = null, cosSqα = 1;         // α = azimuth of the geodesic at the equator
-    let C = null;
-
-    let λʹ = null, iterations = 0;
-    do {
-        sinλ = Math.sin(λ);
-        cosλ = Math.cos(λ);
-        sinSqσ = (cosU2 * sinλ) * (cosU2 * sinλ) + (cosU1 * sinU2 - sinU1 * cosU2 * cosλ) * (cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
-        if (Math.abs(sinSqσ) < Number.EPSILON) break;  // co-incident/antipodal points (falls back on λ/σ = L)
-        sinσ = Math.sqrt(sinSqσ);
-        cosσ = sinU1 * sinU2 + cosU1 * cosU2 * cosλ;
-        σ = Math.atan2(sinσ, cosσ);
-        sinα = cosU1 * cosU2 * sinλ / sinσ;
-        cosSqα = 1 - sinα * sinα;
-        cos2σₘ = (cosSqα != 0) ? (cosσ - 2 * sinU1 * sinU2 / cosSqα) : 0; // on equatorial line cos²α = 0 (§6)
-        C = f / 16 * cosSqα * (4 + f * (4 - 3 * cosSqα));
-        λʹ = λ;
-        λ = L + (1 - C) * f * sinα * (σ + C * sinσ * (cos2σₘ + C * cosσ * (-1 + 2 * cos2σₘ * cos2σₘ)));
-        const iterationCheck = antipodal ? Math.abs(λ) - Math.PI : Math.abs(λ);
-        if (iterationCheck > Math.PI) throw new EvalError('λ > π');
-    } while (Math.abs(λ - λʹ) > 1e-7 && ++iterations < 1000);
-    if (iterations >= 1000) throw new EvalError('Vincenty formula failed to converge');
-
-    const uSq = cosSqα * (a * a - b * b) / (b * b);
-    const A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
-    const B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
-    const Δσ = B * sinσ * (cos2σₘ + B / 4 * (cosσ * (-1 + 2 * cos2σₘ * cos2σₘ) -
-        B / 6 * cos2σₘ * (-3 + 4 * sinσ * sinσ) * (-3 + 4 * cos2σₘ * cos2σₘ)));
-
-    const s = b * A * (σ - Δσ); // s = length of the geodesic
-
-    // note special handling of exactly antipodal points where sin²σ = 0 (due to discontinuity
-    // atan2(0, 0) = 0 but atan2(ε, 0) = π/2 / 90°) - in which case bearing is always meridional,
-    // due north (or due south!)
-    // α = azimuths of the geodesic; α2 the direction P₁ P₂ produced
-    const α1 = Math.abs(sinSqσ) < Number.EPSILON ? 0 : Math.atan2(cosU2 * sinλ, cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
-    const α2 = Math.abs(sinSqσ) < Number.EPSILON ? Math.PI : Math.atan2(cosU1 * sinλ, -sinU1 * cosU2 + cosU1 * sinU2 * cosλ);
-
-    return {
-        distance: s,
-        initialBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α1),
-        finalBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α2),
-        iterations: iterations,
-    };
-}
-
-var vincentys = {
-    inverse
-};
-
-class Point {
-    constructor(x, y) {
-        if (Array.isArray(x))
-            [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
-        else
-            [this.x, this.y] = [x, y];
-    }
-
-    geojson(id, properties) {
-        const feature = {
-            type: 'Feature',
-            id,
-            properties: properties || {},
-            geometry: {
-                type: 'Point',
-                coordinates: [this.x, this.y]
-            }
-        };
-        return feature;
-    }
-
-    /* c8 ignore next 3 */
-    toString() {
-        return JSON.stringify(this.geojson());
-    }
-
-    intersects(other) {
-        if (other instanceof Point)
-            return (this.x == other.x && this.y == other.y);
-        if (other instanceof Box)
-            return other.intersects(this);
-        throw ('other must be either Point or Box');
-    }
-
-    distanceEarth(p) {
-        return this.distanceEarthFCC(p);
-    }
-
-    distanceEarthFCC(p) {
-        const df = (p.y - this.y);
-        const dg = (p.x - this.x);
-        const fm = util.radians((this.y + p.y) / 2);
-        const k1 = 111.13209 - 0.566605 * Math.cos(2 * fm) + 0.00120 * Math.cos(4 * fm);
-        const k2 = 111.41513 * Math.cos(fm) - 0.09455 * Math.cos(3 * fm) + 0.00012 * Math.cos(5 * fm);
-        const d = Math.sqrt((k1 * df) * (k1 * df) + (k2 * dg) * (k2 * dg));
-        return d;
-    }
-
-    /* c8 ignore next 5 */
-    distanceEarthRev(dx, dy) {
-        const lon = this.x + util.degrees((dx / util.REarth) / Math.cos(util.radians(this.y)));
-        const lat = this.y + util.degrees(dy / util.REarth);
-        return new Point(lon, lat);
-    }
-
-    distanceEarthVincentys(p) {
-        return vincentys.inverse(this, p).distance;
-    }
-}
-
-class Range {
-    constructor(a, b) {
-        [this.a, this.b] = [a, b];
-    }
-
-    count() {
-        return Math.abs(this.a - this.b) + 1;
-    }
-
-    center() {
-        return Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2);
-    }
-
-    left() {
-        return new Range(Math.min(this.a, this.b), Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2));
-    }
-
-    right() {
-        return new Range(Math.min(this.a, this.b) + Math.ceil(Math.abs(this.a - this.b) / 2), Math.max(this.a, this.b));
-    }
-
-    contains(p) {
-        return this.a <= p && p <= this.b;
-    }
-
-    /* c8 ignore next 3 */
-    toString() {
-        return `${this.a}:${this.b}`;
-    }
-}
-
-class Box {
-    constructor(a, b, c, d) {
-        if (a instanceof Range) {
-            [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
-            for (let i = a.a; i <= a.b; i++) {
-                this.x1 = Math.min(b.flightPoints[i].x, this.x1);
-                this.y1 = Math.min(b.flightPoints[i].y, this.y1);
-                this.x2 = Math.max(b.flightPoints[i].x, this.x2);
-                this.y2 = Math.max(b.flightPoints[i].y, this.y2);
-            }
-        } else {
-            [this.x1, this.y1, this.x2, this.y2] = [a, b, c, d];
-        }
-    }
-
-    vertices() {
-        return [
-            new Point(this.x1, this.y1),
-            new Point(this.x2, this.y1),
-            new Point(this.x2, this.y2),
-            new Point(this.x1, this.y2)
-        ];
-    }
-
-    intersects(other) {
-        if (other instanceof Point)
-            return (this.x1 <= other.x && this.y1 <= other.y && this.x2 >= other.x && this.y2 >= other.y);
-        if (this.x1 > other.x2 || this.x2 < other.x1 || this.y1 > other.y2 || this.y2 < other.y1)
-            return false;
-        return true;
-    }
-
-    area() {
-        const h = Math.abs(this.x2 - this.x1);
-        const w = Math.abs(this.y2 - this.y1);
-        return h * w;
-    }
-
-    /* c8 ignore next 25 */
-    distance(other) {
-        if (this.intersects(other))
-            return 0;
-        let x1, y1, x2, y2;
-        if (this.x1 > other.x2)
-            x1 = this.x1;
-        x2 = other.x2;
-        if (this.x2 < other.x1)
-            x1 = this.x2;
-        x2 = other.x1;
-        if (this.y1 < other.y2)
-            y1 = this.y1;
-        y2 = other.y2;
-        if (this.y2 > other.y1)
-            y1 = this.y2;
-        y2 = other.y1;
-        if (x1 === undefined) {
-            x1 = this.x1;
-            x2 = this.x1;
-        }
-        if (y1 === undefined) {
-            y1 = this.y1;
-            y2 = this.y1;
-        }
-        return new Point(x1, y1).distanceEarth(new Point(x2, y2));
-    }
-
-    geojson(id, properties) {
-        const feature = {
-            type: 'Feature',
-            id,
-            properties: properties || {},
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[
-                    [this.x1, this.y1],
-                    [this.x1, this.y2],
-                    [this.x2, this.y2],
-                    [this.x2, this.y1],
-                    [this.x1, this.y1],
-                ]]
-            }
-        };
-        return feature;
-    }
-
-    /* c8 ignore next 11 */
-    geojson_collection(boxes) {
-        let features = [];
-        for (let b in boxes) {
-            features.push(boxes[b].geojson(b, { id: b }));
-        }
-        let collection = {
-            type: 'FeatureCollection',
-            features
-        };
-        return collection;
-    }
-
-    toString() {
-        return JSON.stringify(this.geojson());
-    }
-}
-
-var foundation = {
-    Point,
-    Range,
-    Box
-};
-
-var _Flatbush = getCjsExportFromNamespace(flatbush);
-
-var RBush$1 = getCjsExportFromNamespace(rbush);
-
-const Flatbush$1 = _Flatbush.default ? _Flatbush.default : _Flatbush;
-
-const RBush3D = dist.RBush3D;
-
-const { Box: Box$1, Point: Point$1 } = foundation;
-
-/* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
- * http://www.penguin.cz/~ondrap/algorithm.pdf
- * Refer for a proof that the maximum path between rectangles always
- * passes through their vertices
- * 
- * My addition :
- * With 3 rectanges, for each rectangle, the maximum path between them always includes:
- * a) only the vertices that lie on the vertices of the minimum bounding box if there are such vertices
- * b) if there are no such vertices, any vertices that lie on the edges of the bounding box
- * c) or potentially any vertice if no vertices lie on the edges of the bounding box
- */
-function maxDistance3Rectangles(boxes, distance_fn) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1, 2]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
-
-    let intersecting = false;
-    for (let i of [0, 1, 2])
-        if (boxes[i].intersects(boxes[(i + 1) % 3])) {
-            intersecting = true;
-            break;
-        }
-
-    let path = [[], [], []];
-    for (let i of [0, 1, 2]) {
-        for (let v of vertices[i])
-            if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
-                path[i].push(v);
-        if (path[i].length == 0)
-            for (let v of vertices[i])
-                if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
-                    path[i].push(v);
-        if (path[i].length == 0 || intersecting)
-            path[i] = vertices[i];
-    }
-
-    let distanceMax = 0;
-    for (let i of path[0])
-        for (let j of path[1])
-            for (let k of path[2]) {
-                const distance = distance_fn(i, j, k);
-                distanceMax = Math.max(distanceMax, distance);
-            }
-
-    return distanceMax;
-}
-
-function minDistance3Rectangles(boxes, distance_fn) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1, 2]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
-
-    let path = [[], [], []];
-    for (let i of [0, 1, 2]) {
-        path[i] = vertices[i];
-    }
-
-    let distanceMin = Infinity;
-    for (let i of path[0])
-        for (let j of path[1])
-            for (let k of path[2]) {
-                const distance = distance_fn(i, j, k);
-                distanceMin = Math.min(distanceMin, distance);
-            }
-
-    return distanceMin;
-}
-
-function maxDistance2Rectangles(boxes) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
-
-    let path = [[], []];
-    for (let i of [0, 1]) {
-        path[i] = vertices[i];
-    }
-
-    let distanceMax = 0;
-    for (let i of path[0])
-        for (let j of path[1]) {
-            const distance = i.distanceEarth(j);
-            distanceMax = Math.max(distanceMax, distance);
-        }
-
-    return distanceMax;
-}
-
-function maxDistancePath(origin, path, pathStart) {
-    let distanceMax = 0;
-    for (let i of path[pathStart]) {
-        const distance1 = origin !== undefined ? i.distanceEarth(origin) : 0;
-        const distance2 = path.length > pathStart + 1 ? maxDistancePath(i, path, pathStart + 1) : 0;
-        distanceMax = Math.max(distanceMax, distance1 + distance2);
-    }
-    return distanceMax;
-}
-
-function maxDistanceNRectangles(boxes) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    let path = [];
-    for (let r in boxes) {
-        if (boxes[r] instanceof Box$1) {
-            vertices[r] = boxes[r].vertices();
-            minx = Math.min(minx || Infinity, boxes[r].x1);
-            miny = Math.min(miny || Infinity, boxes[r].y1);
-            maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-            maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-        } else if (boxes[r] instanceof Point$1) {
-            vertices[r] = [boxes[r]];
-            minx = Math.min(minx || Infinity, boxes[r].x);
-            miny = Math.min(miny || Infinity, boxes[r].y);
-            maxx = Math.max(maxx || -Infinity, boxes[r].x);
-            maxy = Math.max(maxy || -Infinity, boxes[r].y);
-        } else
-            throw new TypeError('boxes must contain only Box or Point');
-        path[r] = [];
-    }
-
-    for (let i in boxes)
-        if (i > 0) {
-            const intersecting = boxes[i - 1].intersects(boxes[i]);
-            if (intersecting) {
-                boxes[i - 1].intersecting = true;
-                boxes[i].intersecting = true;
-            }
-        }
-
-    for (let i in boxes) {
-        if (boxes[i].intersecting) {
-            path[i] = vertices[i];
-            continue;
-        }
-        for (let v of vertices[i])
-            if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
-                path[i].push(v);
-        if (path[i].length == 0)
-            for (let v of vertices[i])
-                if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
-                    path[i].push(v);
-        if (path[i].length == 0)
-            path[i] = vertices[i];
-    }
-
-    let distanceMax = maxDistancePath(undefined, path, 0);
-    return distanceMax;
-}
-
-function findClosestPairIn2Segments(p1, p2, opt) {
-    let precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 });
-    let precomputed = precomputedAll.reduce((a, x) => (!a || x.in > a.in) ? x : a, undefined);
-    precomputed = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, precomputed);
-    if (precomputed !== undefined)
-        return precomputed.o;
-
-    const rtree = new Flatbush$1(p1 + 1 - opt.launch, 8);
-    const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[p1].y)));
-    for (let i = opt.launch; i <= p1; i++) {
-        const r = opt.flight.flightPoints[i];
-        rtree.add(r.x * lc, r.y, r.x * lc, r.y);
-    }
-    rtree.finish();
-
-    precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
-    const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
-    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
-    let min = { d: Infinity };
-    for (let i = p2; i < lastUnknown; i++) {
-        const pout = opt.flight.flightPoints[i];
-        const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
-        if (n !== undefined) {
-            const pin = opt.flight.flightPoints[n];
-            const d = pout.distanceEarth(pin);
-            if (d < min.d) {
-                min.d = d;
-                min.out = pout;
-                min.in = pin;
-            }
-        }
-    }
-    if (precomputedNext !== undefined) {
-        const pout = precomputedNext.o.out;
-        const pin = precomputedNext.o.in;
-        const d = pout.distanceEarth(pin);
-        if (d < min.d) {
-            min.d = d;
-            min.out = pout;
-            min.in = pin;
-        }
-    }
-
-    opt.flight.closestPairs.insert({ minX: min.in.r, minY: p2, maxX: p1, maxY: min.out.r, o: min });
-    return min;
-}
-
-function findFurthestPointInSegment(sega, segb, target, opt) {
-    let points;
-    if (target instanceof Box$1)
-        points = target.vertices();
-    else if (target instanceof Point$1)
-        points = [target];
-    else
-        throw new TypeError('target must be either Point or Box');
-    
-    let pos;
-    let zSearch;
-    if (sega === opt.launch) {
-        pos = 0;
-        zSearch = { minZ: +opt.launch, maxZ: +segb };
-    } else if (segb === opt.landing) {
-        pos = 1;
-        zSearch = { minZ: +sega, maxZ: +opt.landing };
-    } else
-        throw new RangeError('this function supports seeking only from the launch or the landing point');
-
-    let distanceMax = -Infinity;
-    let fpoint;
-    for (let v of points) {
-        let distanceVMax = -Infinity;
-        let fVpoint;
-
-        const precomputed = opt.flight.furthestPoints[pos].search({ minX: v.x, minY: v.y, maxX: v.x, maxY: v.y, ...zSearch });
-        if (precomputed.length > 1)
-            throw new Error('furthestPoints cache inconsistency');
-
-        if (precomputed[0])
-            if (sega <= precomputed[0].o.r && precomputed[0].o.r <= segb) {
-                distanceVMax = v.distanceEarth(precomputed[0].o);
-                fVpoint = precomputed[0].o;
-            } else
-                throw new Error('furthestPoints cache inconsistency');
-
-        if (fVpoint === undefined) {
-            let intersecting = false;
-            let canCache = false;
-
-            for (let p = sega; p <= segb; p++) {
-                const f = opt.flight.flightPoints[p];
-                if (target instanceof Box$1 && target.intersects(f)) {
-                    intersecting = true;
-                    continue;
-                }
-                const d = v.distanceEarth(f);
-                if (d > distanceVMax) {
-                    distanceVMax = d;
-                    fVpoint = f;
-                    canCache = true;
-                }
-            }
-            if (intersecting) {
-                for (let p of points) {
-                    const d = v.distanceEarth(p);
-                    if (d > distanceVMax) {
-                        distanceVMax = d;
-                        fVpoint = target;
-                        canCache = false;
-                    }
-                }
-            }
-            if (canCache) {
-                let zCache;
-                if (sega === opt.launch) {
-                    zCache = { minZ: +fVpoint.r, maxZ: +segb };
-                } else if (segb === opt.landing) {
-                    zCache = { minZ: +sega, maxZ: +fVpoint.r };
-                }
-
-                opt.flight.furthestPoints[pos].insert({ minX: v.x, maxX: v.x, minY: v.y, maxY: v.y, ...zCache, o: fVpoint });
-            }
-        }
-        if (distanceVMax > distanceMax) {
-            distanceMax = distanceVMax;
-            fpoint = fVpoint;
-        }
-    }
-    if (fpoint === undefined)
-        fpoint = target;
-
-    return fpoint;
-}
-
-function isTriangleClosed(p1, p2, distance, opt) {
-    const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
-    for (let f of fastCandidates)
-        if (f.o.d <= opt.scoring.closingDistanceFree)
-            return f.o;
-
-    const min = findClosestPairIn2Segments(p1, p2, opt);
-
-    if (min.d <= opt.scoring.closingDistance(distance, opt))
-        return min;
-    return false;
-}
-
-function init(opt) {
-    opt.flight.closestPairs = new RBush$1();
-    opt.flight.furthestPoints = [new RBush3D(), new RBush3D()];
-    opt.flight.flightPoints = new Array(opt.flight.filtered.length);
-    for (let r in opt.flight.filtered)
-        opt.flight.flightPoints[r] = new Point$1(opt.flight.filtered, r);
-}
-
-var geom = {
-    maxDistance3Rectangles,
-    maxDistance2Rectangles,
-    minDistance3Rectangles,
-    maxDistanceNRectangles,
-    findFurthestPointInSegment,
-    isTriangleClosed,
-    init
-};
-
-function closingPenalty(cd, opt) {
-    return (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0);
-}
-
-function closingWithLimit(distance, opt) {
-    return Math.max(opt.scoring.closingDistanceFixed || 0, distance * (opt.scoring.closingDistanceRelative || 0));
-}
-
-/*eslint no-unused-vars: ["error", { "args": "none" }]*/
-function closingWithPenalty(distance, opt) {
-    return Infinity;
-}
-
-function boundDistance3Points(ranges, boxes, opt) {
-    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
-    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
-    const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
-    return maxDistance * opt.scoring.multiplier;
-}
-
-function scoreDistance3Points(tp, opt) {
-    let distance = 0;
-    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
-    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
-    const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
-        distance += all[i].distanceEarth(all[i + 1]);
-    const score = distance * opt.scoring.multiplier;
-    return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
-}
-
-function maxFAIDistance(maxTriDistance, boxes, opt) {
-    const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-
-    const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
-    const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
-    const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
-    const maxDistance = Math.min(maxAB / opt.scoring.minSide,
-        maxBC / opt.scoring.minSide, maxCA / opt.scoring.minSide, maxTriDistance);
-    if (maxDistance < minTriDistance)
-        return 0;
-    return maxDistance;
-}
-
-function boundOpenTriangle(ranges, boxes, opt) {
-    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
-    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
-    const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
-    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-    if (opt.scoring.minSide !== undefined) {
-        if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
-            return 0;
-    }
-
-    let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxTriDistance, opt);
-        if (!cp)
-            return 0;
-        return (maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
-    }
-
-    return maxD3PDistance * opt.scoring.multiplier;
-}
-
-function scoreOpenTriangle(tp, opt) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
-    const triDistance = d0 + d1 + d2;
-
-    if (opt.scoring.minSide !== undefined) {
-        const minSide = opt.scoring.minSide * triDistance;
-        if (d0 < minSide || d1 < minSide || d2 < minSide)
-            return { score: 0 };
-    }
-
-    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, triDistance, opt);
-    if (!cp)
-        return { score: 0 };
-
-    let d3pDistance = 0;
-    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
-    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
-    const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
-        d3pDistance += all[i].distanceEarth(all[i + 1]);
-    
-    const distance = d3pDistance;
-    const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
-    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
-}
-
-function boundTriangle(ranges, boxes, opt) {
-    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-
-    const maxDistance = (opt.scoring.minSide !== undefined)
-        ? maxFAIDistance(maxTriDistance, boxes, opt)
-        : maxTriDistance;
-    
-    if (maxDistance === 0)
-        return 0;
-
-    let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt);
-        if (!cp)
-            return 0;
-        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
-    }
-
-    return maxDistance * opt.scoring.multiplier;
-}
-
-function scoreTriangle(tp, opt) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
-    const distance = d0 + d1 + d2;
-    
-    if (opt.scoring.minSide !== undefined) {
-        const minSide = opt.scoring.minSide * distance;
-        if (d0 < minSide || d1 < minSide || d2 < minSide)
-            return { score: 0 };
-    }
-
-    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
-    if (!cp)
-        return { score: 0 };
-
-    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
-
-    return { distance, score, tp, cp };
-}
-
-var scoring = {
-    closingWithLimit,
-    closingWithPenalty,
-    boundTriangle,
-    scoreTriangle,
-    boundDistance3Points,
-    scoreDistance3Points,
-    boundOpenTriangle,
-    scoreOpenTriangle
-};
-
-/**
- * These are the scoring types
- * @enum {object[][]} scoringRules
- *
- * The differences are mostly in the mutipliers and the way the closing distances of the triangles are calculated
- * 
- * These are the tools that are already implemented in scoring.js/geom.js:
- * @param {function} closingDistance is the triangle closing type, you choose between two types:
- *      closingWithLimit - closing distance is limited
- *      closingWithPenalty - closing distance is unlimited but incurs a penalty
- * @param {number} closingDistanceFixed is the fixed closing distance that is always accepted
- * @param {number} closingDistanceFree is the closing distance that does not incur any scoring penalty
- * @param {number} closingDistanceRelative is the closing distance that is relative to the full triangle length but incurs a penalty
- */
-const scoringRules = {
-    /**
-     * @constant {object[]}
-     */
-    'FFVL': [
-        {
-            name: 'Distance 3 points',
-            multiplier: 1,
-            bound: scoring.boundDistance3Points,
-            score: scoring.scoreDistance3Points,
-            rounding: round2,
-            cardinality: 3,
-            code: 'od'
-        },
-        {
-            name: 'Triangle plat',
-            multiplier: 1.2,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceFixed: 3,
-            closingDistanceFree: 3,
-            closingDistanceRelative: 0.05,
-            rounding: round2,
-            cardinality: 3,
-            code: 'tri'
-        },
-        {
-            name: 'Triangle FAI',
-            multiplier: 1.4,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            minSide: 0.28,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceFixed: 3,
-            closingDistanceFree: 3,
-            closingDistanceRelative: 0.05,
-            rounding: round2,
-            cardinality: 3,
-            code: 'fai'
-        }
-    ],
-    /**
-     * @constant {object[]}
-     */
-    'XContest': [
-        {
-            name: 'Free flight',
-            multiplier: 1,
-            bound: scoring.boundDistance3Points,
-            score: scoring.scoreDistance3Points,
-            rounding: round2,
-            cardinality: 3,
-            code: 'od'
-        },
-        {
-            name: 'Free triangle',
-            multiplier: 1.2,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceRelative: 0.2,
-            rounding: round2,
-            cardinality: 3,
-            code: 'tri'
-        },
-        {
-            name: 'FAI triangle',
-            multiplier: 1.4,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            minSide: 0.28,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceRelative: 0.2,
-            rounding: round2,
-            cardinality: 3,
-            code: 'fai'
-        },
-        {
-            name: 'Closed free triangle',
-            multiplier: 1.4,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceFixed: 0,
-            closingDistanceFree: 0,
-            closingDistanceRelative: 0.05,
-            rounding: round2,
-            cardinality: 3,
-            code: 'tri'
-        },
-        {
-            name: 'Closed FAI triangle',
-            multiplier: 1.6,
-            bound: scoring.boundTriangle,
-            score: scoring.scoreTriangle,
-            minSide: 0.28,
-            closingDistance: scoring.closingWithLimit,
-            closingDistanceFixed: 0,
-            closingDistanceFree: 0,
-            closingDistanceRelative: 0.05,
-            rounding: round2,
-            cardinality: 3,
-            code: 'fai'
-        }
-    ]
-};
-
-function round2(score) {
-    return parseFloat(parseFloat(score).toFixed(2));
-}
-
-var scoringRules_config = scoringRules;
 
 /**
     A utility to reduce unnecessary allocations of <code>function () {}</code>
@@ -4786,7 +2168,7 @@ if (!RegExp.escape) {
 }
 
 var shimRegexp = /*#__PURE__*/Object.freeze({
-    __proto__: null
+	__proto__: null
 });
 
 getCjsExportFromNamespace(shimRegexp);
@@ -7517,14 +4899,2262 @@ PropertyChanges.makePropertyObservable = function (object, key) {
     }
 };
 
+var ObjectChangeDescriptor$1 = changeDescriptor.ObjectChangeDescriptor,
+    ChangeListenersRecord = changeDescriptor.ChangeListenersRecord,
+    ListenerGhost$1 = changeDescriptor.ListenerGhost;
+
+var mapChanges = MapChanges;
+function MapChanges() {
+    throw new Error("Can't construct. MapChanges is a mixin.");
+}
+
+/*
+    Object map change descriptors carry information necessary for adding,
+    removing, dispatching, and shorting events to listeners for map changes
+    for a particular key on a particular object.  These descriptors are used
+    here for shallow map changes.
+
+    {
+        willChangeListeners:Array(Fgunction)
+        changeListeners:Array(Function)
+    }
+*/
+
+var mapChangeDescriptors = new weakMap$1();
+
+function MapChangeDescriptor(name) {
+    this.name = name;
+    this.isActive = false;
+    this._willChangeListeners = null;
+    this._changeListeners = null;
+}
+MapChangeDescriptor.prototype = new ObjectChangeDescriptor$1();
+MapChangeDescriptor.prototype.constructor = MapChangeDescriptor;
+
+MapChangeDescriptor.prototype.changeListenersRecordConstructor = MapChangeListenersRecord;
+MapChangeDescriptor.prototype.willChangeListenersRecordConstructor = MapWillChangeListenersRecord;
+
+var MapChangeListenersSpecificHandlerMethodName = new _map();
+
+function MapChangeListenersRecord(name) {
+    var specificHandlerMethodName = MapChangeListenersSpecificHandlerMethodName.get(name);
+    if(!specificHandlerMethodName) {
+        specificHandlerMethodName = "handle";
+        specificHandlerMethodName += name.slice(0, 1).toUpperCase();
+        specificHandlerMethodName += name.slice(1);
+        specificHandlerMethodName += "MapChange";
+        MapChangeListenersSpecificHandlerMethodName.set(name,specificHandlerMethodName);
+    }
+    this.specificHandlerMethodName = specificHandlerMethodName;
+	return this;
+}
+MapChangeListenersRecord.prototype = new ChangeListenersRecord();
+MapChangeListenersRecord.prototype.constructor = MapChangeListenersRecord;
+MapChangeListenersRecord.prototype.genericHandlerMethodName = "handleMapChange";
+
+var MapWillChangeListenersSpecificHandlerMethodName = new _map();
+
+function MapWillChangeListenersRecord(name) {
+    var specificHandlerMethodName = MapWillChangeListenersSpecificHandlerMethodName.get(name);
+    if(!specificHandlerMethodName) {
+        specificHandlerMethodName = "handle";
+        specificHandlerMethodName += name.slice(0, 1).toUpperCase();
+        specificHandlerMethodName += name.slice(1);
+        specificHandlerMethodName += "MapWillChange";
+        MapWillChangeListenersSpecificHandlerMethodName.set(name,specificHandlerMethodName);
+    }
+    this.specificHandlerMethodName = specificHandlerMethodName;
+    return this;
+}
+MapWillChangeListenersRecord.prototype = new ChangeListenersRecord();
+MapWillChangeListenersRecord.prototype.constructor = MapWillChangeListenersRecord;
+MapWillChangeListenersRecord.prototype.genericHandlerMethodName = "handleMapWillChange";
+
+
+MapChanges.prototype.getAllMapChangeDescriptors = function () {
+    if (!mapChangeDescriptors.has(this)) {
+        mapChangeDescriptors.set(this, new _map());
+    }
+    return mapChangeDescriptors.get(this);
+};
+
+MapChanges.prototype.getMapChangeDescriptor = function (token) {
+    var tokenChangeDescriptors = this.getAllMapChangeDescriptors();
+    token = token || "";
+    if (!tokenChangeDescriptors.has(token)) {
+        tokenChangeDescriptors.set(token, new MapChangeDescriptor(token));
+    }
+    return tokenChangeDescriptors.get(token);
+};
+
+var ObjectsDispatchesMapChanges = new weakMap$1(),
+    dispatchesMapChangesGetter = function() {
+        return ObjectsDispatchesMapChanges.get(this);
+    },
+    dispatchesMapChangesSetter = function(value) {
+        return ObjectsDispatchesMapChanges.set(this,value);
+    },
+    dispatchesChangesMethodName = "dispatchesMapChanges",
+    dispatchesChangesPropertyDescriptor = {
+        get: dispatchesMapChangesGetter,
+        set: dispatchesMapChangesSetter,
+        configurable: true,
+        enumerable: false
+    };
+
+MapChanges.prototype.addMapChangeListener = function addMapChangeListener(listener, token, beforeChange) {
+    //console.log("this:",this," addMapChangeListener(",listener,",",token,",",beforeChange);
+
+    if (!this.isObservable && this.makeObservable) {
+        // for Array
+        this.makeObservable();
+    }
+    var descriptor = this.getMapChangeDescriptor(token);
+    var listeners;
+    if (beforeChange) {
+        listeners = descriptor.willChangeListeners;
+    } else {
+        listeners = descriptor.changeListeners;
+    }
+
+    // console.log("addMapChangeListener()",listener, token);
+    //console.log("this:",this," addMapChangeListener()  listeners._current is ",listeners._current);
+
+    if(!listeners._current) {
+        listeners._current = listener;
+    }
+    else if(!Array.isArray(listeners._current)) {
+        listeners._current = [listeners._current,listener];
+    }
+    else {
+        listeners._current.push(listener);
+    }
+
+    if(Object.getOwnPropertyDescriptor((this.__proto__||Object.getPrototypeOf(this)),dispatchesChangesMethodName) === void 0) {
+        Object.defineProperty((this.__proto__||Object.getPrototypeOf(this)), dispatchesChangesMethodName, dispatchesChangesPropertyDescriptor);
+    }
+    this.dispatchesMapChanges = true;
+
+    var self = this;
+    return function cancelMapChangeListener() {
+        if (!self) {
+            // TODO throw new Error("Can't remove map change listener again");
+            return;
+        }
+        self.removeMapChangeListener(listener, token, beforeChange);
+        self = null;
+    };
+};
+
+MapChanges.prototype.removeMapChangeListener = function (listener, token, beforeChange) {
+    var descriptor = this.getMapChangeDescriptor(token);
+
+    var listeners;
+    if (beforeChange) {
+        listeners = descriptor.willChangeListeners;
+    } else {
+        listeners = descriptor.changeListeners;
+    }
+
+    if(listeners._current) {
+        if(listeners._current === listener) {
+            listeners._current = null;
+        }
+        else {
+            var index = listeners._current.lastIndexOf(listener);
+            if (index === -1) {
+                throw new Error("Can't remove map change listener: does not exist: token " + JSON.stringify(token));
+            }
+            else {
+                if(descriptor.isActive) {
+                    listeners.ghostCount = listeners.ghostCount+1;
+                    listeners._current[index]=ListenerGhost$1;
+                }
+                else {
+                    listeners._current.spliceOne(index);
+                }
+            }
+        }
+    }
+
+
+};
+
+MapChanges.prototype.dispatchMapChange = function (key, value, beforeChange) {
+    var descriptors = this.getAllMapChangeDescriptors(),
+        Ghost = ListenerGhost$1;
+
+    descriptors.forEach(function (descriptor, token) {
+
+        if (descriptor.isActive) {
+            return;
+        }
+
+        var listeners = beforeChange ? descriptor.willChangeListeners : descriptor.changeListeners;
+        if(listeners && listeners._current) {
+
+            var tokenName = listeners.specificHandlerMethodName;
+            if(Array.isArray(listeners._current)) {
+                if(listeners._current.length) {
+                    //removeGostListenersIfNeeded returns listeners.current or a new filtered one when conditions are met
+                    var currentListeners = listeners.removeCurrentGostListenersIfNeeded(),
+                        i, countI, listener;
+                    descriptor.isActive = true;
+
+                    try {
+                        for(i=0, countI = currentListeners.length;i<countI;i++) {
+                            // dispatch to each listener
+                            if ((listener = currentListeners[i]) !== Ghost) {
+                                if (listener[tokenName]) {
+                                    listener[tokenName](value, key, this);
+                                } else if (listener.call) {
+                                    listener.call(listener, value, key, this);
+                                } else {
+                                    throw new Error("Handler " + listener + " has no method " + tokenName + " and is not callable");
+                                }
+                            }
+                        }
+                    } finally {
+                        descriptor.isActive = false;
+                    }
+                }
+            }
+            else {
+                descriptor.isActive = true;
+                // dispatch each listener
+
+                try {
+                    listener = listeners._current;
+                    if (listener[tokenName]) {
+                        listener[tokenName](value, key, this);
+                    } else if (listener.call) {
+                        listener.call(listener, value, key, this);
+                    } else {
+                        throw new Error("Handler " + listener + " has no method " + tokenName + " and is not callable");
+                    }
+                } finally {
+                    descriptor.isActive = false;
+                }
+
+            }
+        }
+
+    }, this);
+};
+
+MapChanges.prototype.addBeforeMapChangeListener = function (listener, token) {
+    return this.addMapChangeListener(listener, token, true);
+};
+
+MapChanges.prototype.removeBeforeMapChangeListener = function (listener, token) {
+    return this.removeMapChangeListener(listener, token, true);
+};
+
+MapChanges.prototype.dispatchBeforeMapChange = function (key, value) {
+    return this.dispatchMapChange(key, value, true);
+};
+
+var map = _map;
+
+if((commonjsGlobal.Map === void 0) || (typeof commonjsGlobal.Set.prototype.values !== "function")) {
+    Object.addEach(_map.prototype, propertyChanges.prototype);
+    Object.addEach(_map.prototype, mapChanges.prototype);
+}
+else {
+    Object.defineEach(_map.prototype, propertyChanges.prototype, false, /*configurable*/true, /*enumerable*/ false, /*writable*/true);
+    Object.defineEach(_map.prototype, mapChanges.prototype, false, /*configurable*/true, /*enumerable*/ false, /*writable*/true);
+}
+
+class FlatQueue {
+
+    constructor() {
+        this.ids = [];
+        this.values = [];
+        this.length = 0;
+    }
+
+    clear() {
+        this.length = 0;
+    }
+
+    push(id, value) {
+        let pos = this.length++;
+        this.ids[pos] = id;
+        this.values[pos] = value;
+
+        while (pos > 0) {
+            const parent = (pos - 1) >> 1;
+            const parentValue = this.values[parent];
+            if (value >= parentValue) break;
+            this.ids[pos] = this.ids[parent];
+            this.values[pos] = parentValue;
+            pos = parent;
+        }
+
+        this.ids[pos] = id;
+        this.values[pos] = value;
+    }
+
+    pop() {
+        if (this.length === 0) return undefined;
+
+        const top = this.ids[0];
+        this.length--;
+
+        if (this.length > 0) {
+            const id = this.ids[0] = this.ids[this.length];
+            const value = this.values[0] = this.values[this.length];
+            const halfLength = this.length >> 1;
+            let pos = 0;
+
+            while (pos < halfLength) {
+                let left = (pos << 1) + 1;
+                const right = left + 1;
+                let bestIndex = this.ids[left];
+                let bestValue = this.values[left];
+                const rightValue = this.values[right];
+
+                if (right < this.length && rightValue < bestValue) {
+                    left = right;
+                    bestIndex = this.ids[right];
+                    bestValue = rightValue;
+                }
+                if (bestValue >= value) break;
+
+                this.ids[pos] = bestIndex;
+                this.values[pos] = bestValue;
+                pos = left;
+            }
+
+            this.ids[pos] = id;
+            this.values[pos] = value;
+        }
+
+        return top;
+    }
+
+    peek() {
+        return this.ids[0];
+    }
+
+    peekValue() {
+        return this.values[0];
+    }
+}
+
+const ARRAY_TYPES = [
+    Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
+    Int32Array, Uint32Array, Float32Array, Float64Array
+];
+
+const VERSION = 3; // serialized format version
+
+class Flatbush {
+
+    static from(data) {
+        if (!(data instanceof ArrayBuffer)) {
+            throw new Error('Data must be an instance of ArrayBuffer.');
+        }
+        const [magic, versionAndType] = new Uint8Array(data, 0, 2);
+        if (magic !== 0xfb) {
+            throw new Error('Data does not appear to be in a Flatbush format.');
+        }
+        if (versionAndType >> 4 !== VERSION) {
+            throw new Error(`Got v${versionAndType >> 4} data when expected v${VERSION}.`);
+        }
+        const [nodeSize] = new Uint16Array(data, 2, 1);
+        const [numItems] = new Uint32Array(data, 4, 1);
+
+        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
+    }
+
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
+        if (numItems === undefined) throw new Error('Missing required argument: numItems.');
+        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
+
+        this.numItems = +numItems;
+        this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
+
+        // calculate the total number of nodes in the R-tree to allocate space for
+        // and the index of each tree level (used in search later)
+        let n = numItems;
+        let numNodes = n;
+        this._levelBounds = [n * 4];
+        do {
+            n = Math.ceil(n / this.nodeSize);
+            numNodes += n;
+            this._levelBounds.push(numNodes * 4);
+        } while (n !== 1);
+
+        this.ArrayType = ArrayType || Float64Array;
+        this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
+
+        const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
+        const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
+
+        if (arrayTypeIndex < 0) {
+            throw new Error(`Unexpected typed array class: ${ArrayType}.`);
+        }
+
+        if (data && (data instanceof ArrayBuffer)) {
+            this.data = data;
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+
+            this._pos = numNodes * 4;
+            this.minX = this._boxes[this._pos - 4];
+            this.minY = this._boxes[this._pos - 3];
+            this.maxX = this._boxes[this._pos - 2];
+            this.maxY = this._boxes[this._pos - 1];
+
+        } else {
+            this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+            this._pos = 0;
+            this.minX = Infinity;
+            this.minY = Infinity;
+            this.maxX = -Infinity;
+            this.maxY = -Infinity;
+
+            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
+            new Uint16Array(this.data, 2, 1)[0] = nodeSize;
+            new Uint32Array(this.data, 4, 1)[0] = numItems;
+        }
+
+        // a priority queue for k-nearest-neighbors queries
+        this._queue = new FlatQueue();
+    }
+
+    add(minX, minY, maxX, maxY) {
+        const index = this._pos >> 2;
+        this._indices[index] = index;
+        this._boxes[this._pos++] = minX;
+        this._boxes[this._pos++] = minY;
+        this._boxes[this._pos++] = maxX;
+        this._boxes[this._pos++] = maxY;
+
+        if (minX < this.minX) this.minX = minX;
+        if (minY < this.minY) this.minY = minY;
+        if (maxX > this.maxX) this.maxX = maxX;
+        if (maxY > this.maxY) this.maxY = maxY;
+
+        return index;
+    }
+
+    finish() {
+        if (this._pos >> 2 !== this.numItems) {
+            throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
+        }
+
+        if (this.numItems <= this.nodeSize) {
+            // only one node, skip sorting and just fill the root box
+            this._boxes[this._pos++] = this.minX;
+            this._boxes[this._pos++] = this.minY;
+            this._boxes[this._pos++] = this.maxX;
+            this._boxes[this._pos++] = this.maxY;
+            return;
+        }
+
+        const width = this.maxX - this.minX;
+        const height = this.maxY - this.minY;
+        const hilbertValues = new Uint32Array(this.numItems);
+        const hilbertMax = (1 << 16) - 1;
+
+        // map item centers into Hilbert coordinate space and calculate Hilbert values
+        for (let i = 0; i < this.numItems; i++) {
+            let pos = 4 * i;
+            const minX = this._boxes[pos++];
+            const minY = this._boxes[pos++];
+            const maxX = this._boxes[pos++];
+            const maxY = this._boxes[pos++];
+            const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
+            const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
+            hilbertValues[i] = hilbert(x, y);
+        }
+
+        // sort items by their Hilbert value (for packing later)
+        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
+
+        // generate nodes at each tree level, bottom-up
+        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
+            const end = this._levelBounds[i];
+
+            // generate a parent node for each block of consecutive <nodeSize> nodes
+            while (pos < end) {
+                const nodeIndex = pos;
+
+                // calculate bbox for the new node
+                let nodeMinX = Infinity;
+                let nodeMinY = Infinity;
+                let nodeMaxX = -Infinity;
+                let nodeMaxY = -Infinity;
+                for (let i = 0; i < this.nodeSize && pos < end; i++) {
+                    nodeMinX = Math.min(nodeMinX, this._boxes[pos++]);
+                    nodeMinY = Math.min(nodeMinY, this._boxes[pos++]);
+                    nodeMaxX = Math.max(nodeMaxX, this._boxes[pos++]);
+                    nodeMaxY = Math.max(nodeMaxY, this._boxes[pos++]);
+                }
+
+                // add the new node to the tree data
+                this._indices[this._pos >> 2] = nodeIndex;
+                this._boxes[this._pos++] = nodeMinX;
+                this._boxes[this._pos++] = nodeMinY;
+                this._boxes[this._pos++] = nodeMaxX;
+                this._boxes[this._pos++] = nodeMaxY;
+            }
+        }
+    }
+
+    search(minX, minY, maxX, maxY, filterFn) {
+        if (this._pos !== this._boxes.length) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+
+        let nodeIndex = this._boxes.length - 4;
+        const queue = [];
+        const results = [];
+
+        while (nodeIndex !== undefined) {
+            // find the end index of the node
+            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+
+            // search through child nodes
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                const index = this._indices[pos >> 2] | 0;
+
+                // check if node bbox intersects with query bbox
+                if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
+                if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
+                if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
+                if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
+
+                if (nodeIndex < this.numItems * 4) {
+                    if (filterFn === undefined || filterFn(index)) {
+                        results.push(index); // leaf item
+                    }
+
+                } else {
+                    queue.push(index); // node; add it to the search queue
+                }
+            }
+
+            nodeIndex = queue.pop();
+        }
+
+        return results;
+    }
+
+    neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
+        if (this._pos !== this._boxes.length) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+
+        let nodeIndex = this._boxes.length - 4;
+        const q = this._queue;
+        const results = [];
+        const maxDistSquared = maxDistance * maxDistance;
+
+        while (nodeIndex !== undefined) {
+            // find the end index of the node
+            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+
+            // add child nodes to the queue
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                const index = this._indices[pos >> 2] | 0;
+
+                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
+                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
+                const dist = dx * dx + dy * dy;
+
+                if (nodeIndex < this.numItems * 4) { // leaf node
+                    if (filterFn === undefined || filterFn(index)) {
+                        // put a negative index if it's an item rather than a node, to recognize later
+                        q.push(-index - 1, dist);
+                    }
+                } else {
+                    q.push(index, dist);
+                }
+            }
+
+            // pop items from the queue
+            while (q.length && q.peek() < 0) {
+                const dist = q.peekValue();
+                if (dist > maxDistSquared) {
+                    q.clear();
+                    return results;
+                }
+                results.push(-q.pop() - 1);
+
+                if (results.length === maxResults) {
+                    q.clear();
+                    return results;
+                }
+            }
+
+            nodeIndex = q.pop();
+        }
+
+        q.clear();
+        return results;
+    }
+}
+
+function axisDist(k, min, max) {
+    return k < min ? min - k : k <= max ? 0 : k - max;
+}
+
+// binary search for the first value in the array bigger than the given
+function upperBound(value, arr) {
+    let i = 0;
+    let j = arr.length - 1;
+    while (i < j) {
+        const m = (i + j) >> 1;
+        if (arr[m] > value) {
+            j = m;
+        } else {
+            i = m + 1;
+        }
+    }
+    return arr[i];
+}
+
+// custom quicksort that partially sorts bbox data alongside the hilbert values
+function sort(values, boxes, indices, left, right, nodeSize) {
+    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
+
+    const pivot = values[(left + right) >> 1];
+    let i = left - 1;
+    let j = right + 1;
+
+    while (true) {
+        do i++; while (values[i] < pivot);
+        do j--; while (values[j] > pivot);
+        if (i >= j) break;
+        swap(values, boxes, indices, i, j);
+    }
+
+    sort(values, boxes, indices, left, j, nodeSize);
+    sort(values, boxes, indices, j + 1, right, nodeSize);
+}
+
+// swap two values and two corresponding boxes
+function swap(values, boxes, indices, i, j) {
+    const temp = values[i];
+    values[i] = values[j];
+    values[j] = temp;
+
+    const k = 4 * i;
+    const m = 4 * j;
+
+    const a = boxes[k];
+    const b = boxes[k + 1];
+    const c = boxes[k + 2];
+    const d = boxes[k + 3];
+    boxes[k] = boxes[m];
+    boxes[k + 1] = boxes[m + 1];
+    boxes[k + 2] = boxes[m + 2];
+    boxes[k + 3] = boxes[m + 3];
+    boxes[m] = a;
+    boxes[m + 1] = b;
+    boxes[m + 2] = c;
+    boxes[m + 3] = d;
+
+    const e = indices[i];
+    indices[i] = indices[j];
+    indices[j] = e;
+}
+
+// Fast Hilbert curve algorithm by http://threadlocalmutex.com/
+// Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
+function hilbert(x, y) {
+    let a = x ^ y;
+    let b = 0xFFFF ^ a;
+    let c = 0xFFFF ^ (x | y);
+    let d = x & (y ^ 0xFFFF);
+
+    let A = a | (b >> 1);
+    let B = (a >> 1) ^ a;
+    let C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+    let D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+
+    a = A; b = B; c = C; d = D;
+    A = ((a & (a >> 2)) ^ (b & (b >> 2)));
+    B = ((a & (b >> 2)) ^ (b & ((a ^ b) >> 2)));
+    C ^= ((a & (c >> 2)) ^ (b & (d >> 2)));
+    D ^= ((b & (c >> 2)) ^ ((a ^ b) & (d >> 2)));
+
+    a = A; b = B; c = C; d = D;
+    A = ((a & (a >> 4)) ^ (b & (b >> 4)));
+    B = ((a & (b >> 4)) ^ (b & ((a ^ b) >> 4)));
+    C ^= ((a & (c >> 4)) ^ (b & (d >> 4)));
+    D ^= ((b & (c >> 4)) ^ ((a ^ b) & (d >> 4)));
+
+    a = A; b = B; c = C; d = D;
+    C ^= ((a & (c >> 8)) ^ (b & (d >> 8)));
+    D ^= ((b & (c >> 8)) ^ ((a ^ b) & (d >> 8)));
+
+    a = C ^ (C >> 1);
+    b = D ^ (D >> 1);
+
+    let i0 = x ^ y;
+    let i1 = b | (0xFFFF ^ (i0 | a));
+
+    i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
+    i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
+    i0 = (i0 | (i0 << 2)) & 0x33333333;
+    i0 = (i0 | (i0 << 1)) & 0x55555555;
+
+    i1 = (i1 | (i1 << 8)) & 0x00FF00FF;
+    i1 = (i1 | (i1 << 4)) & 0x0F0F0F0F;
+    i1 = (i1 | (i1 << 2)) & 0x33333333;
+    i1 = (i1 | (i1 << 1)) & 0x55555555;
+
+    return ((i1 << 1) | i0) >>> 0;
+}
+
+var flatbush = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	'default': Flatbush
+});
+
+function quickselect(arr, k, left, right, compare) {
+    quickselectStep(arr, k, left || 0, right || (arr.length - 1), compare || defaultCompare);
+}
+
+function quickselectStep(arr, k, left, right, compare) {
+
+    while (right > left) {
+        if (right - left > 600) {
+            var n = right - left + 1;
+            var m = k - left + 1;
+            var z = Math.log(n);
+            var s = 0.5 * Math.exp(2 * z / 3);
+            var sd = 0.5 * Math.sqrt(z * s * (n - s) / n) * (m - n / 2 < 0 ? -1 : 1);
+            var newLeft = Math.max(left, Math.floor(k - m * s / n + sd));
+            var newRight = Math.min(right, Math.floor(k + (n - m) * s / n + sd));
+            quickselectStep(arr, k, newLeft, newRight, compare);
+        }
+
+        var t = arr[k];
+        var i = left;
+        var j = right;
+
+        swap$1(arr, left, k);
+        if (compare(arr[right], t) > 0) swap$1(arr, left, right);
+
+        while (i < j) {
+            swap$1(arr, i, j);
+            i++;
+            j--;
+            while (compare(arr[i], t) < 0) i++;
+            while (compare(arr[j], t) > 0) j--;
+        }
+
+        if (compare(arr[left], t) === 0) swap$1(arr, left, j);
+        else {
+            j++;
+            swap$1(arr, j, right);
+        }
+
+        if (j <= k) left = j + 1;
+        if (k <= j) right = j - 1;
+    }
+}
+
+function swap$1(arr, i, j) {
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+}
+
+function defaultCompare(a, b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
+class RBush {
+    constructor(maxEntries = 9) {
+        // max entries in a node is 9 by default; min node fill is 40% for best performance
+        this._maxEntries = Math.max(4, maxEntries);
+        this._minEntries = Math.max(2, Math.ceil(this._maxEntries * 0.4));
+        this.clear();
+    }
+
+    all() {
+        return this._all(this.data, []);
+    }
+
+    search(bbox) {
+        let node = this.data;
+        const result = [];
+
+        if (!intersects(bbox, node)) return result;
+
+        const toBBox = this.toBBox;
+        const nodesToSearch = [];
+
+        while (node) {
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
+                const childBBox = node.leaf ? toBBox(child) : child;
+
+                if (intersects(bbox, childBBox)) {
+                    if (node.leaf) result.push(child);
+                    else if (contains(bbox, childBBox)) this._all(child, result);
+                    else nodesToSearch.push(child);
+                }
+            }
+            node = nodesToSearch.pop();
+        }
+
+        return result;
+    }
+
+    collides(bbox) {
+        let node = this.data;
+
+        if (!intersects(bbox, node)) return false;
+
+        const nodesToSearch = [];
+        while (node) {
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
+                const childBBox = node.leaf ? this.toBBox(child) : child;
+
+                if (intersects(bbox, childBBox)) {
+                    if (node.leaf || contains(bbox, childBBox)) return true;
+                    nodesToSearch.push(child);
+                }
+            }
+            node = nodesToSearch.pop();
+        }
+
+        return false;
+    }
+
+    load(data) {
+        if (!(data && data.length)) return this;
+
+        if (data.length < this._minEntries) {
+            for (let i = 0; i < data.length; i++) {
+                this.insert(data[i]);
+            }
+            return this;
+        }
+
+        // recursively build the tree with the given data from scratch using OMT algorithm
+        let node = this._build(data.slice(), 0, data.length - 1, 0);
+
+        if (!this.data.children.length) {
+            // save as is if tree is empty
+            this.data = node;
+
+        } else if (this.data.height === node.height) {
+            // split root if trees have the same height
+            this._splitRoot(this.data, node);
+
+        } else {
+            if (this.data.height < node.height) {
+                // swap trees if inserted one is bigger
+                const tmpNode = this.data;
+                this.data = node;
+                node = tmpNode;
+            }
+
+            // insert the small tree into the large tree at appropriate level
+            this._insert(node, this.data.height - node.height - 1, true);
+        }
+
+        return this;
+    }
+
+    insert(item) {
+        if (item) this._insert(item, this.data.height - 1);
+        return this;
+    }
+
+    clear() {
+        this.data = createNode([]);
+        return this;
+    }
+
+    remove(item, equalsFn) {
+        if (!item) return this;
+
+        let node = this.data;
+        const bbox = this.toBBox(item);
+        const path = [];
+        const indexes = [];
+        let i, parent, goingUp;
+
+        // depth-first iterative tree traversal
+        while (node || path.length) {
+
+            if (!node) { // go up
+                node = path.pop();
+                parent = path[path.length - 1];
+                i = indexes.pop();
+                goingUp = true;
+            }
+
+            if (node.leaf) { // check current node
+                const index = findItem(item, node.children, equalsFn);
+
+                if (index !== -1) {
+                    // item found, remove the item and condense tree upwards
+                    node.children.splice(index, 1);
+                    path.push(node);
+                    this._condense(path);
+                    return this;
+                }
+            }
+
+            if (!goingUp && !node.leaf && contains(node, bbox)) { // go down
+                path.push(node);
+                indexes.push(i);
+                i = 0;
+                parent = node;
+                node = node.children[0];
+
+            } else if (parent) { // go right
+                i++;
+                node = parent.children[i];
+                goingUp = false;
+
+            } else node = null; // nothing found
+        }
+
+        return this;
+    }
+
+    toBBox(item) { return item; }
+
+    compareMinX(a, b) { return a.minX - b.minX; }
+    compareMinY(a, b) { return a.minY - b.minY; }
+
+    toJSON() { return this.data; }
+
+    fromJSON(data) {
+        this.data = data;
+        return this;
+    }
+
+    _all(node, result) {
+        const nodesToSearch = [];
+        while (node) {
+            if (node.leaf) result.push(...node.children);
+            else nodesToSearch.push(...node.children);
+
+            node = nodesToSearch.pop();
+        }
+        return result;
+    }
+
+    _build(items, left, right, height) {
+
+        const N = right - left + 1;
+        let M = this._maxEntries;
+        let node;
+
+        if (N <= M) {
+            // reached leaf level; return leaf
+            node = createNode(items.slice(left, right + 1));
+            calcBBox(node, this.toBBox);
+            return node;
+        }
+
+        if (!height) {
+            // target height of the bulk-loaded tree
+            height = Math.ceil(Math.log(N) / Math.log(M));
+
+            // target number of root entries to maximize storage utilization
+            M = Math.ceil(N / Math.pow(M, height - 1));
+        }
+
+        node = createNode([]);
+        node.leaf = false;
+        node.height = height;
+
+        // split the items into M mostly square tiles
+
+        const N2 = Math.ceil(N / M);
+        const N1 = N2 * Math.ceil(Math.sqrt(M));
+
+        multiSelect(items, left, right, N1, this.compareMinX);
+
+        for (let i = left; i <= right; i += N1) {
+
+            const right2 = Math.min(i + N1 - 1, right);
+
+            multiSelect(items, i, right2, N2, this.compareMinY);
+
+            for (let j = i; j <= right2; j += N2) {
+
+                const right3 = Math.min(j + N2 - 1, right2);
+
+                // pack each entry recursively
+                node.children.push(this._build(items, j, right3, height - 1));
+            }
+        }
+
+        calcBBox(node, this.toBBox);
+
+        return node;
+    }
+
+    _chooseSubtree(bbox, node, level, path) {
+        while (true) {
+            path.push(node);
+
+            if (node.leaf || path.length - 1 === level) break;
+
+            let minArea = Infinity;
+            let minEnlargement = Infinity;
+            let targetNode;
+
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
+                const area = bboxArea(child);
+                const enlargement = enlargedArea(bbox, child) - area;
+
+                // choose entry with the least area enlargement
+                if (enlargement < minEnlargement) {
+                    minEnlargement = enlargement;
+                    minArea = area < minArea ? area : minArea;
+                    targetNode = child;
+
+                } else if (enlargement === minEnlargement) {
+                    // otherwise choose one with the smallest area
+                    if (area < minArea) {
+                        minArea = area;
+                        targetNode = child;
+                    }
+                }
+            }
+
+            node = targetNode || node.children[0];
+        }
+
+        return node;
+    }
+
+    _insert(item, level, isNode) {
+        const bbox = isNode ? item : this.toBBox(item);
+        const insertPath = [];
+
+        // find the best node for accommodating the item, saving all nodes along the path too
+        const node = this._chooseSubtree(bbox, this.data, level, insertPath);
+
+        // put the item into the node
+        node.children.push(item);
+        extend(node, bbox);
+
+        // split on node overflow; propagate upwards if necessary
+        while (level >= 0) {
+            if (insertPath[level].children.length > this._maxEntries) {
+                this._split(insertPath, level);
+                level--;
+            } else break;
+        }
+
+        // adjust bboxes along the insertion path
+        this._adjustParentBBoxes(bbox, insertPath, level);
+    }
+
+    // split overflowed node into two
+    _split(insertPath, level) {
+        const node = insertPath[level];
+        const M = node.children.length;
+        const m = this._minEntries;
+
+        this._chooseSplitAxis(node, m, M);
+
+        const splitIndex = this._chooseSplitIndex(node, m, M);
+
+        const newNode = createNode(node.children.splice(splitIndex, node.children.length - splitIndex));
+        newNode.height = node.height;
+        newNode.leaf = node.leaf;
+
+        calcBBox(node, this.toBBox);
+        calcBBox(newNode, this.toBBox);
+
+        if (level) insertPath[level - 1].children.push(newNode);
+        else this._splitRoot(node, newNode);
+    }
+
+    _splitRoot(node, newNode) {
+        // split root node
+        this.data = createNode([node, newNode]);
+        this.data.height = node.height + 1;
+        this.data.leaf = false;
+        calcBBox(this.data, this.toBBox);
+    }
+
+    _chooseSplitIndex(node, m, M) {
+        let index;
+        let minOverlap = Infinity;
+        let minArea = Infinity;
+
+        for (let i = m; i <= M - m; i++) {
+            const bbox1 = distBBox(node, 0, i, this.toBBox);
+            const bbox2 = distBBox(node, i, M, this.toBBox);
+
+            const overlap = intersectionArea(bbox1, bbox2);
+            const area = bboxArea(bbox1) + bboxArea(bbox2);
+
+            // choose distribution with minimum overlap
+            if (overlap < minOverlap) {
+                minOverlap = overlap;
+                index = i;
+
+                minArea = area < minArea ? area : minArea;
+
+            } else if (overlap === minOverlap) {
+                // otherwise choose distribution with minimum area
+                if (area < minArea) {
+                    minArea = area;
+                    index = i;
+                }
+            }
+        }
+
+        return index || M - m;
+    }
+
+    // sorts node children by the best axis for split
+    _chooseSplitAxis(node, m, M) {
+        const compareMinX = node.leaf ? this.compareMinX : compareNodeMinX;
+        const compareMinY = node.leaf ? this.compareMinY : compareNodeMinY;
+        const xMargin = this._allDistMargin(node, m, M, compareMinX);
+        const yMargin = this._allDistMargin(node, m, M, compareMinY);
+
+        // if total distributions margin value is minimal for x, sort by minX,
+        // otherwise it's already sorted by minY
+        if (xMargin < yMargin) node.children.sort(compareMinX);
+    }
+
+    // total margin of all possible split distributions where each node is at least m full
+    _allDistMargin(node, m, M, compare) {
+        node.children.sort(compare);
+
+        const toBBox = this.toBBox;
+        const leftBBox = distBBox(node, 0, m, toBBox);
+        const rightBBox = distBBox(node, M - m, M, toBBox);
+        let margin = bboxMargin(leftBBox) + bboxMargin(rightBBox);
+
+        for (let i = m; i < M - m; i++) {
+            const child = node.children[i];
+            extend(leftBBox, node.leaf ? toBBox(child) : child);
+            margin += bboxMargin(leftBBox);
+        }
+
+        for (let i = M - m - 1; i >= m; i--) {
+            const child = node.children[i];
+            extend(rightBBox, node.leaf ? toBBox(child) : child);
+            margin += bboxMargin(rightBBox);
+        }
+
+        return margin;
+    }
+
+    _adjustParentBBoxes(bbox, path, level) {
+        // adjust bboxes along the given tree path
+        for (let i = level; i >= 0; i--) {
+            extend(path[i], bbox);
+        }
+    }
+
+    _condense(path) {
+        // go through the path, removing empty nodes and updating bboxes
+        for (let i = path.length - 1, siblings; i >= 0; i--) {
+            if (path[i].children.length === 0) {
+                if (i > 0) {
+                    siblings = path[i - 1].children;
+                    siblings.splice(siblings.indexOf(path[i]), 1);
+
+                } else this.clear();
+
+            } else calcBBox(path[i], this.toBBox);
+        }
+    }
+}
+
+function findItem(item, items, equalsFn) {
+    if (!equalsFn) return items.indexOf(item);
+
+    for (let i = 0; i < items.length; i++) {
+        if (equalsFn(item, items[i])) return i;
+    }
+    return -1;
+}
+
+// calculate node's bbox from bboxes of its children
+function calcBBox(node, toBBox) {
+    distBBox(node, 0, node.children.length, toBBox, node);
+}
+
+// min bounding rectangle of node children from k to p-1
+function distBBox(node, k, p, toBBox, destNode) {
+    if (!destNode) destNode = createNode(null);
+    destNode.minX = Infinity;
+    destNode.minY = Infinity;
+    destNode.maxX = -Infinity;
+    destNode.maxY = -Infinity;
+
+    for (let i = k; i < p; i++) {
+        const child = node.children[i];
+        extend(destNode, node.leaf ? toBBox(child) : child);
+    }
+
+    return destNode;
+}
+
+function extend(a, b) {
+    a.minX = Math.min(a.minX, b.minX);
+    a.minY = Math.min(a.minY, b.minY);
+    a.maxX = Math.max(a.maxX, b.maxX);
+    a.maxY = Math.max(a.maxY, b.maxY);
+    return a;
+}
+
+function compareNodeMinX(a, b) { return a.minX - b.minX; }
+function compareNodeMinY(a, b) { return a.minY - b.minY; }
+
+function bboxArea(a)   { return (a.maxX - a.minX) * (a.maxY - a.minY); }
+function bboxMargin(a) { return (a.maxX - a.minX) + (a.maxY - a.minY); }
+
+function enlargedArea(a, b) {
+    return (Math.max(b.maxX, a.maxX) - Math.min(b.minX, a.minX)) *
+           (Math.max(b.maxY, a.maxY) - Math.min(b.minY, a.minY));
+}
+
+function intersectionArea(a, b) {
+    const minX = Math.max(a.minX, b.minX);
+    const minY = Math.max(a.minY, b.minY);
+    const maxX = Math.min(a.maxX, b.maxX);
+    const maxY = Math.min(a.maxY, b.maxY);
+
+    return Math.max(0, maxX - minX) *
+           Math.max(0, maxY - minY);
+}
+
+function contains(a, b) {
+    return a.minX <= b.minX &&
+           a.minY <= b.minY &&
+           b.maxX <= a.maxX &&
+           b.maxY <= a.maxY;
+}
+
+function intersects(a, b) {
+    return b.minX <= a.maxX &&
+           b.minY <= a.maxY &&
+           b.maxX >= a.minX &&
+           b.maxY >= a.minY;
+}
+
+function createNode(children) {
+    return {
+        children,
+        height: 1,
+        leaf: true,
+        minX: Infinity,
+        minY: Infinity,
+        maxX: -Infinity,
+        maxY: -Infinity
+    };
+}
+
+// sort an array so that items come in groups of n unsorted items, with groups sorted between each other;
+// combines selection algorithm with binary divide & conquer approach
+
+function multiSelect(arr, left, right, n, compare) {
+    const stack = [left, right];
+
+    while (stack.length) {
+        right = stack.pop();
+        left = stack.pop();
+
+        if (right - left <= n) continue;
+
+        const mid = left + Math.ceil((right - left) / n / 2) * n;
+        quickselect(arr, mid, left, right, compare);
+
+        stack.push(left, mid, mid, right);
+    }
+}
+
+var rbush = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	'default': RBush
+});
+
+const REarth = 6371;
+
+const WGS84 = {
+    a: 6378.137,
+    b: 6356.752314245,
+    f: 1 / 298.257223563
+};
+
+function radians(degrees) {
+    return degrees / (180 / Math.PI);
+}
+
+function degrees(radians) {
+    return radians * (180 / Math.PI);
+}
+
+const consoleColors = {
+    bright: '\x1b[1m',
+    dim: '\x1b[2m',
+    underscore: '\x1b[4m',
+    blink: '\x1b[5m',
+    reverse: '\x1b[7m',
+    hidden: '\x1b[8m',
+    fg: {
+        black: '\x1b[30m',
+        red: '\x1b[31m',
+        green: '\x1b[32m',
+        yellow: '\x1b[33m',
+        blue: '\x1b[34m',
+        magenta: '\x1b[35m',
+        cyan: '\x1b[36m',
+        white: '\x1b[37m',
+        crimson: '\x1b[38m'
+    },
+    bg: {
+        black: '\x1b[40m',
+        red: '\x1b[41m',
+        green: '\x1b[42m',
+        yellow: '\x1b[43m',
+        blue: '\x1b[44m',
+        magenta: '\x1b[45m',
+        cyan: '\x1b[46m',
+        white: '\x1b[47m',
+        crimson: '\x1b[48m'
+    },
+    reset: '\x1b[0m'
+};
+
+var util = {
+    radians,
+    degrees,
+    REarth,
+    WGS84,
+    consoleColors
+};
+
+// Vincenty's Algorithm, courtesy of Movable Type Ltd
+// https://www.movable-type.co.uk/scripts/latlong-vincenty.html
+// Published and included here under an MIT licence
+function inverse(p1, p2) {
+    const φ1 = util.radians(p1.y), λ1 = util.radians(p1.x);
+    const φ2 = util.radians(p2.y), λ2 = util.radians(p2.x);
+
+    const { a, b, f } = util.WGS84;
+
+    const L = λ2 - λ1; // L = difference in longitude, U = reduced latitude, defined by tan U = (1-f)·tanφ.
+    const tanU1 = (1 - f) * Math.tan(φ1), cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1)), sinU1 = tanU1 * cosU1;
+    const tanU2 = (1 - f) * Math.tan(φ2), cosU2 = 1 / Math.sqrt((1 + tanU2 * tanU2)), sinU2 = tanU2 * cosU2;
+
+    const antipodal = Math.abs(L) > Math.PI / 2 || Math.abs(φ2 - φ1) > Math.PI / 2;
+
+    let λ = L, sinλ = null, cosλ = null; // λ = difference in longitude on an auxiliary sphere
+    let σ = antipodal ? Math.PI : 0, sinσ = 0, cosσ = antipodal ? -1 : 1, sinSqσ = null; // σ = angular distance P₁ P₂ on the sphere
+    let cos2σₘ = 1;                      // σₘ = angular distance on the sphere from the equator to the midpoint of the line
+    let sinα = null, cosSqα = 1;         // α = azimuth of the geodesic at the equator
+    let C = null;
+
+    let λʹ = null, iterations = 0;
+    do {
+        sinλ = Math.sin(λ);
+        cosλ = Math.cos(λ);
+        sinSqσ = (cosU2 * sinλ) * (cosU2 * sinλ) + (cosU1 * sinU2 - sinU1 * cosU2 * cosλ) * (cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
+        if (Math.abs(sinSqσ) < Number.EPSILON) break;  // co-incident/antipodal points (falls back on λ/σ = L)
+        sinσ = Math.sqrt(sinSqσ);
+        cosσ = sinU1 * sinU2 + cosU1 * cosU2 * cosλ;
+        σ = Math.atan2(sinσ, cosσ);
+        sinα = cosU1 * cosU2 * sinλ / sinσ;
+        cosSqα = 1 - sinα * sinα;
+        cos2σₘ = (cosSqα != 0) ? (cosσ - 2 * sinU1 * sinU2 / cosSqα) : 0; // on equatorial line cos²α = 0 (§6)
+        C = f / 16 * cosSqα * (4 + f * (4 - 3 * cosSqα));
+        λʹ = λ;
+        λ = L + (1 - C) * f * sinα * (σ + C * sinσ * (cos2σₘ + C * cosσ * (-1 + 2 * cos2σₘ * cos2σₘ)));
+        const iterationCheck = antipodal ? Math.abs(λ) - Math.PI : Math.abs(λ);
+        if (iterationCheck > Math.PI) throw new EvalError('λ > π');
+    } while (Math.abs(λ - λʹ) > 1e-7 && ++iterations < 1000);
+    if (iterations >= 1000) throw new EvalError('Vincenty formula failed to converge');
+
+    const uSq = cosSqα * (a * a - b * b) / (b * b);
+    const A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+    const B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+    const Δσ = B * sinσ * (cos2σₘ + B / 4 * (cosσ * (-1 + 2 * cos2σₘ * cos2σₘ) -
+        B / 6 * cos2σₘ * (-3 + 4 * sinσ * sinσ) * (-3 + 4 * cos2σₘ * cos2σₘ)));
+
+    const s = b * A * (σ - Δσ); // s = length of the geodesic
+
+    // note special handling of exactly antipodal points where sin²σ = 0 (due to discontinuity
+    // atan2(0, 0) = 0 but atan2(ε, 0) = π/2 / 90°) - in which case bearing is always meridional,
+    // due north (or due south!)
+    // α = azimuths of the geodesic; α2 the direction P₁ P₂ produced
+    const α1 = Math.abs(sinSqσ) < Number.EPSILON ? 0 : Math.atan2(cosU2 * sinλ, cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
+    const α2 = Math.abs(sinSqσ) < Number.EPSILON ? Math.PI : Math.atan2(cosU1 * sinλ, -sinU1 * cosU2 + cosU1 * sinU2 * cosλ);
+
+    return {
+        distance: s,
+        initialBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α1),
+        finalBearing: Math.abs(s) < Number.EPSILON ? NaN : util.degrees(α2),
+        iterations: iterations,
+    };
+}
+
+var vincentys = {
+    inverse
+};
+
+class Point {
+    constructor(x, y) {
+        if (Array.isArray(x))
+            [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
+        else
+            [this.x, this.y] = [x, y];
+    }
+
+    geojson(id, properties) {
+        const feature = {
+            type: 'Feature',
+            id,
+            properties: properties || {},
+            geometry: {
+                type: 'Point',
+                coordinates: [this.x, this.y]
+            }
+        };
+        return feature;
+    }
+
+    /* c8 ignore next 3 */
+    toString() {
+        return JSON.stringify(this.geojson());
+    }
+
+    intersects(other) {
+        if (other instanceof Point)
+            return (this.x == other.x && this.y == other.y);
+        if (other instanceof Box)
+            return other.intersects(this);
+        throw ('other must be either Point or Box');
+    }
+
+    distanceEarth(p) {
+        return this.distanceEarthFCC(p);
+    }
+
+    distanceEarthFCC(p) {
+        const df = (p.y - this.y);
+        const dg = (p.x - this.x);
+        const fm = util.radians((this.y + p.y) / 2);
+        const k1 = 111.13209 - 0.566605 * Math.cos(2 * fm) + 0.00120 * Math.cos(4 * fm);
+        const k2 = 111.41513 * Math.cos(fm) - 0.09455 * Math.cos(3 * fm) + 0.00012 * Math.cos(5 * fm);
+        const d = Math.sqrt((k1 * df) * (k1 * df) + (k2 * dg) * (k2 * dg));
+        return d;
+    }
+
+    /* c8 ignore next 5 */
+    distanceEarthRev(dx, dy) {
+        const lon = this.x + util.degrees((dx / util.REarth) / Math.cos(util.radians(this.y)));
+        const lat = this.y + util.degrees(dy / util.REarth);
+        return new Point(lon, lat);
+    }
+
+    distanceEarthVincentys(p) {
+        return vincentys.inverse(this, p).distance;
+    }
+}
+
+class Range {
+    constructor(a, b) {
+        [this.a, this.b] = [a, b];
+    }
+
+    count() {
+        return Math.abs(this.a - this.b) + 1;
+    }
+
+    center() {
+        return Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2);
+    }
+
+    left() {
+        return new Range(Math.min(this.a, this.b), Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2));
+    }
+
+    right() {
+        return new Range(Math.min(this.a, this.b) + Math.ceil(Math.abs(this.a - this.b) / 2), Math.max(this.a, this.b));
+    }
+
+    contains(p) {
+        return this.a <= p && p <= this.b;
+    }
+
+    /* c8 ignore next 3 */
+    toString() {
+        return `${this.a}:${this.b}`;
+    }
+}
+
+class Box {
+    constructor(a, b, c, d) {
+        if (a instanceof Range) {
+            [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
+            for (let i = a.a; i <= a.b; i++) {
+                this.x1 = Math.min(b.flightPoints[i].x, this.x1);
+                this.y1 = Math.min(b.flightPoints[i].y, this.y1);
+                this.x2 = Math.max(b.flightPoints[i].x, this.x2);
+                this.y2 = Math.max(b.flightPoints[i].y, this.y2);
+            }
+        } else {
+            [this.x1, this.y1, this.x2, this.y2] = [a, b, c, d];
+        }
+    }
+
+    vertices() {
+        return [
+            new Point(this.x1, this.y1),
+            new Point(this.x2, this.y1),
+            new Point(this.x2, this.y2),
+            new Point(this.x1, this.y2)
+        ];
+    }
+
+    intersects(other) {
+        if (other instanceof Point)
+            return (this.x1 <= other.x && this.y1 <= other.y && this.x2 >= other.x && this.y2 >= other.y);
+        if (this.x1 > other.x2 || this.x2 < other.x1 || this.y1 > other.y2 || this.y2 < other.y1)
+            return false;
+        return true;
+    }
+
+    area() {
+        const h = Math.abs(this.x2 - this.x1);
+        const w = Math.abs(this.y2 - this.y1);
+        return h * w;
+    }
+
+    /* c8 ignore next 25 */
+    distance(other) {
+        if (this.intersects(other))
+            return 0;
+        let x1, y1, x2, y2;
+        if (this.x1 > other.x2)
+            x1 = this.x1;
+        x2 = other.x2;
+        if (this.x2 < other.x1)
+            x1 = this.x2;
+        x2 = other.x1;
+        if (this.y1 < other.y2)
+            y1 = this.y1;
+        y2 = other.y2;
+        if (this.y2 > other.y1)
+            y1 = this.y2;
+        y2 = other.y1;
+        if (x1 === undefined) {
+            x1 = this.x1;
+            x2 = this.x1;
+        }
+        if (y1 === undefined) {
+            y1 = this.y1;
+            y2 = this.y1;
+        }
+        return new Point(x1, y1).distanceEarth(new Point(x2, y2));
+    }
+
+    geojson(id, properties) {
+        const feature = {
+            type: 'Feature',
+            id,
+            properties: properties || {},
+            geometry: {
+                type: 'Polygon',
+                coordinates: [[
+                    [this.x1, this.y1],
+                    [this.x1, this.y2],
+                    [this.x2, this.y2],
+                    [this.x2, this.y1],
+                    [this.x1, this.y1],
+                ]]
+            }
+        };
+        return feature;
+    }
+
+    /* c8 ignore next 11 */
+    geojson_collection(boxes) {
+        let features = [];
+        for (let b in boxes) {
+            features.push(boxes[b].geojson(b, { id: b }));
+        }
+        let collection = {
+            type: 'FeatureCollection',
+            features
+        };
+        return collection;
+    }
+
+    toString() {
+        return JSON.stringify(this.geojson());
+    }
+}
+
+var foundation = {
+    Point,
+    Range,
+    Box
+};
+
+var _Flatbush = getCjsExportFromNamespace(flatbush);
+
+var RBush$1 = getCjsExportFromNamespace(rbush);
+
+const Flatbush$1 = _Flatbush.default ? _Flatbush.default : _Flatbush;
+
+
+const { Box: Box$1, Point: Point$1 } = foundation;
+
+/* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
+ * http://www.penguin.cz/~ondrap/algorithm.pdf
+ * Refer for a proof that the maximum path between rectangles always
+ * passes through their vertices
+ * 
+ * My addition :
+ * With 3 rectanges, for each rectangle, the maximum path between them always includes:
+ * a) only the vertices that lie on the vertices of the minimum bounding box if there are such vertices
+ * b) if there are no such vertices, any vertices that lie on the edges of the bounding box
+ * c) or potentially any vertice if no vertices lie on the edges of the bounding box
+ */
+function maxDistance3Rectangles(boxes, distance_fn) {
+    let vertices = [];
+    let minx, miny, maxx, maxy;
+    for (let r of [0, 1, 2]) {
+        vertices[r] = boxes[r].vertices();
+        minx = Math.min(minx || Infinity, boxes[r].x1);
+        miny = Math.min(miny || Infinity, boxes[r].y1);
+        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
+        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+    }
+
+    let intersecting = false;
+    for (let i of [0, 1, 2])
+        if (boxes[i].intersects(boxes[(i + 1) % 3])) {
+            intersecting = true;
+            break;
+        }
+
+    let path = [[], [], []];
+    for (let i of [0, 1, 2]) {
+        for (let v of vertices[i])
+            if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
+                path[i].push(v);
+        if (path[i].length == 0)
+            for (let v of vertices[i])
+                if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
+                    path[i].push(v);
+        if (path[i].length == 0 || intersecting)
+            path[i] = vertices[i];
+    }
+
+    let distanceMax = 0;
+    for (let i of path[0])
+        for (let j of path[1])
+            for (let k of path[2]) {
+                const distance = distance_fn(i, j, k);
+                distanceMax = Math.max(distanceMax, distance);
+            }
+
+    return distanceMax;
+}
+
+function minDistance3Rectangles(boxes, distance_fn) {
+    let vertices = [];
+    let minx, miny, maxx, maxy;
+    for (let r of [0, 1, 2]) {
+        vertices[r] = boxes[r].vertices();
+        minx = Math.min(minx || Infinity, boxes[r].x1);
+        miny = Math.min(miny || Infinity, boxes[r].y1);
+        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
+        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+    }
+
+    let path = [[], [], []];
+    for (let i of [0, 1, 2]) {
+        path[i] = vertices[i];
+    }
+
+    let distanceMin = Infinity;
+    for (let i of path[0])
+        for (let j of path[1])
+            for (let k of path[2]) {
+                const distance = distance_fn(i, j, k);
+                distanceMin = Math.min(distanceMin, distance);
+            }
+
+    return distanceMin;
+}
+
+function maxDistance2Rectangles(boxes) {
+    let vertices = [];
+    let minx, miny, maxx, maxy;
+    for (let r of [0, 1]) {
+        vertices[r] = boxes[r].vertices();
+        minx = Math.min(minx || Infinity, boxes[r].x1);
+        miny = Math.min(miny || Infinity, boxes[r].y1);
+        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
+        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+    }
+
+    let path = [[], []];
+    for (let i of [0, 1]) {
+        path[i] = vertices[i];
+    }
+
+    let distanceMax = 0;
+    for (let i of path[0])
+        for (let j of path[1]) {
+            const distance = i.distanceEarth(j);
+            distanceMax = Math.max(distanceMax, distance);
+        }
+
+    return distanceMax;
+}
+
+function maxDistancePath(origin, path, pathStart) {
+    let distanceMax = 0;
+    for (let i of path[pathStart]) {
+        const distance1 = origin !== undefined ? i.distanceEarth(origin) : 0;
+        const distance2 = path.length > pathStart + 1 ? maxDistancePath(i, path, pathStart + 1) : 0;
+        distanceMax = Math.max(distanceMax, distance1 + distance2);
+    }
+    return distanceMax;
+}
+
+function maxDistanceNRectangles(boxes) {
+    let vertices = [];
+    let minx, miny, maxx, maxy;
+    let path = [];
+    for (let r in boxes) {
+        if (boxes[r] instanceof Box$1) {
+            vertices[r] = boxes[r].vertices();
+            minx = Math.min(minx || Infinity, boxes[r].x1);
+            miny = Math.min(miny || Infinity, boxes[r].y1);
+            maxx = Math.max(maxx || -Infinity, boxes[r].x2);
+            maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+        } else if (boxes[r] instanceof Point$1) {
+            vertices[r] = [boxes[r]];
+            minx = Math.min(minx || Infinity, boxes[r].x);
+            miny = Math.min(miny || Infinity, boxes[r].y);
+            maxx = Math.max(maxx || -Infinity, boxes[r].x);
+            maxy = Math.max(maxy || -Infinity, boxes[r].y);
+        } else
+            throw new TypeError('boxes must contain only Box or Point');
+        path[r] = [];
+    }
+
+    for (let i in boxes)
+        if (i > 0) {
+            const intersecting = boxes[i - 1].intersects(boxes[i]);
+            if (intersecting) {
+                boxes[i - 1].intersecting = true;
+                boxes[i].intersecting = true;
+            }
+        }
+
+    for (let i in boxes) {
+        if (boxes[i].intersecting) {
+            path[i] = vertices[i];
+            continue;
+        }
+        for (let v of vertices[i])
+            if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
+                path[i].push(v);
+        if (path[i].length == 0)
+            for (let v of vertices[i])
+                if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
+                    path[i].push(v);
+        if (path[i].length == 0)
+            path[i] = vertices[i];
+    }
+
+    let distanceMax = maxDistancePath(undefined, path, 0);
+    return distanceMax;
+}
+
+function findClosestPairIn2Segments(p1, p2, opt) {
+    let precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 });
+    let precomputed = precomputedAll.reduce((a, x) => (!a || x.in > a.in) ? x : a, undefined);
+    precomputed = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, precomputed);
+    if (precomputed !== undefined)
+        return precomputed.o;
+
+    const rtree = new Flatbush$1(p1 + 1 - opt.launch, 8);
+    const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[p1].y)));
+    for (let i = opt.launch; i <= p1; i++) {
+        const r = opt.flight.flightPoints[i];
+        rtree.add(r.x * lc, r.y, r.x * lc, r.y);
+    }
+    rtree.finish();
+
+    precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
+    const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
+    const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
+    let min = { d: Infinity };
+    for (let i = p2; i < lastUnknown; i++) {
+        const pout = opt.flight.flightPoints[i];
+        const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
+        if (n !== undefined) {
+            const pin = opt.flight.flightPoints[n];
+            const d = pout.distanceEarth(pin);
+            if (d < min.d) {
+                min.d = d;
+                min.out = pout;
+                min.in = pin;
+            }
+        }
+    }
+    if (precomputedNext !== undefined) {
+        const pout = precomputedNext.o.out;
+        const pin = precomputedNext.o.in;
+        const d = pout.distanceEarth(pin);
+        if (d < min.d) {
+            min.d = d;
+            min.out = pout;
+            min.in = pin;
+        }
+    }
+
+    opt.flight.closestPairs.insert({ minX: min.in.r, minY: p2, maxX: p1, maxY: min.out.r, o: min });
+    return min;
+}
+
+function findFurthestPointInSegment(sega, segb, target, opt) {
+    let points;
+    if (target instanceof Box$1)
+        points = target.vertices();
+    else if (target instanceof Point$1)
+        points = [target];
+    else
+        throw new TypeError('target must be either Point or Box');
+    
+    let pos;
+    let zSearch;
+    if (sega === opt.launch) {
+        pos = 0;
+        zSearch = +segb;
+    } else if (segb === opt.landing) {
+        pos = 1;
+        zSearch = +sega;
+    } else
+        throw new RangeError('this function supports seeking only from the launch or the landing point');
+
+    let distanceMax = -Infinity;
+    let fpoint;
+    for (let v of points) {
+        let distanceVMax = -Infinity;
+        let fVpoint;
+
+        let precomputed;
+        const precomputedAll = opt.flight.furthestPoints[pos].get(v.x + ':' + v.y);
+        for (const p of precomputedAll || []) {
+            if (zSearch >= p.min && zSearch <= p.max) {
+                precomputed = p;
+                break;
+            }
+        }
+
+        if (precomputed)
+            if (sega <= precomputed.o.r && precomputed.o.r <= segb) {
+                distanceVMax = v.distanceEarth(precomputed.o);
+                fVpoint = precomputed.o;
+            } else
+                throw new Error('furthestPoints cache inconsistency');
+
+        if (fVpoint === undefined) {
+            let intersecting = false;
+            let canCache = false;
+
+            for (let p = sega; p <= segb; p++) {
+                const f = opt.flight.flightPoints[p];
+                if (target instanceof Box$1 && target.intersects(f)) {
+                    intersecting = true;
+                    continue;
+                }
+                const d = v.distanceEarth(f);
+                if (d > distanceVMax) {
+                    distanceVMax = d;
+                    fVpoint = f;
+                    canCache = true;
+                }
+            }
+            if (intersecting) {
+                for (let p of points) {
+                    const d = v.distanceEarth(p);
+                    if (d > distanceVMax) {
+                        distanceVMax = d;
+                        fVpoint = target;
+                        canCache = false;
+                    }
+                }
+            }
+            if (canCache) {
+                let zCache;
+                if (sega === opt.launch) {
+                    zCache = { min: +fVpoint.r, max: +segb };
+                } else if (segb === opt.landing) {
+                    zCache = { min: +sega, max: +fVpoint.r };
+                }
+
+                let c = precomputedAll;
+                if (!c) {
+                    c = [];
+                    opt.flight.furthestPoints[pos].set(v.x + ':' + v.y, c);
+                }
+                const existing = c.filter(x => x.o.r == fVpoint.r && !(zCache.max <= x.min || zCache.min >= x.max))[0];
+                if (existing) {
+                    existing.min = Math.min(zCache.min, existing.min);
+                    existing.max = Math.max(zCache.max, existing.max);
+                } else
+                    c.push({ ...zCache, o: fVpoint });
+            }
+        }
+        if (distanceVMax > distanceMax) {
+            distanceMax = distanceVMax;
+            fpoint = fVpoint;
+        }
+    }
+    if (fpoint === undefined)
+        fpoint = target;
+
+    return fpoint;
+}
+
+function isTriangleClosed(p1, p2, distance, opt) {
+    const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
+    for (let f of fastCandidates)
+        if (f.o.d <= opt.scoring.closingDistanceFree)
+            return f.o;
+
+    const min = findClosestPairIn2Segments(p1, p2, opt);
+
+    if (min.d <= opt.scoring.closingDistance(distance, opt))
+        return min;
+    return false;
+}
+
+function init(opt) {
+    opt.flight.closestPairs = new RBush$1();
+    opt.flight.furthestPoints = [new map(), new map()];
+    opt.flight.flightPoints = new Array(opt.flight.filtered.length);
+    for (let r in opt.flight.filtered)
+        opt.flight.flightPoints[r] = new Point$1(opt.flight.filtered, r);
+}
+
+var geom = {
+    maxDistance3Rectangles,
+    maxDistance2Rectangles,
+    minDistance3Rectangles,
+    maxDistanceNRectangles,
+    findFurthestPointInSegment,
+    isTriangleClosed,
+    init
+};
+
+function closingPenalty(cd, opt) {
+    return (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0);
+}
+
+function closingWithLimit(distance, opt) {
+    return Math.max(opt.scoring.closingDistanceFixed || 0, distance * (opt.scoring.closingDistanceRelative || 0));
+}
+
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+function closingWithPenalty(distance, opt) {
+    return Infinity;
+}
+
+function boundDistance3Points(ranges, boxes, opt) {
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    return maxDistance * opt.scoring.multiplier;
+}
+
+function scoreDistance3Points(tp, opt) {
+    let distance = 0;
+    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
+    const all = [pin, tp[0], tp[1], tp[2], pout];
+    for (let i of [0, 1, 2, 3])
+        distance += all[i].distanceEarth(all[i + 1]);
+    const score = distance * opt.scoring.multiplier;
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
+}
+
+function maxFAIDistance(maxTriDistance, boxes, opt) {
+    const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+
+    const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
+    const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
+    const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
+    const maxDistance = Math.min(maxAB / opt.scoring.minSide,
+        maxBC / opt.scoring.minSide, maxCA / opt.scoring.minSide, maxTriDistance);
+    if (maxDistance < minTriDistance)
+        return 0;
+    return maxDistance;
+}
+
+function boundOpenTriangle(ranges, boxes, opt) {
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+    if (opt.scoring.minSide !== undefined) {
+        if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
+            return 0;
+    }
+
+    let cp = { d: 0 };
+    if (ranges[0].b < ranges[2].a) {
+        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxTriDistance, opt);
+        if (!cp)
+            return 0;
+        return (maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    }
+
+    return maxD3PDistance * opt.scoring.multiplier;
+}
+
+function scoreOpenTriangle(tp, opt) {
+    const d0 = tp[0].distanceEarth(tp[1]);
+    const d1 = tp[1].distanceEarth(tp[2]);
+    const d2 = tp[2].distanceEarth(tp[0]);
+    const triDistance = d0 + d1 + d2;
+
+    if (opt.scoring.minSide !== undefined) {
+        const minSide = opt.scoring.minSide * triDistance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
+
+    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, triDistance, opt);
+    if (!cp)
+        return { score: 0 };
+
+    let d3pDistance = 0;
+    const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
+    const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
+    const all = [pin, tp[0], tp[1], tp[2], pout];
+    for (let i of [0, 1, 2, 3])
+        d3pDistance += all[i].distanceEarth(all[i + 1]);
+    
+    const distance = d3pDistance;
+    const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
+}
+
+function boundTriangle(ranges, boxes, opt) {
+    const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+
+    const maxDistance = (opt.scoring.minSide !== undefined)
+        ? maxFAIDistance(maxTriDistance, boxes, opt)
+        : maxTriDistance;
+    
+    if (maxDistance === 0)
+        return 0;
+
+    let cp = { d: 0 };
+    if (ranges[0].b < ranges[2].a) {
+        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt);
+        if (!cp)
+            return 0;
+        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    }
+
+    return maxDistance * opt.scoring.multiplier;
+}
+
+function scoreTriangle(tp, opt) {
+    const d0 = tp[0].distanceEarth(tp[1]);
+    const d1 = tp[1].distanceEarth(tp[2]);
+    const d2 = tp[2].distanceEarth(tp[0]);
+    const distance = d0 + d1 + d2;
+    
+    if (opt.scoring.minSide !== undefined) {
+        const minSide = opt.scoring.minSide * distance;
+        if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
+
+    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
+    if (!cp)
+        return { score: 0 };
+
+    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+
+    return { distance, score, tp, cp };
+}
+
+var scoring = {
+    closingWithLimit,
+    closingWithPenalty,
+    boundTriangle,
+    scoreTriangle,
+    boundDistance3Points,
+    scoreDistance3Points,
+    boundOpenTriangle,
+    scoreOpenTriangle
+};
+
+/**
+ * These are the scoring types
+ * @enum {object[][]} scoringRules
+ *
+ * The differences are mostly in the mutipliers and the way the closing distances of the triangles are calculated
+ * 
+ * These are the tools that are already implemented in scoring.js/geom.js:
+ * @param {function} closingDistance is the triangle closing type, you choose between two types:
+ *      closingWithLimit - closing distance is limited
+ *      closingWithPenalty - closing distance is unlimited but incurs a penalty
+ * @param {number} closingDistanceFixed is the fixed closing distance that is always accepted
+ * @param {number} closingDistanceFree is the closing distance that does not incur any scoring penalty
+ * @param {number} closingDistanceRelative is the closing distance that is relative to the full triangle length but incurs a penalty
+ */
+const scoringRules = {
+    /**
+     * @constant {object[]}
+     */
+    'FFVL': [
+        {
+            name: 'Distance 3 points',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Triangle plat',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 3,
+            closingDistanceFree: 3,
+            closingDistanceRelative: 0.05,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'Triangle FAI',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 3,
+            closingDistanceFree: 3,
+            closingDistanceRelative: 0.05,
+            rounding: round2,
+            cardinality: 3,
+            code: 'fai'
+        }
+    ],
+    /**
+     * @constant {object[]}
+     */
+    'XContest': [
+        {
+            name: 'Free flight',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Free triangle',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceRelative: 0.2,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceRelative: 0.2,
+            rounding: round2,
+            cardinality: 3,
+            code: 'fai'
+        },
+        {
+            name: 'Closed free triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0,
+            closingDistanceFree: 0,
+            closingDistanceRelative: 0.05,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'Closed FAI triangle',
+            multiplier: 1.6,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0,
+            closingDistanceFree: 0,
+            closingDistanceRelative: 0.05,
+            rounding: round2,
+            cardinality: 3,
+            code: 'fai'
+        }
+    ]
+};
+
+function round2(score) {
+    return parseFloat(parseFloat(score).toFixed(2));
+}
+
+var scoringRules_config = scoringRules;
+
 //TODO:
 // Remove Dict and use native Map as much as possible here
 //Use ObjectChangeDescriptor to avoid creating useless arrays and benefit from similar gains made in property-changes
 
 
-var ObjectChangeDescriptor$1 = changeDescriptor.ObjectChangeDescriptor,
-    ChangeListenersRecord = changeDescriptor.ChangeListenersRecord,
-    ListenerGhost$1 = changeDescriptor.ListenerGhost;
+var ObjectChangeDescriptor$2 = changeDescriptor.ObjectChangeDescriptor,
+    ChangeListenersRecord$1 = changeDescriptor.ChangeListenersRecord,
+    ListenerGhost$2 = changeDescriptor.ListenerGhost;
 
 var rangeChangeDescriptors = new weakMap$1(); // {isActive, willChangeListeners, changeListeners}
 
@@ -7536,7 +7166,7 @@ function RangeChangeDescriptor(name) {
     this._willChangeListeners = null;
     this._changeListeners = null;
 }
-RangeChangeDescriptor.prototype = new ObjectChangeDescriptor$1();
+RangeChangeDescriptor.prototype = new ObjectChangeDescriptor$2();
 RangeChangeDescriptor.prototype.constructor = RangeChangeDescriptor;
 
 RangeChangeDescriptor.prototype.changeListenersRecordConstructor = RangeChangeListenersRecord;
@@ -7562,7 +7192,7 @@ function RangeChangeListenersRecord(name) {
     this.specificHandlerMethodName = specificHandlerMethodName;
 	return this;
 }
-RangeChangeListenersRecord.prototype = new ChangeListenersRecord();
+RangeChangeListenersRecord.prototype = new ChangeListenersRecord$1();
 RangeChangeListenersRecord.prototype.constructor = RangeChangeListenersRecord;
 
 var RangeWillChangeListenersSpecificHandlerMethodName = new _map();
@@ -7579,7 +7209,7 @@ function RangeWillChangeListenersRecord(name) {
     this.specificHandlerMethodName = specificHandlerMethodName;
     return this;
 }
-RangeWillChangeListenersRecord.prototype = new ChangeListenersRecord();
+RangeWillChangeListenersRecord.prototype = new ChangeListenersRecord$1();
 RangeWillChangeListenersRecord.prototype.constructor = RangeWillChangeListenersRecord;
 
 var rangeChanges = RangeChanges;
@@ -7610,8 +7240,8 @@ var ObjectsDispatchesRangeChanges = new weakMap$1(),
     dispatchesRangeChangesSetter = function(value) {
         return ObjectsDispatchesRangeChanges.set(this,value);
     },
-    dispatchesChangesMethodName = "dispatchesRangeChanges",
-    dispatchesChangesPropertyDescriptor = {
+    dispatchesChangesMethodName$1 = "dispatchesRangeChanges",
+    dispatchesChangesPropertyDescriptor$1 = {
         get: dispatchesRangeChangesGetter,
         set: dispatchesRangeChangesSetter,
         configurable: true,
@@ -7644,8 +7274,8 @@ RangeChanges.prototype.addRangeChangeListener = function addRangeChangeListener(
         listeners._current.push(listener);
     }
 
-    if(Object.getOwnPropertyDescriptor((this.__proto__||Object.getPrototypeOf(this)),dispatchesChangesMethodName) === void 0) {
-        Object.defineProperty((this.__proto__||Object.getPrototypeOf(this)), dispatchesChangesMethodName, dispatchesChangesPropertyDescriptor);
+    if(Object.getOwnPropertyDescriptor((this.__proto__||Object.getPrototypeOf(this)),dispatchesChangesMethodName$1) === void 0) {
+        Object.defineProperty((this.__proto__||Object.getPrototypeOf(this)), dispatchesChangesMethodName$1, dispatchesChangesPropertyDescriptor$1);
     }
     this.dispatchesRangeChanges = true;
 
@@ -7683,7 +7313,7 @@ RangeChanges.prototype.removeRangeChangeListener = function (listener, token, be
             else {
                 if(descriptor.isActive) {
                     listeners.ghostCount = listeners.ghostCount+1;
-                    listeners._current[index]=ListenerGhost$1;
+                    listeners._current[index]=ListenerGhost$2;
                 }
                 else {
                     listeners._current.spliceOne(index);
@@ -7728,7 +7358,7 @@ RangeChanges.prototype.dispatchRangeChange = function (plus, minus, index, befor
                     try {
                             //removeGostListenersIfNeeded returns listeners.current or a new filtered one when conditions are met
                             currentListeners = listeners.removeCurrentGostListenersIfNeeded();
-                            Ghost = ListenerGhost$1;
+                            Ghost = ListenerGhost$2;
                         for(i=0, countI = currentListeners.length;i<countI;i++) {
                             if ((listener = currentListeners[i]) !== Ghost) {
                                 if (listener[tokenName]) {
@@ -9134,7 +8764,7 @@ function* solver(flight$1, _scoringTypes, _config) {
 var solver_1 = solver;
 
 var manufacturers = /*#__PURE__*/Object.freeze({
-    __proto__: null
+	__proto__: null
 });
 
 var MANUFACTURERS = getCjsExportFromNamespace(manufacturers);
