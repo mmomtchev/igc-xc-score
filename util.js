@@ -16,7 +16,6 @@ function degrees(radians) {
 }
 
 const consoleColors = {
-    reset: '\x1b[0m',
     bright: '\x1b[1m',
     dim: '\x1b[2m',
     underscore: '\x1b[4m',
@@ -44,7 +43,8 @@ const consoleColors = {
         cyan: '\x1b[46m',
         white: '\x1b[47m',
         crimson: '\x1b[48m'
-    }
+    },
+    reset: '\x1b[0m'
 };
 
 module.exports = {
