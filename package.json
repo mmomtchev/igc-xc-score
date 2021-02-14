@@ -23,7 +23,7 @@
     "build": "rollup -c && npm run nexe_all && npm run www && npm run doc",
     "c8": "npx c8 --exclude igc-parser.js node test",
     "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
-    "codecov": "curl -s https://codecov.io/bash | env CODECOV_TOKEN='4d5a31d4-9b2f-4a62-9db9-2c49eef14ea0' bash",
+    "codecov": "curl -s https://codecov.io/bash | bash",
     "preversion": "npm test",
     "version": "npm run build && git add package.json igc-xc-score.js index.es.js index.cjs.js doc",
     "postversion": "git push && git push --tags"
