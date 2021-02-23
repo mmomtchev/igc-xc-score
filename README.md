@@ -236,4 +236,3 @@ Please make sure to update tests as appropriate.
 
 ## License
 [LGPL](https://choosealicense.com/licenses/lgpl-3.0/)
-
