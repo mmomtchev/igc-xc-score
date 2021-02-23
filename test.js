@@ -3,7 +3,6 @@ const path = require('path');
 const WorkerThreads = require('worker_threads');
 const IGCParser = require('igc-parser');
 const Worker = WorkerThreads.Worker;
-//const SharedMap = require('sharedmap');
 
 const NWORKERS = require('os').cpus().length;
 
@@ -15,7 +14,7 @@ class SharedMap {
     }
 }
 
-async function* solver(flight) {
+function solver(flight) {
     const config = {};
     config.flight = flight;
     config.flight.furthestPoints = [new SharedMap(), new SharedMap()];
@@ -29,10 +28,9 @@ async function* solver(flight) {
         workers[w].qlen = 0;
         workers[w].results = [];
     }
-    yield null;
 }
 
 (async () => {
     const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
-    (await solver(flight).next()).value;
+    solver(flight);
 })();
