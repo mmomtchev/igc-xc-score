@@ -29,7 +29,5 @@ function solver(flight) {
     }
 }
 
-(async () => {
-    const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
-    solver(flight);
-})();
+const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
+solver(flight);
