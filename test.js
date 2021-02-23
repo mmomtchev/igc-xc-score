@@ -15,8 +15,7 @@ class SharedMap {
 }
 
 function solver(flight) {
-    const config = {};
-    config.flight = flight;
+    const config = { flight };
     config.flight.furthestPoints = [new SharedMap(), new SharedMap()];
 
     //delete flight.errors;
