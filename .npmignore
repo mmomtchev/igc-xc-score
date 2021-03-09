@@ -1,4 +1,5 @@
 Attic
 node_modules
 coverage
-
+.vscode
+.github
