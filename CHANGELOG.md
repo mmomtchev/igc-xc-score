@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [1.6.0] Unreleased
+
+### Removed
+ - Remove the deprecated internal copy of igc-parser
 ## [1.5.3] 2021-03-09
 
 ### Changed
@@ -28,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Significantly faster processing of triangles
 
-## [1.5.0] 2020-07-10
+# [1.5.0] 2020-07-10
 
 ### Added
  - Added a new hybrid type of flight - Open Triangle - that is scored as a 3 TP distance flight but has a triangle closing rule (no such rules at the moment)
@@ -50,19 +54,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added TypeScript definitions for the solver
 
 
-## [1.4.0] 2020-06-11
+# [1.4.0] 2020-06-11
 
 ### Added
  - Add three separate and well-defined interfaces: CLI, CJS and ESM
 
 
-## [1.3.0] 2020-05-07
+# [1.3.0] 2020-05-07
 
 ### Added
  - Vastly improved launch and landing detection supporting flight logs with multiple launches, landings and hiking segments
 
 
-## [1.2.0] 2020-05-05
+# [1.2.0] 2020-05-05
 
 ### Added
  - Support for High Precision mode computing distances by Vincenty's method bringing the error down to 60cm from about 5m (up to 25m on flights with very long legs) with the default method (FCC)
@@ -93,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Much faster processing of 3 turnpoints distance flights (4x speedup)
 
 
-## [1.1.0] 2020-04-25
+# [1.1.0] 2020-04-25
 
 ### Added
  - Support XContest rules
@@ -108,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Faster processing of 3 turnpoints distance flights
 
 
-## [1.0.0] 2020-04-22
+# [1.0.0] 2020-04-22
 
 ### Added
 - First release
