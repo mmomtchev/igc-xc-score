@@ -6,13 +6,12 @@
  * @module igc-xc-score
  * @author Momtchil Momtchev <momtchil@momtchev.com>
  */
-
-const SortedSet = require('collections/sorted-set');
-const Solution = require('./solution').Solution;
-const { Range, Point } = require('./foundation');
-const geom = require('./geom');
-const Flight = require('./flight');
-const scoringRules = require('./scoring-rules.config');
+import SortedSet from 'collections/sorted-set.js';
+import { Solution } from './solution.js';
+import { Range, Point } from './foundation.js';
+import * as geom from './geom.js';
+import * as Flight from './flight.js';
+import scoringRules from '../scoring-rules.config.js';
 
 /**
  * This the solver
@@ -25,7 +24,7 @@ const scoringRules = require('./scoring-rules.config');
  * @param {boolean=} config.hp use high-precision distance calculation (Vincenty's), much slower for slightly higher precision, default false
  * @param {boolean=} config.trim automatically detect launch and landing and trim the flight track, default false
  */
-function* solver(flight, _scoringTypes, _config) {
+export default function* solver(flight, _scoringTypes, _config) {
     let reset;
 
     const scoringTypes = _scoringTypes || scoringRules.FFVL;
@@ -126,5 +125,3 @@ function* solver(flight, _scoringTypes, _config) {
             reset = yield best;
     } while (!reset);
 }
-
-module.exports = solver;

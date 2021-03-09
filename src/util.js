@@ -1,21 +1,21 @@
 'use strict';
-const REarth = 6371;
+export const REarth = 6371;
 
-const WGS84 = {
+export const WGS84 = {
     a: 6378.137,
     b: 6356.752314245,
     f: 1 / 298.257223563
 };
 
-function radians(degrees) {
+export function radians(degrees) {
     return degrees / (180 / Math.PI);
 }
 
-function degrees(radians) {
+export function degrees(radians) {
     return radians * (180 / Math.PI);
 }
 
-const consoleColors = {
+export const consoleColors = {
     bright: '\x1b[1m',
     dim: '\x1b[2m',
     underscore: '\x1b[4m',
@@ -45,12 +45,4 @@ const consoleColors = {
         crimson: '\x1b[48m'
     },
     reset: '\x1b[0m'
-};
-
-module.exports = {
-    radians,
-    degrees,
-    REarth,
-    WGS84,
-    consoleColors
 };

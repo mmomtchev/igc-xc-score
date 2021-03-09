@@ -1,8 +1,8 @@
 'use strict';
 let id = 0;
-const { Box, Point, Range } = require('./foundation');
+import { Box, Point, Range } from './foundation.js';
 
-class Solution {
+export class Solution {
     constructor(ranges, opt, parent) {
         if (ranges.length > opt.scoring.cardinality)
             this.ranges = ranges.slice(0, opt.scoring.cardinality);
@@ -299,7 +299,3 @@ class Solution {
         this.opt.config.env.fs.writeFileSync(`debug-${this.id}.json`, JSON.stringify(this.geojson({ debug: true })));
     }
 }
-
-module.exports = {
-    Solution
-};

@@ -1,5 +1,5 @@
 'use strict';
-const scoring = require('./scoring');
+import * as scoring from './src/scoring.js';
 
 /**
  * These are the scoring types
@@ -127,4 +127,4 @@ function round2(score) {
     return parseFloat(parseFloat(score).toFixed(2));
 }
 
-module.exports = scoringRules;
+export default scoringRules;

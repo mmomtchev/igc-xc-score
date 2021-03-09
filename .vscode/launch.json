@@ -1,12 +1,14 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "TRI",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/tri.igc",
                 "out=out.json"
@@ -17,7 +19,10 @@
             "name": "D3P",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/d3p.igc",
                 "out=out.json"
@@ -28,7 +33,10 @@
             "name": "BIGFLAT",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/bigflat.igc"
             ],
@@ -38,7 +46,10 @@
             "name": "FAI",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/fai.igc"
             ],
@@ -48,7 +59,10 @@
             "name": "LINE",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/line.igc",
                 "trim=true"
@@ -59,7 +73,10 @@
             "name": "ZIGZAG",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/zigzag.igc"
             ],
@@ -69,7 +86,10 @@
             "name": "ZIGZAGTRI",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/flat-ffvl-26.37.igc"
             ],
@@ -79,7 +99,10 @@
             "name": "WORK",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/index",
+            "program": "${workspaceFolder}/src/cli",
+            "runtimeArgs": [
+                "--experimental-json-modules",
+            ],
             "args": [
                 "test/work.igc",
                 "out=out.json",

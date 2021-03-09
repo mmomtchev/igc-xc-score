@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const IGCParser = require('igc-parser');
-const solver = require('./solver');
-const util = require('./util');
-const Point = require('./foundation').Point;
-const scoringRules = require('./scoring-rules.config');
+'use strict';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
+import IGCParser from 'igc-parser';
+import { solver, scoringRules } from '..';
+import * as util from '../src/util';
+import { Point } from '../src/foundation';
 
 const defaultConfig = {
     quiet: true,

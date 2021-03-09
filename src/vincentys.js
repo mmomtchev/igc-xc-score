@@ -1,10 +1,10 @@
 'use strict';
-const util = require('./util');
+import * as util from './util.js';
 
 // Vincenty's Algorithm, courtesy of Movable Type Ltd
 // https://www.movable-type.co.uk/scripts/latlong-vincenty.html
 // Published and included here under an MIT licence
-function inverse(p1, p2) {
+export function inverse(p1, p2) {
     const φ1 = util.radians(p1.y), λ1 = util.radians(p1.x);
     const φ2 = util.radians(p2.y), λ2 = util.radians(p2.x);
 
@@ -64,7 +64,3 @@ function inverse(p1, p2) {
         iterations: iterations,
     };
 }
-
-module.exports = {
-    inverse
-};

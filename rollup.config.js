@@ -6,78 +6,53 @@ import { terser } from 'rollup-plugin-terser';
 import executable from 'rollup-plugin-executable';
 
 export default [
-	{
-		input: 'index.js',
-		output: {
-			file: 'igc-xc-score.js',
-			format: 'cjs',
-			compact: true,
-			banner: '#!/usr/bin/env node\n'
-		},
-		external: builtins,
-		plugins: [
-			resolve({
-				preferBuiltins: true
-			}),
-			commonjs({
-				include: [
-					'*.js',
-					'*.json',
-					'node_modules/**',
-				],
-			}),
-			json(),
-			terser({
-				mangle: false
-			}),
-			executable()
-		]
-	},
-	{
-		input: 'main.js',
-		output: {
-			file: 'index.cjs.js',
-			format: 'cjs',
-			compact: true,
-			exports: 'named'
-		},
-		external: builtins,
-		plugins: [
-			resolve({
-				preferBuiltins: true
-			}),
-			commonjs({
-				include: [
-					'*.js',
-					'*.json',
-					'node_modules/**',
-				],
-			}),
-			json(),
-			terser({
-				mangle: false
-			})
-		]
-	},
-	{
-		input: 'module.js',
-		output: {
-			file: 'index.es.js',
-			format: 'cjs',
-			compact: false,
-		},
-		external: builtins,
-		plugins: [
-			resolve({
-				preferBuiltins: true
-			}),
-			commonjs({
-				include: [
-					'*.js',
-					'*.json',
-					'node_modules/**',
-				],
-			})
-		]
-	}
+    {
+        input: 'src/cli.js',
+        output: {
+            file: 'dist/igc-xc-score.cjs',
+            format: 'cjs',
+            compact: true,
+            banner: '#!/usr/bin/env node\n'
+        },
+        external: builtins,
+        plugins: [
+            resolve({
+                preferBuiltins: true
+            }),
+            commonjs({
+                include: [
+                    'node_modules/**',
+                ],
+            }),
+            json(),
+            terser({
+                mangle: false
+            }),
+            executable()
+        ]
+    },
+    {
+        input: 'index.js',
+        output: {
+            file: 'dist/index.cjs',
+            format: 'cjs',
+            compact: true,
+            exports: 'named'
+        },
+        external: builtins,
+        plugins: [
+            resolve({
+                preferBuiltins: true
+            }),
+            commonjs({
+                include: [
+                    'node_modules/**',
+                ],
+            }),
+            json(),
+            terser({
+                mangle: false
+            })
+        ]
+    }
 ];

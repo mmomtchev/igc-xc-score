@@ -1,9 +1,9 @@
-const Map = require('collections/map');
-const _Flatbush = require('flatbush');
-const Flatbush = _Flatbush.default ? _Flatbush.default : _Flatbush;
-const RBush = require('rbush');
-const util = require('./util');
-const { Box, Point } = require('./foundation');
+'use strict';
+import Map from 'collections/map.js';
+import Flatbush from 'flatbush';
+import RBush from 'rbush';
+import * as util from './util.js';
+import { Box, Point } from './foundation.js';
 
 /* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
  * http://www.penguin.cz/~ondrap/algorithm.pdf
@@ -16,7 +16,7 @@ const { Box, Point } = require('./foundation');
  * b) if there are no such vertices, any vertices that lie on the edges of the bounding box
  * c) or potentially any vertice if no vertices lie on the edges of the bounding box
  */
-function maxDistance3Rectangles(boxes, distance_fn) {
+export function maxDistance3Rectangles(boxes, distance_fn) {
     let vertices = [];
     let minx, miny, maxx, maxy;
     for (let r of [0, 1, 2]) {
@@ -58,7 +58,7 @@ function maxDistance3Rectangles(boxes, distance_fn) {
     return distanceMax;
 }
 
-function minDistance3Rectangles(boxes, distance_fn) {
+export function minDistance3Rectangles(boxes, distance_fn) {
     let vertices = [];
     let minx, miny, maxx, maxy;
     for (let r of [0, 1, 2]) {
@@ -85,7 +85,7 @@ function minDistance3Rectangles(boxes, distance_fn) {
     return distanceMin;
 }
 
-function maxDistance2Rectangles(boxes) {
+export function maxDistance2Rectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
     for (let r of [0, 1]) {
@@ -111,7 +111,7 @@ function maxDistance2Rectangles(boxes) {
     return distanceMax;
 }
 
-function maxDistancePath(origin, path, pathStart) {
+export function maxDistancePath(origin, path, pathStart) {
     let distanceMax = 0;
     for (let i of path[pathStart]) {
         const distance1 = origin !== undefined ? i.distanceEarth(origin) : 0;
@@ -121,7 +121,7 @@ function maxDistancePath(origin, path, pathStart) {
     return distanceMax;
 }
 
-function maxDistanceNRectangles(boxes) {
+export function maxDistanceNRectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
     let path = [];
@@ -172,7 +172,7 @@ function maxDistanceNRectangles(boxes) {
     return distanceMax;
 }
 
-function findClosestPairIn2Segments(p1, p2, opt) {
+export function findClosestPairIn2Segments(p1, p2, opt) {
     let precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 });
     let precomputed = precomputedAll.reduce((a, x) => (!a || x.in > a.in) ? x : a, undefined);
     precomputed = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, precomputed);
@@ -219,7 +219,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     return min;
 }
 
-function findFurthestPointInSegment(sega, segb, target, opt) {
+export function findFurthestPointInSegment(sega, segb, target, opt) {
     let points;
     if (target instanceof Box)
         points = target.vertices();
@@ -320,7 +320,7 @@ function findFurthestPointInSegment(sega, segb, target, opt) {
     return fpoint;
 }
 
-function isTriangleClosed(p1, p2, distance, opt) {
+export function isTriangleClosed(p1, p2, distance, opt) {
     const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
     for (let f of fastCandidates)
         if (f.o.d <= opt.scoring.closingDistanceFree)
@@ -333,20 +333,10 @@ function isTriangleClosed(p1, p2, distance, opt) {
     return false;
 }
 
-function init(opt) {
+export function init(opt) {
     opt.flight.closestPairs = new RBush();
     opt.flight.furthestPoints = [new Map(), new Map()];
     opt.flight.flightPoints = new Array(opt.flight.filtered.length);
     for (let r in opt.flight.filtered)
         opt.flight.flightPoints[r] = new Point(opt.flight.filtered, r);
 }
-
-module.exports = {
-    maxDistance3Rectangles,
-    maxDistance2Rectangles,
-    minDistance3Rectangles,
-    maxDistanceNRectangles,
-    findFurthestPointInSegment,
-    isTriangleClosed,
-    init
-};

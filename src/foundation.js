@@ -1,7 +1,8 @@
 'use strict';
-const util = require('./util');
+import * as util from './util.js';
+import * as vincentys from './vincentys.js';
 
-class Point {
+export class Point {
     constructor(x, y) {
         if (Array.isArray(x))
             [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
@@ -57,11 +58,11 @@ class Point {
     }
 
     distanceEarthVincentys(p) {
-        return require('./vincentys').inverse(this, p).distance;
+        return vincentys.inverse(this, p).distance;
     }
 }
 
-class Range {
+export class Range {
     constructor(a, b) {
         [this.a, this.b] = [a, b];
     }
@@ -92,7 +93,7 @@ class Range {
     }
 }
 
-class Box {
+export class Box {
     constructor(a, b, c, d) {
         if (a instanceof Range) {
             [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
@@ -194,9 +195,3 @@ class Box {
         return JSON.stringify(this.geojson());
     }
 }
-
-module.exports = {
-    Point,
-    Range,
-    Box
-};

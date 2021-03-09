@@ -31,7 +31,7 @@ const definitionGround = {
     zmax: 0.1
 };
 
-const Point = require('./foundation').Point;
+import { Point } from './foundation.js';
 
 function prepare(fixes) {
     for (let i in fixes) {
@@ -118,7 +118,7 @@ function detectLaunchLanding(fixes) {
     return ll;
 }
 
-function analyze(flight, config) {
+export function analyze(flight, config) {
     if (!config.invalid)
         flight.filtered = flight.fixes.filter(x => x.valid).filter((x, i, a) => i == 0 || a[i-1].timestamp !== x.timestamp);
     else
@@ -134,7 +134,3 @@ function analyze(flight, config) {
     } else
         flight.ll = [ { launch: 0, landing: flight.filtered.length - 1 } ];    
 }
-
-module.exports = {
-    analyze
-};

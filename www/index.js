@@ -1,19 +1,19 @@
 /*eslint-env jquery*/
 import { Map, View } from 'ol';
-import { transformExtent } from 'ol/proj';
-import GeoJSON from 'ol/format/GeoJSON';
-import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
-import XYZ from 'ol/source/XYZ';
-import VectorSource from 'ol/source/Vector';
-import { defaults as defaultControls, ScaleLine } from 'ol/control';
-import { Circle as CircleStyle, Stroke, Style } from 'ol/style';
-import { easeOut } from 'ol/easing';
+import { transformExtent } from 'ol/proj.js';
+import GeoJSON from 'ol/format/GeoJSON.js';
+import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
+import XYZ from 'ol/source/XYZ.js';
+import VectorSource from 'ol/source/Vector.js';
+import { defaults as defaultControls, ScaleLine } from 'ol/control.js';
+import { Circle as CircleStyle, Stroke, Style } from 'ol/style.js';
+import { easeOut } from 'ol/easing.js';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
 import './igc-xc-score.css';
 
-import { solver as igcSolver, scoringRules as igcScoring } from '../index.es';
+import { solver as igcSolver, scoringRules as igcScoring } from 'igc-xc-score';
 import { IGCParser as igcParser } from 'igc-parser';
 
 const flightStyle = {
@@ -161,7 +161,7 @@ if (!window.requestIdleCallback) {
     };
     window.cancelIdleCallback = (a) => {
         clearTimeout(a);
-    }
+    };
 }
 
 let runningProcess;
@@ -186,6 +186,7 @@ function runProcessing() {
     });
 }
 
+// eslint-disable-next-line no-undef
 $('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
 
 Object.keys(igcScoring).map(scoring => {

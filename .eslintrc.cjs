@@ -13,7 +13,8 @@ module.exports = {
         SharedArrayBuffer: 'readonly'
     },
     parserOptions: {
-        ecmaVersion: 2018
+        ecmaVersion: 2018,
+        sourceType: 'module'
     },
     rules: {
         quotes: ['error', 'single'],
@@ -21,12 +22,6 @@ module.exports = {
 		indent: ['error', 4]
     },
     overrides: [
-        {
-            files: ['igc-parser.js'],
-            rules: {
-                quotes: [0]
-            }
-        },
         {
             files: ['www/index.js'],
             env: {
@@ -38,7 +33,7 @@ module.exports = {
             parserOptions: {
                 ecmaVersion: 2016,
                 sourceType: 'module'
-            },
+            }
         }
     ]
 };

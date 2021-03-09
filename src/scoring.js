@@ -1,27 +1,27 @@
 'use strict';
-const geom = require('./geom');
+import * as geom from './geom.js';
 
-function closingPenalty(cd, opt) {
+export function closingPenalty(cd, opt) {
     return (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0);
 }
 
-function closingWithLimit(distance, opt) {
+export function closingWithLimit(distance, opt) {
     return Math.max(opt.scoring.closingDistanceFixed || 0, distance * (opt.scoring.closingDistanceRelative || 0));
 }
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-function closingWithPenalty(distance, opt) {
+export function closingWithPenalty(distance, opt) {
     return Infinity;
 }
 
-function boundDistance3Points(ranges, boxes, opt) {
+export function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
     return maxDistance * opt.scoring.multiplier;
 }
 
-function scoreDistance3Points(tp, opt) {
+export function scoreDistance3Points(tp, opt) {
     let distance = 0;
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
@@ -47,7 +47,7 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
     return maxDistance;
 }
 
-function boundOpenTriangle(ranges, boxes, opt) {
+export function boundOpenTriangle(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
     const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
@@ -70,7 +70,7 @@ function boundOpenTriangle(ranges, boxes, opt) {
     return maxD3PDistance * opt.scoring.multiplier;
 }
 
-function scoreOpenTriangle(tp, opt) {
+export function scoreOpenTriangle(tp, opt) {
     const d0 = tp[0].distanceEarth(tp[1]);
     const d1 = tp[1].distanceEarth(tp[2]);
     const d2 = tp[2].distanceEarth(tp[0]);
@@ -98,7 +98,7 @@ function scoreOpenTriangle(tp, opt) {
     return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
 }
 
-function boundTriangle(ranges, boxes, opt) {
+export function boundTriangle(ranges, boxes, opt) {
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
@@ -121,7 +121,7 @@ function boundTriangle(ranges, boxes, opt) {
     return maxDistance * opt.scoring.multiplier;
 }
 
-function scoreTriangle(tp, opt) {
+export function scoreTriangle(tp, opt) {
     const d0 = tp[0].distanceEarth(tp[1]);
     const d1 = tp[1].distanceEarth(tp[2]);
     const d2 = tp[2].distanceEarth(tp[0]);
@@ -141,14 +141,3 @@ function scoreTriangle(tp, opt) {
 
     return { distance, score, tp, cp };
 }
-
-module.exports = {
-    closingWithLimit,
-    closingWithPenalty,
-    boundTriangle,
-    scoreTriangle,
-    boundDistance3Points,
-    scoreDistance3Points,
-    boundOpenTriangle,
-    scoreOpenTriangle
-};

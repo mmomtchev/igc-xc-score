@@ -11,7 +11,7 @@ module.exports = {
     mode: 'none',
     context: __dirname,
     entry: {
-        index: './www/index.js'
+        index: path.resolve(__dirname, 'www', 'index.js')
     },
     output: {
         filename: 'bundle.js',
@@ -21,6 +21,7 @@ module.exports = {
     resolve: {
         modules: ['node_modules'],
         alias: {
+            'igc-xc-score': path.resolve(__dirname, 'index.js'),
             jquery: 'jquery/dist/jquery.min.js',
             handlebars: 'handlebars/dist/handlebars.min.js',
             jquery_typeahead: 'jquery-typeahead/dist/jquery.typeahead.min.js'

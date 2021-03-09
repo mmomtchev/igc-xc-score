@@ -1,26 +1,31 @@
 {
   "name": "igc-xc-score",
-  "version": "1.5.2",
+  "version": "1.5.99",
   "description": "igc-xc-score is a paragliding and hang-gliding XC scoring program in vanilla JS",
-  "main": "index.cjs.js",
-  "module": "index.es.js",
+  "main": "dist/index.cjs.js",
+  "module": "index.js",
+  "type": "module",
+  "types": "index.d.ts",
   "directories": {
+    "lib": "src",
     "test": "test",
     "example": "www"
   },
   "bin": {
-    "igc-xc-score": "./igc-xc-score.js"
+    "igc-xc-score": "dist/igc-xc-score.cjs"
   },
   "scripts": {
-    "test": "node test && npm run eslint",
-    "eslint": "eslint geom.js index.js scoring.js scoring-rules.config.js solution.js solver.js test.js foundation.js util.js vincentys.js flight.js main.js",
-    "doc": "jsdoc -d doc solver.js scoring-rules.config.js",
-    "nexe_linux": "nexe -i igc-xc-score.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
-    "nexe_win": "nexe -i igc-xc-score.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
-    "nexe_mac": "nexe -i igc-xc-score.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
-    "nexe_all": "npm run nexe_linux && npm run nexe_win && npm run nexe_mac",
-    "www": "webpack && cp www/index.html www/pacman.svg dist/www",
-    "build": "rollup -c && npm run nexe_all && npm run www && npm run doc",
+    "test": "npm run test:es && npm run test:cjs && npm run eslint",
+    "test:es": "NODE_OPTIONS='--experimental-specifier-resolution=node --experimental-json-modules --no-warnings' node test/test",
+    "test:cjs": "node test/test.cjs",
+    "eslint": "eslint src",
+    "doc": "jsdoc -d doc src/solver.js scoring-rules.config.js",
+    "nexe:linux": "nexe -i dist/igc-xc-score.js -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
+    "nexe:win": "nexe -i dist/igc-xc-score.js -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
+    "nexe:mac": "nexe -i dist/igc-xc-score.js -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
+    "nexe": "npm run nexe:linux && npm run nexe:win && npm run nexe:mac",
+    "www": "webpack --mode=production && cp www/index.html www/pacman.svg dist/www",
+    "build": "rollup -c && npm run nexe && npm run www && npm run doc",
     "c8": "npx c8 --exclude igc-parser.js node test",
     "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | bash",
@@ -73,7 +78,7 @@
     "rollup-plugin-executable": "^1.6.0",
     "rollup-plugin-terser": "^7.0.0",
     "style-loader": "^1.2.1",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.12"
+    "webpack": "^5.24.4",
+    "webpack-cli": "^4.5.0"
   }
 }
