@@ -109,9 +109,15 @@ trim=false              # auto-trim the flight log to its launch and landing poi
 
 Using with node (**developer**)
 ```bash
-node igc-xc-score flight.igc out=flight.json quiet=true
-node index flight.igc
+# when checking out from github (already included in the npm package)
+npm run build
+
+# bundled and minified version
+node dist/igc-xc-score.cjs flight.igc out=flight.json quiet=true
 cat flight.json | jq .properties
+
+# source version for debugging
+node --experimental-json-modules src/cli
 ```
 
 ### The solver library
