@@ -2,4 +2,7 @@ Attic
 node_modules
 dist
 coverage
-
+doc
+igc-xc-score.js
+index.cjs.js
+index.es.js
