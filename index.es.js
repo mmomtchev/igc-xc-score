@@ -6707,7 +6707,7 @@ function findClosestPairIn2Segments(p1, p2, opt) {
     const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
-    for (let i = p2; i < lastUnknown; i++) {
+    for (let i = p2; i <= lastUnknown; i++) {
         const pout = opt.flight.flightPoints[i];
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
         if (n !== undefined) {
