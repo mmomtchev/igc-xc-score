@@ -26,11 +26,11 @@
     "nexe": "npm run nexe:linux && npm run nexe:win && npm run nexe:mac",
     "www": "webpack --mode=production && cp www/index.html www/pacman.svg dist/www",
     "build": "rollup -c && npm run nexe && npm run www && npm run doc",
-    "c8": "npx c8 --exclude igc-parser.js node test",
-    "lcov": "npx c8 --exclude igc-parser.js report --reporter=text-lcov > coverage/tests.lcov",
+    "c8": "npx c8 node --experimental-specifier-resolution=node --experimental-json-modules --no-warnings test",
+    "lcov": "npx c8 report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | bash",
     "preversion": "npm test",
-    "version": "npm run build && git add package.json igc-xc-score.js index.es.js index.cjs.js doc",
+    "version": "npm run build && git add package.json",
     "postversion": "git push && git push --tags"
   },
   "repository": {
