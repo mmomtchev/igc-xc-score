@@ -117,7 +117,7 @@ node dist/igc-xc-score.cjs flight.igc out=flight.json quiet=true
 cat flight.json | jq .properties
 
 # source version for debugging
-node --experimental-json-modules src/cli
+node src/cli
 ```
 
 ### The solver library

@@ -5,7 +5,6 @@ import solver from './solver.js';
 import { Solution } from './solution.js';
 import * as util from './util.js';
 import scoringRules from '../scoring-rules.config.js';
-import package_json from '../package.json';
 
 function displayDistance(labela, labelb, a, b) {
     console.log(labela.padStart(6, ' '), labelb.padStart(6, ' '),
@@ -39,7 +38,8 @@ if (config.pipe) {
     outf = 1;
 } else {
     if (!process.argv[2]) {
-        console.log(`igc-xc-score ${package_json.version}`);
+        // eslint-disable-next-line no-undef
+        console.log(`igc-xc-score ${typeof _version !== 'undefined' ? _version : 'from source'}`);
         console.log('Momtchil Momtchev, velivole.fr/meteo.guru, 2020/COVID19');
         console.log('Usage:');
         console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>] ...');

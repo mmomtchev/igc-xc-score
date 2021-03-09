@@ -6,9 +6,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/tri.igc",
                 "out=out.json"
@@ -20,9 +17,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/d3p.igc",
                 "out=out.json"
@@ -34,9 +28,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/bigflat.igc"
             ],
@@ -47,9 +38,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/fai.igc"
             ],
@@ -60,9 +48,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/line.igc",
                 "trim=true"
@@ -74,9 +59,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/zigzag.igc"
             ],
@@ -87,9 +69,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/flat-ffvl-26.37.igc"
             ],
@@ -100,9 +79,6 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
-            "runtimeArgs": [
-                "--experimental-json-modules",
-            ],
             "args": [
                 "test/work.igc",
                 "out=out.json",

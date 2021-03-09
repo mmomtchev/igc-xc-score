@@ -4,6 +4,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';
 import executable from 'rollup-plugin-executable';
+const version = require('./package.json').version;
 
 export default [
     {
@@ -12,7 +13,8 @@ export default [
             file: 'dist/igc-xc-score.cjs',
             format: 'cjs',
             compact: true,
-            banner: '#!/usr/bin/env node\n'
+            banner: '#!/usr/bin/env node\n',
+            intro: `const _version = '${version}'`
         },
         external: builtins,
         plugins: [
@@ -37,7 +39,8 @@ export default [
             file: 'dist/index.cjs',
             format: 'cjs',
             compact: true,
-            exports: 'named'
+            exports: 'named',
+            intro: `const _version = '${version}'`
         },
         external: builtins,
         plugins: [
