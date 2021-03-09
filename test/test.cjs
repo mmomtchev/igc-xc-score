@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const IGCParser = require('igc-parser');
-const { solver, scoringRules } = require('../dist/index.cjs');
+const { solver, scoringRules } = require('..');
 
 const defaultConfig = {
     quiet: true,
