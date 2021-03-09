@@ -31,7 +31,8 @@ const tests = {
         { file: 'hiking-up-2.igc', score: 125.94 },
         { file: 'lunch-break.igc', score: 73.92 },
         { file: 'dup-fixes.igc', score: 89.1 },
-        { file: 'd3p-anti-cache.igc', score: 58.53 }
+        { file: 'd3p-anti-cache.igc', score: 58.53 },
+        { file: 'marcourt.igc', score: 1.57, config: { trim: false } }
     ],
     XContest: [
         { file: 'flat-xcontest-106.82.igc', score: 107.12 },
