@@ -159,6 +159,8 @@ export class Box {
         return new Point(x1, y1).distanceEarth(new Point(x2, y2));
     }
 
+    /* These are debugging aids */
+    /* c8 ignore start */
     geojson(id, properties) {
         const feature = {
             type: 'Feature',
@@ -178,7 +180,6 @@ export class Box {
         return feature;
     }
 
-    /* c8 ignore next 11 */
     geojson_collection(boxes) {
         let features = [];
         for (let b in boxes) {
@@ -194,4 +195,5 @@ export class Box {
     toString() {
         return JSON.stringify(this.geojson());
     }
+    /* c8 ignore stop */
 }

@@ -11,6 +11,7 @@ export function closingWithLimit(distance, opt) {
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 export function closingWithPenalty(distance, opt) {
+    /* c8 ignore next */
     return Infinity;
 }
 
@@ -51,6 +52,8 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
     return maxDistance;
 }
 
+// These are not used by any scoring method at the moment
+/* c8 ignore start */
 export function boundOpenTriangle(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
@@ -101,6 +104,7 @@ export function scoreOpenTriangle(tp, opt) {
     const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
     return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
 }
+/* c8 ignore stop */
 
 // Upper limit for a flat triangle with vertices somewhere in boxes
 export function boundTriangle(ranges, boxes, opt) {
