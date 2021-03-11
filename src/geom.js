@@ -5,7 +5,7 @@ import RBush from 'rbush';
 import * as util from './util.js';
 import { Box, Point } from './foundation.js';
 
-/* Paragliding Competition Tracklog Optimization, Ondˇrej Palkovsk´y
+/* Paragliding Competition Tracklog Optimization, Ondřej Palkovský
  * http://www.penguin.cz/~ondrap/algorithm.pdf
  * Refer for a proof that the maximum path between rectangles always
  * passes through their vertices
@@ -58,6 +58,8 @@ export function maxDistance3Rectangles(boxes, distance_fn) {
     return distanceMax;
 }
 
+// Minimum possible distance between 2 rectangles
+// The proof can be deduced from Ondřej Palkovský's paper
 export function minDistance3Rectangles(boxes, distance_fn) {
     let vertices = [];
     let minx, miny, maxx, maxy;
@@ -85,6 +87,8 @@ export function minDistance3Rectangles(boxes, distance_fn) {
     return distanceMin;
 }
 
+// Maximum possible distance between 2 rectangles
+// See Ondřej Palkovský's paper for the mathematical proof
 export function maxDistance2Rectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
@@ -111,6 +115,10 @@ export function maxDistance2Rectangles(boxes) {
     return distanceMax;
 }
 
+// Max distance across the path defined by path
+// path is an array of arrays of vertices, each distinct path must choose one of these vertices
+// This is a time-critical function, pathStart is an optimizatation that avoids copying the array
+// O(n^m) where m is the cardinality of the solution
 export function maxDistancePath(origin, path, pathStart) {
     let distanceMax = 0;
     for (let i of path[pathStart]) {
@@ -121,6 +129,8 @@ export function maxDistancePath(origin, path, pathStart) {
     return distanceMax;
 }
 
+// Maximum possible distance between N rectangles
+// See Ondřej Palkovský's paper for the mathematical proof
 export function maxDistanceNRectangles(boxes) {
     let vertices = [];
     let minx, miny, maxx, maxy;
@@ -172,6 +182,16 @@ export function maxDistanceNRectangles(boxes) {
     return distanceMax;
 }
 
+// Find the closest pair of points such as the first is before p1 and the second is after p2
+// Works by constructing a packed Hilbert R-tree of the points between the start and p1
+//
+// Searches are cached in a R-tree as they are defined by the pair (p1, p2)
+// even if (p1, p2) are not 2D coordinates in the usual sense
+//
+// Also if x and y are the closest points for the segments [0..p1] and [p1..end]
+// then this is also true for all segments such as p1 is in [x..p1] and p2 is in [p2..y]
+//
+// O(n log(n)) given by the packed Hilbert R-tree construction
 export function findClosestPairIn2Segments(p1, p2, opt) {
     let precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: p2 });
     let precomputed = precomputedAll.reduce((a, x) => (!a || x.in > a.in) ? x : a, undefined);
@@ -187,10 +207,14 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
     }
     rtree.finish();
 
+    // When looking for a new solution, we know that we don't have to look past lastUnknown
+    // lastUnknown is the point from which there is already a solution
     precomputedAll = opt.flight.closestPairs.search({ minX: p1, minY: p2, maxX: p1, maxY: opt.landing });
     const precomputedNext = precomputedAll.reduce((a, x) => (!a || x.out < a.out) ? x : a, undefined);
     const lastUnknown = precomputedNext !== undefined ? precomputedNext.maxY : opt.landing;
     let min = { d: Infinity };
+
+    // In this loop we are searching for a better solution in [p2..lastUnknown]
     for (let i = p2; i <= lastUnknown; i++) {
         const pout = opt.flight.flightPoints[i];
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
@@ -204,6 +228,8 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
             }
         }
     }
+
+    // then we compare it to the one we already know for [lastUnknown..end]
     if (precomputedNext !== undefined) {
         const pout = precomputedNext.o.out;
         const pin = precomputedNext.o.in;
@@ -219,6 +245,11 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
     return min;
 }
 
+// Find the the furthest point between sega and segb from target
+// Exhaustive search with cache (O(n) worst case, O(log(n)) average)
+// The caching method works only when sega is the launch or segb is the landing
+// This function is used to place the entrance and the exit of the 3TP flights
+// It allows to reduce the cardinality of the solution space from 5 to 3
 export function findFurthestPointInSegment(sega, segb, target, opt) {
     let points;
     if (target instanceof Box)
@@ -241,11 +272,14 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
 
     let distanceMax = -Infinity;
     let fpoint;
+    // This loops once is the target is a point
+    // Or four times for the four vertices of a box
     for (let v of points) {
         let distanceVMax = -Infinity;
         let fVpoint;
 
         let precomputed;
+        // This is the cache, we are interested only in the points that are between sega and segb
         const precomputedAll = opt.flight.furthestPoints[pos].get(v.x + ':' + v.y);
         for (const p of precomputedAll || []) {
             if (zSearch >= p.min && zSearch <= p.max) {
@@ -265,6 +299,7 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
             let intersecting = false;
             let canCache = false;
 
+            // Some optimizations are not possible if the boxes are overlapping
             for (let p = sega; p <= segb; p++) {
                 const f = opt.flight.flightPoints[p];
                 if (target instanceof Box && target.intersects(f)) {
@@ -320,6 +355,8 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
     return fpoint;
 }
 
+// Verify if a triangle starting at point p1 and ending at point p2 can be closed
+// if its total distance is distance
 export function isTriangleClosed(p1, p2, distance, opt) {
     const fastCandidates = opt.flight.closestPairs.search({ minX: opt.launch, minY: p2, maxX: p1, maxY: opt.landing });
     for (let f of fastCandidates)

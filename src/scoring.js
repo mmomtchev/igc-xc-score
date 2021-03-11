@@ -14,6 +14,7 @@ export function closingWithPenalty(distance, opt) {
     return Infinity;
 }
 
+// Upper limit for a 3TP distance flight with 3 TPs in boxes
 export function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
@@ -21,6 +22,7 @@ export function boundDistance3Points(ranges, boxes, opt) {
     return maxDistance * opt.scoring.multiplier;
 }
 
+// Score of a 3TP distance flight with all 3 points selected
 export function scoreDistance3Points(tp, opt) {
     let distance = 0;
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
@@ -32,6 +34,8 @@ export function scoreDistance3Points(tp, opt) {
     return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
 }
 
+// Upper limit for a FAI triangle with vertices somewhere in boxes,
+// maxTriDistance is the upper limit of the flat triangle
 function maxFAIDistance(maxTriDistance, boxes, opt) {
     const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
@@ -98,6 +102,7 @@ export function scoreOpenTriangle(tp, opt) {
     return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
 }
 
+// Upper limit for a flat triangle with vertices somewhere in boxes
 export function boundTriangle(ranges, boxes, opt) {
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
@@ -121,6 +126,7 @@ export function boundTriangle(ranges, boxes, opt) {
     return maxDistance * opt.scoring.multiplier;
 }
 
+// Score a triangle once all 3 points have been selected
 export function scoreTriangle(tp, opt) {
     const d0 = tp[0].distanceEarth(tp[1]);
     const d1 = tp[1].distanceEarth(tp[2]);

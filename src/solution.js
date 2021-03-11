@@ -10,6 +10,9 @@ export class Solution {
             this.ranges = ranges;
         this.opt = opt;
         for (let _r in this.ranges) {
+            // This the left-first ordering of the branch-and-bound
+            // The left-first ordering transforms the permutation into a combination
+            // greatly reducing the number of distinct solutions
             const r = parseInt(_r);
             if (r > 0)
                 if (this.ranges[r - 1].a > this.ranges[r].a)
@@ -37,6 +40,8 @@ export class Solution {
 
     do_branch() {
         let div = 0;
+        // This is the breadth-first ordering of the branch-and-bound
+        // It allows for early cut-off of the huge and obviously impossible branches
         for (let r in this.ranges)
             if (this.ranges[r].count() > this.ranges[div].count())
                 div = parseInt(r);
