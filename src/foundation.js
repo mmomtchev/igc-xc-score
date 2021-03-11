@@ -33,7 +33,7 @@ export class Point {
             return (this.x == other.x && this.y == other.y);
         if (other instanceof Box)
             return other.intersects(this);
-        throw ('other must be either Point or Box');
+        throw new TypeError('other must be either Point or Box');
     }
 
     distanceEarth(p) {

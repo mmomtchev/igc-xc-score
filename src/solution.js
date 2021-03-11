@@ -22,7 +22,7 @@ export class Solution {
                     this.ranges[r] = new Range(this.ranges[r].a, Math.min(this.ranges[r + 1].b, this.ranges[r].b));
             if (this.ranges[r].a > this.ranges[r].b) {
                 console.log(this.ranges, parent.ranges);
-                throw 'error';
+                throw new Error('Ranges are not left-ordered');
             }
         }
         this.boxes = [];
