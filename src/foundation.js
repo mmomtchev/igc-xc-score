@@ -5,10 +5,14 @@ import * as vincentys from './vincentys.js';
 
 export class Point {
     constructor(x, y) {
-        if (Array.isArray(x))
-            [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
-        else
-            [this.x, this.y] = [x, y];
+        if (Array.isArray(x)) {
+            this.x = x[y].longitude;
+            this.y = x[y].latitude;
+            this.r = y;
+        } else {
+            this.x = x;
+            this.y = y;
+        }
     }
 
     geojson(id, properties) {
@@ -100,7 +104,11 @@ export class Range {
 export class Box {
     constructor(a, b, c, d) {
         if (a instanceof Range) {
-            [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
+            this.x1 = Infinity;
+            this.y1 = Infinity;
+            this.x2 = -Infinity;
+            this.y2 = -Infinity;
+            
             for (let i = a.start; i <= a.end; i++) {
                 this.x1 = Math.min(b.flightPoints[i].x, this.x1);
                 this.y1 = Math.min(b.flightPoints[i].y, this.y1);
@@ -108,7 +116,10 @@ export class Box {
                 this.y2 = Math.max(b.flightPoints[i].y, this.y2);
             }
         } else {
-            [this.x1, this.y1, this.x2, this.y2] = [a, b, c, d];
+            this.x1 = a;
+            this.y1 = b;
+            this.x2 = c;
+            this.y2 = d;
         }
     }
 
