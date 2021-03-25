@@ -130,9 +130,7 @@ export class Box {
     }
 
     area() {
-        const h = Math.abs(this.x2 - this.x1);
-        const w = Math.abs(this.y2 - this.y1);
-        return h * w;
+        return Math.abs((this.x2 - this.x1) * (this.y2 - this.y1));
     }
 
     /* c8 ignore next 25 */
