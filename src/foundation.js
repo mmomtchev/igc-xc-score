@@ -49,11 +49,20 @@ export class Point {
         const df = (p.y - this.y);
         const dg = (p.x - this.x);
         const fm = util.radians((this.y + p.y) / 2);
-        const k1 = 111.13209 - 0.566605 * Math.cos(2 * fm) + 0.00120 * Math.cos(4 * fm);
-        const k2 = 111.41513 * Math.cos(fm) - 0.09455 * Math.cos(3 * fm) + 0.00012 * Math.cos(5 * fm);
+        // Speed up cos computation using:
+        // - cos(2x) = 2 * cos(x)^2 - 1
+        // - cos(a+b) = 2 * cos(a)cos(b) - cos(a-b)
+        const cosfm = Math.cos(fm);
+        const cos2fm = 2 * cosfm * cosfm - 1;
+        const cos3fm = cosfm * ( 2 * cos2fm - 1);
+        const cos4fm = 2 * cos2fm * cos2fm - 1;  
+        const cos5fm = 2 * cos2fm * cos3fm - cosfm;
+        const k1 = 111.13209 - 0.566605 * cos2fm + 0.00120 * cos4fm;
+        const k2 = 111.41513 * cosfm - 0.09455 * cos3fm + 0.00012 * cos5fm;
         const d = Math.sqrt((k1 * df) * (k1 * df) + (k2 * dg) * (k2 * dg));
         return d;
     }
+
 
     /* c8 ignore next 5 */
     distanceEarthRev(dx, dy) {
