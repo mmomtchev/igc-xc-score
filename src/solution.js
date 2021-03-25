@@ -1,5 +1,6 @@
 'use strict';
 let id = 0;
+
 import { Box, Point, Range } from './foundation.js';
 
 export class Solution {
@@ -15,15 +16,11 @@ export class Solution {
             // greatly reducing the number of distinct solutions
             const r = parseInt(_r);
             if (r > 0)
-                if (this.ranges[r - 1].a > this.ranges[r].a)
-                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].a, this.ranges[r].a), this.ranges[r].b);
+                if (this.ranges[r - 1].start > this.ranges[r].start)
+                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].start, this.ranges[r].start), this.ranges[r].end);
             if (r < this.ranges.length - 1)
-                if (this.ranges[r].b > this.ranges[r + 1].b)
-                    this.ranges[r] = new Range(this.ranges[r].a, Math.min(this.ranges[r + 1].b, this.ranges[r].b));
-            if (this.ranges[r].a > this.ranges[r].b) {
-                console.log(this.ranges, parent.ranges);
-                throw new Error('Ranges are not left-ordered');
-            }
+                if (this.ranges[r].end > this.ranges[r + 1].end)
+                    this.ranges[r] = new Range(this.ranges[r].start, Math.min(this.ranges[r + 1].end, this.ranges[r].end));
         }
         this.boxes = [];
         for (let r in this.ranges)
@@ -112,8 +109,8 @@ export class Solution {
                     .geojson('box' + r, {
                         id: 'box' + r,
                         area: (new Box(this.ranges[r], this.opt.flight)).area(),
-                        a: this.ranges[r].a,
-                        b: this.ranges[r].b
+                        a: this.ranges[r].start,
+                        b: this.ranges[r].end
                     }));
         }
         try {

@@ -1,4 +1,5 @@
 'use strict';
+
 import * as util from './util.js';
 import * as vincentys from './vincentys.js';
 
@@ -63,33 +64,36 @@ export class Point {
 }
 
 export class Range {
-    constructor(a, b) {
-        [this.a, this.b] = [a, b];
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
+        if (end < start)
+            throw new Error('start should be before end');
     }
 
     count() {
-        return Math.abs(this.a - this.b) + 1;
+        return this.end - this.start + 1;
     }
 
     center() {
-        return Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2);
+        return this.start + Math.floor((this.end - this.start) / 2);
     }
 
     left() {
-        return new Range(Math.min(this.a, this.b), Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2));
+        return new Range(this.start, this.center());
     }
 
     right() {
-        return new Range(Math.min(this.a, this.b) + Math.ceil(Math.abs(this.a - this.b) / 2), Math.max(this.a, this.b));
+        return new Range(this.start + Math.ceil((this.end - this.start) / 2), this.end);
     }
 
     contains(p) {
-        return this.a <= p && p <= this.b;
+        return this.start <= p && p <= this.end;
     }
 
     /* c8 ignore next 3 */
     toString() {
-        return `${this.a}:${this.b}`;
+        return `${this.start}:${this.end}`;
     }
 }
 
@@ -97,7 +101,7 @@ export class Box {
     constructor(a, b, c, d) {
         if (a instanceof Range) {
             [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
-            for (let i = a.a; i <= a.b; i++) {
+            for (let i = a.start; i <= a.end; i++) {
                 this.x1 = Math.min(b.flightPoints[i].x, this.x1);
                 this.y1 = Math.min(b.flightPoints[i].y, this.y1);
                 this.x2 = Math.max(b.flightPoints[i].x, this.x2);
