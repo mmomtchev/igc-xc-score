@@ -184,8 +184,8 @@ export class Box {
 
     geojson_collection(boxes) {
         let features = [];
-        for (let b in boxes) {
-            features.push(boxes[b].geojson(b, { id: b }));
+        for (let i = 0; i < boxes.length; i++) {
+            features.push(boxes[i].geojson(i, { id: i }));
         }
         let collection = {
             type: 'FeatureCollection',

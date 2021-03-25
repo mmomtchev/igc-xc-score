@@ -114,7 +114,7 @@ export function maxDistanceNRectangles(boxes) {
     let maxx = -Infinity;
     let maxy = -Infinity;
     let path = [];
-    for (let r in boxes) {
+    for (let r = 0; r < boxes.length; r++) {
         if (boxes[r] instanceof Box) {
             vertices[r] = boxes[r].vertices();
             minx = Math.min(minx, boxes[r].x1);
@@ -132,16 +132,15 @@ export function maxDistanceNRectangles(boxes) {
         path[r] = [];
     }
 
-    for (let i in boxes)
-        if (i > 0) {
-            const intersecting = boxes[i - 1].intersects(boxes[i]);
-            if (intersecting) {
-                boxes[i - 1].intersecting = true;
-                boxes[i].intersecting = true;
-            }
+    for (let i = 1; i < boxes.length; i++) {
+        const intersecting = boxes[i - 1].intersects(boxes[i]);
+        if (intersecting) {
+            boxes[i - 1].intersecting = true;
+            boxes[i].intersecting = true;
         }
+    }    
 
-    for (let i in boxes) {
+    for (let i = 0; i < boxes.length; i++) {
         if (boxes[i].intersecting) {
             path[i] = vertices[i];
             continue;
