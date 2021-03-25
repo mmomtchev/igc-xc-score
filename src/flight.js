@@ -34,18 +34,19 @@ const definitionGround = {
 import { Point } from './foundation.js';
 
 function prepare(fixes) {
-    for (let i in fixes) {
-        if (fixes[i].pressureAltitude === null || fixes[i].pressureAltitude === undefined || fixes[i].pressureAltitude < -1000)
+    for (let i = 0; i < fixes.length; i++) {
+        if (fixes[i].pressureAltitude == null || fixes[i].pressureAltitude < -1000)
             fixes[i].pressureAltitude = fixes[i].gpsAltitude;
         if (fixes[i].pressureAltitude === null)
             fixes[i].gpsAltitude = undefined;
 
         if (i > 0) {
-            if (fixes[i].timestamp !== fixes[i - 1].timestamp) {
+            const deltaTimestamp = fixes[i].timestamp - fixes[i - 1].timestamp;
+            if (deltaTimestamp > 0) {
                 fixes[i].hspeed = (new Point(fixes, i - 1).distanceEarth(new Point(fixes, i))) * 1000 /
-                    (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
+                    deltaTimestamp * 1000;
                 fixes[i].vspeed = (fixes[i].pressureAltitude - fixes[i - 1].pressureAltitude) /
-                    (fixes[i].timestamp - fixes[i - 1].timestamp) * 1000;
+                    deltaTimestamp * 1000;
             } else {
                 fixes[i].hspeed = fixes[i - 1].hspeed;
                 fixes[i].vspeed = fixes[i - 1].vspeed;
@@ -56,8 +57,7 @@ function prepare(fixes) {
         }
     }
 
-    for (let _i in fixes) {
-        const i = parseInt(_i);
+    for (let i = 0; i < fixes.length; i++) {
         const now = fixes[i].timestamp;
         let start, end;
         for (start = i; start > 0 && fixes[start].timestamp > now - Math.round(maPeriod * 1000 / 2); start--);
