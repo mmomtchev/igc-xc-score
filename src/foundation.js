@@ -1,13 +1,18 @@
 'use strict';
+
 import * as util from './util.js';
 import * as vincentys from './vincentys.js';
 
 export class Point {
     constructor(x, y) {
-        if (Array.isArray(x))
-            [this.x, this.y, this.r] = [x[y].longitude, x[y].latitude, y];
-        else
-            [this.x, this.y] = [x, y];
+        if (Array.isArray(x)) {
+            this.x = x[y].longitude;
+            this.y = x[y].latitude;
+            this.r = y;
+        } else {
+            this.x = x;
+            this.y = y;
+        }
     }
 
     geojson(id, properties) {
@@ -44,11 +49,20 @@ export class Point {
         const df = (p.y - this.y);
         const dg = (p.x - this.x);
         const fm = util.radians((this.y + p.y) / 2);
-        const k1 = 111.13209 - 0.566605 * Math.cos(2 * fm) + 0.00120 * Math.cos(4 * fm);
-        const k2 = 111.41513 * Math.cos(fm) - 0.09455 * Math.cos(3 * fm) + 0.00012 * Math.cos(5 * fm);
+        // Speed up cos computation using:
+        // - cos(2x) = 2 * cos(x)^2 - 1
+        // - cos(a+b) = 2 * cos(a)cos(b) - cos(a-b)
+        const cosfm = Math.cos(fm);
+        const cos2fm = 2 * cosfm * cosfm - 1;
+        const cos3fm = cosfm * ( 2 * cos2fm - 1);
+        const cos4fm = 2 * cos2fm * cos2fm - 1;  
+        const cos5fm = 2 * cos2fm * cos3fm - cosfm;
+        const k1 = 111.13209 - 0.566605 * cos2fm + 0.00120 * cos4fm;
+        const k2 = 111.41513 * cosfm - 0.09455 * cos3fm + 0.00012 * cos5fm;
         const d = Math.sqrt((k1 * df) * (k1 * df) + (k2 * dg) * (k2 * dg));
         return d;
     }
+
 
     /* c8 ignore next 5 */
     distanceEarthRev(dx, dy) {
@@ -63,48 +77,58 @@ export class Point {
 }
 
 export class Range {
-    constructor(a, b) {
-        [this.a, this.b] = [a, b];
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
+        if (end < start)
+            throw new Error('start should be before end');
     }
 
     count() {
-        return Math.abs(this.a - this.b) + 1;
+        return this.end - this.start + 1;
     }
 
     center() {
-        return Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2);
+        return this.start + Math.floor((this.end - this.start) / 2);
     }
 
     left() {
-        return new Range(Math.min(this.a, this.b), Math.min(this.a, this.b) + Math.floor(Math.abs(this.a - this.b) / 2));
+        return new Range(this.start, this.center());
     }
 
     right() {
-        return new Range(Math.min(this.a, this.b) + Math.ceil(Math.abs(this.a - this.b) / 2), Math.max(this.a, this.b));
+        return new Range(this.start + Math.ceil((this.end - this.start) / 2), this.end);
     }
 
     contains(p) {
-        return this.a <= p && p <= this.b;
+        return this.start <= p && p <= this.end;
     }
 
     /* c8 ignore next 3 */
     toString() {
-        return `${this.a}:${this.b}`;
+        return `${this.start}:${this.end}`;
     }
 }
 
 export class Box {
     constructor(a, b, c, d) {
         if (a instanceof Range) {
-            [this.x1, this.y1, this.x2, this.y2] = [Infinity, Infinity, -Infinity, -Infinity];
-            for (let i = a.a; i <= a.b; i++) {
+            this.x1 = Infinity;
+            this.y1 = Infinity;
+            this.x2 = -Infinity;
+            this.y2 = -Infinity;
+            
+            for (let i = a.start; i <= a.end; i++) {
                 this.x1 = Math.min(b.flightPoints[i].x, this.x1);
                 this.y1 = Math.min(b.flightPoints[i].y, this.y1);
                 this.x2 = Math.max(b.flightPoints[i].x, this.x2);
                 this.y2 = Math.max(b.flightPoints[i].y, this.y2);
             }
         } else {
-            [this.x1, this.y1, this.x2, this.y2] = [a, b, c, d];
+            this.x1 = a;
+            this.y1 = b;
+            this.x2 = c;
+            this.y2 = d;
         }
     }
 
@@ -126,9 +150,7 @@ export class Box {
     }
 
     area() {
-        const h = Math.abs(this.x2 - this.x1);
-        const w = Math.abs(this.y2 - this.y1);
-        return h * w;
+        return Math.abs((this.x2 - this.x1) * (this.y2 - this.y1));
     }
 
     /* c8 ignore next 25 */
@@ -182,8 +204,8 @@ export class Box {
 
     geojson_collection(boxes) {
         let features = [];
-        for (let b in boxes) {
-            features.push(boxes[b].geojson(b, { id: b }));
+        for (let i = 0; i < boxes.length; i++) {
+            features.push(boxes[i].geojson(i, { id: i }));
         }
         let collection = {
             type: 'FeatureCollection',

@@ -1,4 +1,5 @@
 'use strict';
+
 import * as util from './util.js';
 
 // Vincenty's Algorithm, courtesy of Movable Type Ltd
@@ -11,8 +12,17 @@ export function inverse(p1, p2) {
     const { a, b, f } = util.WGS84;
 
     const L = λ2 - λ1; // L = difference in longitude, U = reduced latitude, defined by tan U = (1-f)·tanφ.
-    const tanU1 = (1 - f) * Math.tan(φ1), cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1)), sinU1 = tanU1 * cosU1;
-    const tanU2 = (1 - f) * Math.tan(φ2), cosU2 = 1 / Math.sqrt((1 + tanU2 * tanU2)), sinU2 = tanU2 * cosU2;
+    const tanU1 = (1 - f) * Math.tan(φ1);
+    const cosU1 = 1 / Math.sqrt((1 + tanU1 * tanU1));
+    const sinU1 = tanU1 * cosU1;
+    const tanU2 = (1 - f) * Math.tan(φ2);
+    const cosU2 = 1 / Math.sqrt((1 + tanU2 * tanU2));
+    const sinU2 = tanU2 * cosU2;
+    
+    const sinU1sinU2 = sinU1 * sinU2;
+    const cosU1cosU2 = cosU1 * cosU2;
+    const cosU1sinU2 = cosU1 * sinU2;
+    const sinU1cosU2 = sinU1 * cosU2;
 
     const antipodal = Math.abs(L) > Math.PI / 2 || Math.abs(φ2 - φ1) > Math.PI / 2;
 
@@ -26,14 +36,16 @@ export function inverse(p1, p2) {
     do {
         sinλ = Math.sin(λ);
         cosλ = Math.cos(λ);
-        sinSqσ = (cosU2 * sinλ) * (cosU2 * sinλ) + (cosU1 * sinU2 - sinU1 * cosU2 * cosλ) * (cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
+        const term1 = cosU2 * sinλ;
+        const term2 = cosU1sinU2 - sinU1cosU2 * cosλ;
+        sinSqσ = term1 * term1 + term2 * term2;
         if (Math.abs(sinSqσ) < Number.EPSILON) break;  // co-incident/antipodal points (falls back on λ/σ = L)
         sinσ = Math.sqrt(sinSqσ);
-        cosσ = sinU1 * sinU2 + cosU1 * cosU2 * cosλ;
+        cosσ = sinU1sinU2 + cosU1cosU2 * cosλ;
         σ = Math.atan2(sinσ, cosσ);
-        sinα = cosU1 * cosU2 * sinλ / sinσ;
+        sinα = cosU1cosU2 * sinλ / sinσ;
         cosSqα = 1 - sinα * sinα;
-        cos2σₘ = (cosSqα != 0) ? (cosσ - 2 * sinU1 * sinU2 / cosSqα) : 0; // on equatorial line cos²α = 0 (§6)
+        cos2σₘ = (cosSqα != 0) ? (cosσ - 2 * sinU1sinU2 / cosSqα) : 0; // on equatorial line cos²α = 0 (§6)
         C = f / 16 * cosSqα * (4 + f * (4 - 3 * cosSqα));
         λʹ = λ;
         λ = L + (1 - C) * f * sinα * (σ + C * sinσ * (cos2σₘ + C * cosσ * (-1 + 2 * cos2σₘ * cos2σₘ)));
@@ -54,8 +66,8 @@ export function inverse(p1, p2) {
     // atan2(0, 0) = 0 but atan2(ε, 0) = π/2 / 90°) - in which case bearing is always meridional,
     // due north (or due south!)
     // α = azimuths of the geodesic; α2 the direction P₁ P₂ produced
-    const α1 = Math.abs(sinSqσ) < Number.EPSILON ? 0 : Math.atan2(cosU2 * sinλ, cosU1 * sinU2 - sinU1 * cosU2 * cosλ);
-    const α2 = Math.abs(sinSqσ) < Number.EPSILON ? Math.PI : Math.atan2(cosU1 * sinλ, -sinU1 * cosU2 + cosU1 * sinU2 * cosλ);
+    const α1 = Math.abs(sinSqσ) < Number.EPSILON ? 0 : Math.atan2(cosU2 * sinλ, cosU1sinU2 - sinU1cosU2 * cosλ);
+    const α2 = Math.abs(sinSqσ) < Number.EPSILON ? Math.PI : Math.atan2(cosU1 * sinλ, -sinU1cosU2 + cosU1sinU2 * cosλ);
 
     return {
         distance: s,

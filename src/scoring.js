@@ -1,4 +1,5 @@
 'use strict';
+
 import * as geom from './geom.js';
 
 export function closingPenalty(cd, opt) {
@@ -17,8 +18,8 @@ export function closingWithPenalty(distance, opt) {
 
 // Upper limit for a 3TP distance flight with 3 TPs in boxes
 export function boundDistance3Points(ranges, boxes, opt) {
-    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
-    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].end, opt.landing, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
     return maxDistance * opt.scoring.multiplier;
 }
@@ -55,8 +56,8 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
 // These are not used by any scoring method at the moment
 /* c8 ignore start */
 export function boundOpenTriangle(ranges, boxes, opt) {
-    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].a, boxes[0], opt);
-    const pout = geom.findFurthestPointInSegment(ranges[2].b, opt.landing, boxes[2], opt);
+    const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
+    const pout = geom.findFurthestPointInSegment(ranges[2].end, opt.landing, boxes[2], opt);
     const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
@@ -67,8 +68,8 @@ export function boundOpenTriangle(ranges, boxes, opt) {
     }
 
     let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxTriDistance, opt);
+    if (ranges[0].end < ranges[2].start) {
+        cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxTriDistance, opt);
         if (!cp)
             return 0;
         return (maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
@@ -120,8 +121,8 @@ export function boundTriangle(ranges, boxes, opt) {
         return 0;
 
     let cp = { d: 0 };
-    if (ranges[0].b < ranges[2].a) {
-        cp = geom.isTriangleClosed(ranges[0].b, ranges[2].a, maxDistance, opt);
+    if (ranges[0].end < ranges[2].start) {
+        cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxDistance, opt);
         if (!cp)
             return 0;
         return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;

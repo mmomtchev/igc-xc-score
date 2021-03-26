@@ -1,5 +1,6 @@
 'use strict';
 let id = 0;
+
 import { Box, Point, Range } from './foundation.js';
 
 export class Solution {
@@ -9,24 +10,19 @@ export class Solution {
         else
             this.ranges = ranges;
         this.opt = opt;
-        for (let _r in this.ranges) {
+        for (let r = 0; r < this.ranges.length; r++) {
             // This the left-first ordering of the branch-and-bound
             // The left-first ordering transforms the permutation into a combination
             // greatly reducing the number of distinct solutions
-            const r = parseInt(_r);
             if (r > 0)
-                if (this.ranges[r - 1].a > this.ranges[r].a)
-                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].a, this.ranges[r].a), this.ranges[r].b);
+                if (this.ranges[r - 1].start > this.ranges[r].start)
+                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].start, this.ranges[r].start), this.ranges[r].end);
             if (r < this.ranges.length - 1)
-                if (this.ranges[r].b > this.ranges[r + 1].b)
-                    this.ranges[r] = new Range(this.ranges[r].a, Math.min(this.ranges[r + 1].b, this.ranges[r].b));
-            if (this.ranges[r].a > this.ranges[r].b) {
-                console.log(this.ranges, parent.ranges);
-                throw new Error('Ranges are not left-ordered');
-            }
+                if (this.ranges[r].end > this.ranges[r + 1].end)
+                    this.ranges[r] = new Range(this.ranges[r].start, Math.min(this.ranges[r + 1].end, this.ranges[r].end));
         }
         this.boxes = [];
-        for (let r in this.ranges)
+        for (let r = 0; r < this.ranges.length; r++)
             this.boxes[r] = new Box(this.ranges[r], opt.flight);
         this.score = undefined;
         this.bound = undefined;
@@ -42,12 +38,12 @@ export class Solution {
         let div = 0;
         // This is the breadth-first ordering of the branch-and-bound
         // It allows for early cut-off of the huge and obviously impossible branches
-        for (let r in this.ranges)
+        for (let r = 0; r < this.ranges.length; r++)
             if (this.ranges[r].count() > this.ranges[div].count())
-                div = parseInt(r);
-        for (let r in this.ranges)
+                div = r;
+        for (let r = 0; r < this.ranges.length; r++)
             if (this.ranges[r].count() > 1 && this.boxes[r].area() > this.boxes[div].area() * 8)
-                div = parseInt(r);
+                div = r;
 
         if (this.ranges[div].count() == 1)
             return [];
@@ -55,7 +51,7 @@ export class Solution {
         let subsolutions = [];
         for (let i of [this.ranges[div].left(), this.ranges[div].right()]) {
             let subranges = [];
-            for (let r in this.ranges)
+            for (let r = 0; r < this.ranges.length; r++)
                 if (r != div)
                     subranges[r] = this.ranges[r];
                 else
@@ -71,14 +67,14 @@ export class Solution {
     }
 
     do_score() {
-        for (let r in this.ranges)
-            if (r < this.ranges.length - 1 && this.ranges[r].center() >= this.ranges[parseInt(r) + 1].center()) {
+        for (let r = 0; r < this.ranges.length; r++)
+            if (r < this.ranges.length - 1 && this.ranges[r].center() >= this.ranges[r + 1].center()) {
                 this.score = 0;
                 return;
             }
 
         let tp = [];
-        for (let r in this.ranges)
+        for (let r = 0; r < this.ranges.length; r++)
             tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
 
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
@@ -107,13 +103,13 @@ export class Solution {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
             /* c8 ignore next 8 */
-            for (let r in this.ranges)
+            for (let r = 0; r < this.ranges.length; r++)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
                         id: 'box' + r,
                         area: (new Box(this.ranges[r], this.opt.flight)).area(),
-                        a: this.ranges[r].a,
-                        b: this.ranges[r].b
+                        a: this.ranges[r].start,
+                        b: this.ranges[r].end
                     }));
         }
         try {
@@ -215,7 +211,7 @@ export class Solution {
             }
         } catch (e) {
         }
-        for (let li in this.opt.flight.ll) {
+        for (let li = 0; li < this.opt.flight.ll.length; li++) {
             const l = this.opt.flight.ll[li];
             features.push(this.opt.flight.flightPoints[l.launch]
                 .geojson('launch' + li, {
@@ -284,18 +280,17 @@ export class Solution {
     trace(msg) {
         if (!this.opt.config.trace || !process.stdout)
             return;
-        const trace = this.opt.config.trace.split(',');
+        const trace = this.opt.config.trace.split(',').map(str => parseInt(str, 10));
         if (trace[0] < 0) {
-            if (this.id % parseInt(trace[1]) !== 0)
+            if (this.id % trace[1] !== 0)
                 return;
         } else {
-            for (let i in this.ranges)
-                if (!this.ranges[i].contains(trace[i]))
-                    return;
+            if (this.ranges.some((range, i) => !range.contains(trace[i])))
+                return;            
         }
         let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.opt.scoring.name} `;
-        for (let i in this.ranges)
-            r += this.ranges[i] + ' ';
+        for (const range of this.ranges)
+            r += range + ' ';
         if (this.bound)
             r += `bound: ${this.bound} `;
         if (this.score)

@@ -1,9 +1,12 @@
 'use strict';
-import Map from 'collections/map.js';
-import Flatbush from 'flatbush';
-import RBush from 'rbush';
+
 import * as util from './util.js';
+
 import { Box, Point } from './foundation.js';
+
+import Flatbush from 'flatbush';
+import Map from 'collections/map.js';
+import RBush from 'rbush';
 
 /* Paragliding Competition Tracklog Optimization, Ondřej Palkovský
  * http://www.penguin.cz/~ondrap/algorithm.pdf
@@ -17,34 +20,30 @@ import { Box, Point } from './foundation.js';
  * c) or potentially any vertice if no vertices lie on the edges of the bounding box
  */
 export function maxDistance3Rectangles(boxes, distance_fn) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1, 2]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
+    const minx = Math.min(boxes[0].x1, boxes[1].x1, boxes[2].x1);
+    const miny = Math.min(boxes[0].y1, boxes[1].y1, boxes[2].y1);
+    const maxx = Math.max(boxes[0].x2, boxes[1].x2, boxes[2].x2);
+    const maxy = Math.max(boxes[0].y2, boxes[1].y2, boxes[2].y2);    
 
     let intersecting = false;
-    for (let i of [0, 1, 2])
+    for (let i = 0; i < 3; i++)
         if (boxes[i].intersects(boxes[(i + 1) % 3])) {
             intersecting = true;
             break;
         }
 
-    let path = [[], [], []];
-    for (let i of [0, 1, 2]) {
-        for (let v of vertices[i])
+    const path = [[], [], []];
+    for (let i = 0; i < 3; i++) {
+        const vertices = boxes[i].vertices();
+        for (let v of vertices)
             if ((v.x == minx || v.x == maxx) && (v.y == miny || v.y == maxy))
                 path[i].push(v);
         if (path[i].length == 0)
-            for (let v of vertices[i])
+            for (let v of vertices)
                 if (v.x == minx || v.x == maxx || v.y == miny || v.y == maxy)
                     path[i].push(v);
         if (path[i].length == 0 || intersecting)
-            path[i] = vertices[i];
+            path[i] = vertices;
     }
 
     let distanceMax = 0;
@@ -58,28 +57,17 @@ export function maxDistance3Rectangles(boxes, distance_fn) {
     return distanceMax;
 }
 
-// Minimum possible distance between 2 rectangles
+// Minimum possible distance between 3 rectangles
 // The proof can be deduced from Ondřej Palkovský's paper
 export function minDistance3Rectangles(boxes, distance_fn) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1, 2]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
-
-    let path = [[], [], []];
-    for (let i of [0, 1, 2]) {
-        path[i] = vertices[i];
-    }
+    const v0 = boxes[0].vertices();
+    const v1 = boxes[1].vertices();
+    const v2 = boxes[2].vertices();
 
     let distanceMin = Infinity;
-    for (let i of path[0])
-        for (let j of path[1])
-            for (let k of path[2]) {
+    for (let i of v0)
+        for (let j of v1)
+            for (let k of v2) {
                 const distance = distance_fn(i, j, k);
                 distanceMin = Math.min(distanceMin, distance);
             }
@@ -90,24 +78,12 @@ export function minDistance3Rectangles(boxes, distance_fn) {
 // Maximum possible distance between 2 rectangles
 // See Ondřej Palkovský's paper for the mathematical proof
 export function maxDistance2Rectangles(boxes) {
-    let vertices = [];
-    let minx, miny, maxx, maxy;
-    for (let r of [0, 1]) {
-        vertices[r] = boxes[r].vertices();
-        minx = Math.min(minx || Infinity, boxes[r].x1);
-        miny = Math.min(miny || Infinity, boxes[r].y1);
-        maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-        maxy = Math.max(maxy || -Infinity, boxes[r].y2);
-    }
-
-    let path = [[], []];
-    for (let i of [0, 1]) {
-        path[i] = vertices[i];
-    }
+    const v0 = boxes[0].vertices();
+    const v1 = boxes[1].vertices();
 
     let distanceMax = 0;
-    for (let i of path[0])
-        for (let j of path[1]) {
+    for (let i of v0)
+        for (let j of v1) {
             const distance = i.distanceEarth(j);
             distanceMax = Math.max(distanceMax, distance);
         }
@@ -133,36 +109,38 @@ export function maxDistancePath(origin, path, pathStart) {
 // See Ondřej Palkovský's paper for the mathematical proof
 export function maxDistanceNRectangles(boxes) {
     let vertices = [];
-    let minx, miny, maxx, maxy;
+    let minx = Infinity;
+    let miny = Infinity;
+    let maxx = -Infinity;
+    let maxy = -Infinity;
     let path = [];
-    for (let r in boxes) {
+    for (let r = 0; r < boxes.length; r++) {
         if (boxes[r] instanceof Box) {
             vertices[r] = boxes[r].vertices();
-            minx = Math.min(minx || Infinity, boxes[r].x1);
-            miny = Math.min(miny || Infinity, boxes[r].y1);
-            maxx = Math.max(maxx || -Infinity, boxes[r].x2);
-            maxy = Math.max(maxy || -Infinity, boxes[r].y2);
+            minx = Math.min(minx, boxes[r].x1);
+            miny = Math.min(miny, boxes[r].y1);
+            maxx = Math.max(maxx, boxes[r].x2);
+            maxy = Math.max(maxy, boxes[r].y2);
         } else if (boxes[r] instanceof Point) {
             vertices[r] = [boxes[r]];
-            minx = Math.min(minx || Infinity, boxes[r].x);
-            miny = Math.min(miny || Infinity, boxes[r].y);
-            maxx = Math.max(maxx || -Infinity, boxes[r].x);
-            maxy = Math.max(maxy || -Infinity, boxes[r].y);
+            minx = Math.min(minx, boxes[r].x);
+            miny = Math.min(miny, boxes[r].y);
+            maxx = Math.max(maxx, boxes[r].x);
+            maxy = Math.max(maxy, boxes[r].y);
         } else
             throw new TypeError('boxes must contain only Box or Point');
         path[r] = [];
     }
 
-    for (let i in boxes)
-        if (i > 0) {
-            const intersecting = boxes[i - 1].intersects(boxes[i]);
-            if (intersecting) {
-                boxes[i - 1].intersecting = true;
-                boxes[i].intersecting = true;
-            }
+    for (let i = 1; i < boxes.length; i++) {
+        const intersecting = boxes[i - 1].intersects(boxes[i]);
+        if (intersecting) {
+            boxes[i - 1].intersecting = true;
+            boxes[i].intersecting = true;
         }
+    }    
 
-    for (let i in boxes) {
+    for (let i = 0; i < boxes.length; i++) {
         if (boxes[i].intersecting) {
             path[i] = vertices[i];
             continue;
