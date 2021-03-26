@@ -40,7 +40,8 @@ if (config.pipe) {
     if (!process.argv[2]) {
         // eslint-disable-next-line no-undef
         console.log(`igc-xc-score ${typeof _version !== 'undefined' ? _version : 'from source'}`);
-        console.log('Momtchil Momtchev, velivole.fr/meteo.guru, 2020/COVID19');
+        // eslint-disable-next-line no-undef
+        console.log(`Momtchil Momtchev (velivole.fr/meteo.guru) & contributors, © 2020-${typeof _year !== 'undefined' ? _year : 'present'}, LGPL 3.0`);
         console.log('Usage:');
         console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>] ...');
         console.log('flight.igc             is the flight track log');

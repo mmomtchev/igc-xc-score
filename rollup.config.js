@@ -6,6 +6,8 @@ import { terser } from 'rollup-plugin-terser';
 import executable from 'rollup-plugin-executable';
 const version = require('./package.json').version;
 
+const intro = `const [ _version, _year ] = [ '${version}', '${new Date().getFullYear()}']`;
+
 export default [
     {
         input: 'src/cli.js',
@@ -14,7 +16,7 @@ export default [
             format: 'cjs',
             compact: true,
             banner: '#!/usr/bin/env node\n',
-            intro: `const _version = '${version}'`
+            intro
         },
         external: builtins,
         plugins: [
@@ -40,7 +42,7 @@ export default [
             format: 'cjs',
             compact: true,
             exports: 'named',
-            intro: `const _version = '${version}'`
+            intro
         },
         external: builtins,
         plugins: [
