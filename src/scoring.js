@@ -43,14 +43,18 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
 
+    if (maxTriDistance < minTriDistance)
+        return 0;    
+
     const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
     const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
     const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
-    const maxDistance = Math.min(maxAB / opt.scoring.minSide,
-        maxBC / opt.scoring.minSide, maxCA / opt.scoring.minSide, maxTriDistance);
+    
+    const maxDistance = Math.min(maxAB, maxBC, maxCA) / opt.scoring.minSide;
     if (maxDistance < minTriDistance)
         return 0;
-    return maxDistance;
+
+    return Math.min(maxDistance, maxTriDistance);
 }
 
 // These are not used by any scoring method at the moment
