@@ -30,7 +30,7 @@ export function scoreDistance3Points(tp, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
+    for (let i = 0; i < all.length - 1; i++)
         distance += all[i].distanceEarth(all[i + 1]);
     const score = distance * opt.scoring.multiplier;
     return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
@@ -102,7 +102,7 @@ export function scoreOpenTriangle(tp, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
+    for (let i = 0; i < all.length - 1; i++)
         d3pDistance += all[i].distanceEarth(all[i + 1]);
     
     const distance = d3pDistance;
