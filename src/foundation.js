@@ -157,30 +157,21 @@ export class Box {
     distance(other) {
         if (this.intersects(other))
             return 0;
-        let x1, y1, x2, y2;
+        let x1 = this.x1;
+        let x2 = this.x1;
+        let y1 = this.y1;
+        let y2 = this.y1;
         if (this.x1 > other.x2) {
-            x1 = this.x1;
             x2 = other.x2;
-        }
-        if (this.x2 < other.x1) {
+        } else if (this.x2 < other.x1) {
             x1 = this.x2;
             x2 = other.x1;
         }
         if (this.y1 < other.y2) {
-            y1 = this.y1;
             y2 = other.y2;
-        }
-        if (this.y2 > other.y1) {
+        } else if (this.y2 > other.y1) {
             y1 = this.y2;
             y2 = other.y1;
-        }
-        if (x1 === undefined) {
-            x1 = this.x1;
-            x2 = this.x1;
-        }
-        if (y1 === undefined) {
-            y1 = this.y1;
-            y2 = this.y1;
         }
         return new Point(x1, y1).distanceEarth(new Point(x2, y2));
     }
