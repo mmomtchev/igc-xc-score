@@ -30,7 +30,7 @@ export function scoreDistance3Points(tp, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
+    for (let i = 0; i < all.length - 1; i++)
         distance += all[i].distanceEarth(all[i + 1]);
     const score = distance * opt.scoring.multiplier;
     return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
@@ -43,14 +43,18 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
 
+    if (maxTriDistance < minTriDistance)
+        return 0;    
+
     const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
     const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
     const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
-    const maxDistance = Math.min(maxAB / opt.scoring.minSide,
-        maxBC / opt.scoring.minSide, maxCA / opt.scoring.minSide, maxTriDistance);
+    
+    const maxDistance = Math.min(maxAB, maxBC, maxCA) / opt.scoring.minSide;
     if (maxDistance < minTriDistance)
         return 0;
-    return maxDistance;
+
+    return Math.min(maxDistance, maxTriDistance);
 }
 
 // These are not used by any scoring method at the moment
@@ -98,7 +102,7 @@ export function scoreOpenTriangle(tp, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i of [0, 1, 2, 3])
+    for (let i = 0; i < all.length - 1; i++)
         d3pDistance += all[i].distanceEarth(all[i + 1]);
     
     const distance = d3pDistance;

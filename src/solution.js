@@ -10,20 +10,20 @@ export class Solution {
         else
             this.ranges = ranges;
         this.opt = opt;
+        this.boxes = [];
         for (let r = 0; r < this.ranges.length; r++) {
             // This the left-first ordering of the branch-and-bound
             // The left-first ordering transforms the permutation into a combination
             // greatly reducing the number of distinct solutions
             if (r > 0)
                 if (this.ranges[r - 1].start > this.ranges[r].start)
-                    this.ranges[r] = new Range(Math.max(this.ranges[r - 1].start, this.ranges[r].start), this.ranges[r].end);
+                    this.ranges[r] = new Range(this.ranges[r - 1].start, this.ranges[r].end);
             if (r < this.ranges.length - 1)
                 if (this.ranges[r].end > this.ranges[r + 1].end)
-                    this.ranges[r] = new Range(this.ranges[r].start, Math.min(this.ranges[r + 1].end, this.ranges[r].end));
-        }
-        this.boxes = [];
-        for (let r = 0; r < this.ranges.length; r++)
+                    this.ranges[r] = new Range(this.ranges[r].start, this.ranges[r + 1].end);
+
             this.boxes[r] = new Box(this.ranges[r], opt.flight);
+        }        
         this.score = undefined;
         this.bound = undefined;
         this.id = id++;
