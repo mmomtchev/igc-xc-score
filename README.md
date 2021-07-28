@@ -128,9 +128,9 @@ Calling the solver from another Node.js program is easy, you should look at *ind
 ```JS
 const fs = require('fs');
 const IGCParser = require('igc-parser');
-const { scoring, solver } = require('igc-xc-score');
+const { scoringRules, solver } = require('igc-xc-score');
 const flight = IGCParser.parse(fs.readFileSync(path.join('test', test.file), 'utf8'), { lenient: true });
-const result = solver(flight, scoring.FFVL).next().value;
+const result = solver(flight, scoringRules.FFVL).next().value;
 if (result.optimal)
     console.log(`score is ${result.score}`)
 ```
