@@ -227,7 +227,7 @@ $('#igc-upload').on('change', () => {
             });
             runProcessing();
         } catch (e) {
-            $('#status').html(e);
+            $('#status').html(encodeURIComponent(e.toString()));
             $('#spinner').hide();
             igcFlight = undefined;
         }
