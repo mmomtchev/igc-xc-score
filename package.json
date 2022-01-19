@@ -50,7 +50,7 @@
   },
   "homepage": "https://github.com/mmomtchev/igc-xc-score#readme",
   "dependencies": {
-    "collections": "^5.1.12",
+    "collections": "^5.1.13",
     "flatbush": "^3.3.0",
     "igc-parser": "^0.5.0",
     "rbush": "^3.0.1"
