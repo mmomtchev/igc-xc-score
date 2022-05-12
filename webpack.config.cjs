@@ -7,14 +7,14 @@ const build_pkg = require('./package.json');
 const build_git = exec.execSync('git rev-parse --short HEAD').toString();
 const build_date = exec.execSync('date -u +"%Y-%m-%d"').toString();
 
-module.exports = {
+module.exports = (env, argv) => ({
     mode: 'none',
     context: __dirname,
     entry: {
         index: path.resolve(__dirname, 'www', 'index.js')
     },
     output: {
-        filename: 'bundle.js',
+        filename: '[name].bundle.js',
         path: path.resolve(__dirname , 'dist', 'www'),
         publicPath: '/xc-score/'
     },
@@ -23,11 +23,9 @@ module.exports = {
         alias: {
             'igc-xc-score': path.resolve(__dirname, 'index.js'),
             jquery: 'jquery/dist/jquery.min.js',
-            handlebars: 'handlebars/dist/handlebars.min.js',
-            jquery_typeahead: 'jquery-typeahead/dist/jquery.typeahead.min.js'
         }
     },
-    devtool: 'inline-source-map',
+    devtool: argv.mode == 'development' ? 'eval' : undefined,
     plugins: [
         new webpack.ProvidePlugin({
             $: 'jquery',
@@ -47,5 +45,11 @@ module.exports = {
                 use: ['style-loader', 'css-loader']
             }
         ]
+    },
+    optimization: {
+        usedExports: true,
+        splitChunks: {
+            chunks: 'all'
+        }
     }
-};
+});
