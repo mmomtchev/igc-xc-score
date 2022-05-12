@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.1] 2022-05-12
 
 ### Changed
+ - Fix the bundled binaries
  - Update all the dependencies
  - Use OpenStreetMap as a default map in the web demo and add a layer switcher
 
