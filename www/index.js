@@ -3,14 +3,16 @@ import { Map, View } from 'ol';
 import { transformExtent } from 'ol/proj.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
-import XYZ from 'ol/source/XYZ.js';
-import VectorSource from 'ol/source/Vector.js';
+import { XYZ, Vector as VectorSource, OSM } from 'ol/source.js';
 import { defaults as defaultControls, ScaleLine } from 'ol/control.js';
 import { Circle as CircleStyle, Stroke, Style } from 'ol/style.js';
 import { easeOut } from 'ol/easing.js';
+import LayerSwitcher from 'ol-layerswitcher';
+
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'ol/ol.css';
+import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import './igc-xc-score.css';
 
 import { solver as igcSolver, scoringRules as igcScoring } from 'igc-xc-score';
@@ -128,10 +130,19 @@ $(document).ready(() => {
         target: 'map',
         layers: [
             new TileLayer({
+                title: 'OpenTopoMap',
+                visible: false,
+                type: 'base',
                 source: new XYZ({
                     url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                    attributions: 'Kartendaten: © <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM | Kartendarstellung: © <a href="http://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
                     maxZoom: 17
                 }),
+            }),
+            new TileLayer({
+                title: 'OpenStreetMap',
+                type: 'base',
+                source: new OSM()
             }),
             new VectorLayer({
                 source: flightDataSource,
@@ -150,6 +161,10 @@ $(document).ready(() => {
                 steps: 5,
                 text: false,
                 minWidth: 140
+            }),
+            new LayerSwitcher({
+                tipLabel: 'Map',
+                groupSelectStyle: 'children'
             })
         ])
     });
