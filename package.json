@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@popperjs/core": "^2.11.5",
-    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-commonjs": "^22.0.1",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "bootstrap": "^5.1.3",
