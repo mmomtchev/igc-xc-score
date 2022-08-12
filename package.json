@@ -72,7 +72,7 @@
     "jquery": "^3.6.0",
     "jsdoc": "^3.6.11",
     "nexe": "^4.0.0-beta.19",
-    "ol": "^6.15.0",
+    "ol": "^6.15.1",
     "ol-layerswitcher": "^3.8.3",
     "rollup": "^2.77.0",
     "rollup-plugin-executable": "^1.6.3",
