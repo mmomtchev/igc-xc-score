@@ -56,7 +56,7 @@
     "rbush": "^3.0.1"
   },
   "devDependencies": {
-    "@popperjs/core": "^2.11.5",
+    "@popperjs/core": "^2.11.6",
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
