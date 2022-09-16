@@ -43,16 +43,16 @@ if (config.pipe) {
         // eslint-disable-next-line no-undef
         console.log(`Momtchil Momtchev (velivole.fr/meteo.guru) & contributors, © 2020-${typeof _year !== 'undefined' ? _year : 'present'}, LGPL 3.0`);
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI] [quiet=true] [pipe=true] [progress=<n>] ...');
-        console.log('flight.igc             is the flight track log');
-        console.log('out=flight.json        save the optimal solution in GeoJSON format');
-        console.log('maxtime=n              limit the execution time to n seconds');
-        console.log('scoring=FFVL|XContest  select the scoring rules');
-        console.log('quiet=true             suppress all output');
-        console.log('pipe=true              read flight data from stdin and write optimal solutions to stdout, works best with quiet');
-        console.log('progress=<n>           output an intermediate solution every n milliseconds, works best with pipe');
-        console.log('hp=true                enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
-        console.log('trim=true              auto-trim the flight log to its launch and landing points');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI|XCLeague] [quiet=true] [pipe=true] [progress=<n>] ...');
+        console.log('flight.igc                           is the flight track log');
+        console.log('out=flight.json                      save the optimal solution in GeoJSON format');
+        console.log('maxtime=n                            limit the execution time to n seconds');
+        console.log('scoring=FFVL|XContest|FAI|XCLeague   select the scoring rules');
+        console.log('quiet=true                           suppress all output');
+        console.log('pipe=true                            read flight data from stdin and write optimal solutions to stdout, works best with quiet');
+        console.log('progress=<n>                         output an intermediate solution every n milliseconds, works best with pipe');
+        console.log('hp=true                              enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
+        console.log('trim=true                            auto-trim the flight log to its launch and landing points');
         process.exit(1);
     }
     inf = process.argv[2];
@@ -116,8 +116,15 @@ try {
                 displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
             else if (best.scoreInfo.tp[2])
                 displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
-            else
+            else if (best.scoreInfo.tp[1])
                 displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
+            else {
+                if (best.scoreInfo.tp[0].distanceEarth(best.scoreInfo.cp.in) >
+                        best.scoreInfo.tp[0].distanceEarth(best.scoreInfo.cp.out))
+                    displayDistance('cp.in', 'tp', best.scoreInfo.tp[0], best.scoreInfo.cp.in);
+                else
+                    displayDistance('cp.out', 'tp', best.scoreInfo.tp[0], best.scoreInfo.cp.out);
+            }
             console.log('Best solution is'
 				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`

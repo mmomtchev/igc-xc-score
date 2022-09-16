@@ -162,14 +162,31 @@ const scoringRules = {
         {
             name: 'Out-and-return distance',
             multiplier: 2,
-            bound: scoring.boundOutAndReturn,
-            score: scoring.scoreOutAndReturn,
+            bound: scoring.boundOutAndReturn1,
+            score: scoring.scoreOutAndReturn1,
             closingDistance: scoring.closingWithLimit,
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            cardinality: 3,
+            code: 'or1'
+        }
+    ],
+    /**
+     * @constant {object[]}
+     */
+    'XCLeague': [
+        {
+            name: 'Out-and-return distance',
+            multiplier: 2,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.4,
+            closingDistanceFixed: 0.4,
+            rounding: round2,
             cardinality: 2,
-            code: 'oar'
+            code: 'or2'
         }
     ]
 };

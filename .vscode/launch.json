@@ -75,13 +75,24 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "OAR",
+            "name": "OAR FAI",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
                 "test/out-and-return-record.igc",
                 "scoring=FAI"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "OAR XCLeague",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/cli",
+            "args": [
+                "test/out-and-return-record.igc",
+                "scoring=XCLeague"
             ],
             "console": "integratedTerminal"
         },
