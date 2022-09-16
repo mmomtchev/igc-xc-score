@@ -8,7 +8,7 @@ igc-xc-score is a paragliding and hang-gliding XC scoring tool in vanilla JS.
 
 It can be used directly from the command-line, or as a library embedded in a web browser or an application.
 
-Currently only the FFVL and XContest scoring rules are implemented, but you can pass your own structure with scoring info.
+Currently only FFVL, XContest and FAI scoring rules are implemented, but you can pass your own structure with scoring info.
 
 Changing the multipliers or the closing distances is easy, adding new bounding algorithms is not.
 

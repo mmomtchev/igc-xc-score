@@ -126,12 +126,14 @@ export function boundTriangle(ranges, boxes, opt) {
 
     let cp = { d: 0 };
     if (ranges[0].end < ranges[2].start) {
+        // Ranges do not overlap
         cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxDistance, opt);
         if (!cp)
             return 0;
         return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
     }
 
+    // Ranges overlap - bounding is impossible at this stage
     return maxDistance * opt.scoring.multiplier;
 }
 
@@ -149,6 +151,35 @@ export function scoreTriangle(tp, opt) {
     }
 
     let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
+    if (!cp)
+        return { score: 0 };
+
+    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+
+    return { distance, score, tp, cp };
+}
+
+// Upper limit for an out-and-return distance with vertices somewhere in boxes
+export function boundOutAndReturn(ranges, boxes, opt) {
+    const maxDistance = geom.maxDistance2Rectangles(boxes) * 2;
+
+    if (ranges[0].end < ranges[1].start) {
+        // Ranges do not overlap
+        const cp = geom.isTriangleClosed(ranges[0].end, ranges[1].start, maxDistance, opt);
+        if (!cp)
+            return 0;
+        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    }
+
+    // Ranges overlap - bounding is impossible at this stage
+    return maxDistance * opt.scoring.multiplier;
+}
+
+// Score an out-and-return once the 2 points have been selected
+export function scoreOutAndReturn(tp, opt) {
+    const distance = tp[0].distanceEarth(tp[1]) * 2;
+
+    let cp = geom.isTriangleClosed(tp[0].r, tp[1].r, distance, opt);
     if (!cp)
         return { score: 0 };
 

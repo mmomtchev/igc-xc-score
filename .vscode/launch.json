@@ -75,6 +75,17 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "OAR",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/cli",
+            "args": [
+                "test/out-and-return-record.igc",
+                "scoring=FAI"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "WORK",
             "type": "node",
             "request": "launch",

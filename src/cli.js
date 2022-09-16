@@ -43,7 +43,7 @@ if (config.pipe) {
         // eslint-disable-next-line no-undef
         console.log(`Momtchil Momtchev (velivole.fr/meteo.guru) & contributors, © 2020-${typeof _year !== 'undefined' ? _year : 'present'}, LGPL 3.0`);
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>] ...');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI] [quiet=true] [pipe=true] [progress=<n>] ...');
         console.log('flight.igc             is the flight track log');
         console.log('out=flight.json        save the optimal solution in GeoJSON format');
         console.log('maxtime=n              limit the execution time to n seconds');
@@ -107,12 +107,17 @@ try {
         if (best.scoreInfo !== undefined) {
             if (best.scoreInfo.ep && best.scoreInfo.ep['start'])
                 displayDistance('start', 'tp0', best.scoreInfo.ep['start'], best.scoreInfo.tp[0]);
-            for (let i of [0, 1])
+            let i = 0;
+            while(best.scoreInfo.tp[i + 1]) {
                 displayDistance(`tp${i}`, `tp${i + 1}`, best.scoreInfo.tp[i], best.scoreInfo.tp[i + 1]);
+                i++;
+            }
             if (best.scoreInfo.ep && best.scoreInfo.ep['finish'])
                 displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
-            else
+            else if (best.scoreInfo.tp[2])
                 displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
+            else
+                displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
             console.log('Best solution is'
 				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`

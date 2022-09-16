@@ -48,6 +48,9 @@ const tests = {
         { file: 'trifai-xcontest-307.57.igc', score: 308.26 },
         { file: 'freeflight-xcontest-465.33.igc', score: 465.58 },
         { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
+    ],
+    FAI: [
+        { file: 'out-and-return-record.igc', score: 606.7 }
     ]
 };
 

@@ -120,6 +120,57 @@ const scoringRules = {
             cardinality: 3,
             code: 'fai'
         }
+    ],
+    /**
+     * @constant {object[]}
+     */
+    'FAI': [
+        {
+            name: 'Open Distance',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Free Triangle',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'fai'
+        },
+        {
+            name: 'Out-and-return distance',
+            multiplier: 2,
+            bound: scoring.boundOutAndReturn,
+            score: scoring.scoreOutAndReturn,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 2,
+            code: 'oar'
+        }
     ]
 };
 

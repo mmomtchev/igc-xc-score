@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.2] WIP
+## [1.7.0] WIP
+ - Add a new type of flight, out-and-return distance
+ - Add the FAI rules
  - Significantly reduce the size of the production build of the web demo
 
 ## [1.6.1] 2022-05-12
