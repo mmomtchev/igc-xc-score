@@ -116,15 +116,9 @@ try {
                 displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
             else if (best.scoreInfo.tp[2])
                 displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
-            else if (best.scoreInfo.tp[1])
+            else
                 displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
-            else {
-                if (best.scoreInfo.tp[0].distanceEarth(best.scoreInfo.cp.in) >
-                        best.scoreInfo.tp[0].distanceEarth(best.scoreInfo.cp.out))
-                    displayDistance('cp.in', 'tp', best.scoreInfo.tp[0], best.scoreInfo.cp.in);
-                else
-                    displayDistance('cp.out', 'tp', best.scoreInfo.tp[0], best.scoreInfo.cp.out);
-            }
+            
             console.log('Best solution is'
 				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`

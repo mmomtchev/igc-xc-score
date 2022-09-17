@@ -221,9 +221,16 @@ export function scoreOutAndReturn1(tp, opt) {
     if (!cp)
         return { score: 0 };
 
-    const realDistance = Math.max(tp[1].distanceEarth(cp.in), tp[1].distanceEarth(cp.out)) * 2;
+    // Select the better second turn point
+    let tp2;
+    if (tp[1].distanceEarth(cp.in) > tp[1].distanceEarth(cp.out))
+        tp2 = cp.in;
+    else
+        tp2 = cp.out;
 
-    let score = (realDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    const realDistance = tp[1].distanceEarth(tp2);
 
-    return { distance: realDistance, score, tp: [tp[1]], cp };
+    let score = (realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
+
+    return { distance: realDistance, score, tp: [tp[1], tp2], cp };
 }

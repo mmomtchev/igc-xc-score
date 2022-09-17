@@ -168,7 +168,7 @@ const scoringRules = {
     'FAI-OAR': [
         {
             name: 'Out-and-return distance',
-            multiplier: 2,
+            multiplier: 1,
             bound: scoring.boundOutAndReturn1,
             score: scoring.scoreOutAndReturn1,
             closingDistance: scoring.closingWithLimit,
@@ -176,7 +176,7 @@ const scoringRules = {
             closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
-            code: 'or1'
+            code: 'oar'
         }
     ],
     /**
@@ -197,7 +197,7 @@ const scoringRules = {
             closingDistanceFixed: 0.4,
             rounding: round2,
             cardinality: 2,
-            code: 'or2'
+            code: 'oar'
         }
     ]
 };
