@@ -98,7 +98,7 @@ function loop() {
     if (!s.done) {
         $('#spinner').show();
         // eslint-disable-next-line no-undef
-        display(s.value.geojson({ debug: __DEBUG__ }));
+        display(s.value.geojson());
         runningProcess = window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
@@ -207,6 +207,8 @@ function runProcessing() {
         const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
             maxcycle: 100,
             hp: hp,
+            // eslint-disable-next-line no-undef
+            debug: { debug: __DEBUG__ },
             trim
         }, { timeout: 2000 });
         loop.call(it);

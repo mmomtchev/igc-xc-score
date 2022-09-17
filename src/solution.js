@@ -99,7 +99,7 @@ export class Solution {
     }
 
     /*eslint no-empty: ["off"]*/
-    geojson({ debug }) {
+    geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
             /* c8 ignore next 8 */
@@ -138,7 +138,7 @@ export class Solution {
                         }
                     });
             }
-            if (debug && this.boxes) {
+            if (this.opt.config.debug && this.boxes) {
                 for (const b in this.boxes) {
                     features.push({
                         type: 'Feature',
