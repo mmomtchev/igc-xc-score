@@ -49,7 +49,7 @@ const tests = {
         { file: 'freeflight-xcontest-465.33.igc', score: 465.58 },
         { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
     ],
-    FAI: [
+    'FAI-OAR': [
         { file: 'out-and-return-record.igc', score: 606.07 }
     ],
     XCLeague: [

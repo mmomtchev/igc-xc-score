@@ -159,6 +159,13 @@ const scoringRules = {
             cardinality: 3,
             code: 'fai'
         },
+    ],
+    /**
+     * @constant {object[]}
+     * This is a special type of flight that does not have proper scoring
+     * It is used only for Out-and-Return Distance to one turnpoint records
+     */
+    'FAI-OAR': [
         {
             name: 'Out-and-return distance',
             multiplier: 2,
@@ -177,6 +184,10 @@ const scoringRules = {
      */
     'XCLeague': [
         {
+            /**
+             * This the XCLeague definition of Out-and-Return Distance
+             * between 2 turnpoints
+             */
             name: 'Out-and-return distance',
             multiplier: 2,
             bound: scoring.boundOutAndReturn2,
