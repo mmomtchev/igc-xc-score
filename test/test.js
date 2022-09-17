@@ -50,7 +50,7 @@ const tests = {
         { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
     ],
     'FAI-OAR': [
-        { file: 'out-and-return-record.igc', score: 606.07 }
+        { file: 'out-and-return-record.igc', score: 303.35 }
     ],
     XCLeague: [
         { file: 'out-and-return-record.igc', score: 605.07 }
