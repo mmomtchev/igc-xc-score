@@ -97,6 +97,16 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Free Triangle XCLeague",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/cli",
+            "args": [
+                "test/trifai-xcontest-307.57.igc",
+                "scoring=XCLeague"
+            ],
+            "console": "integratedTerminal"
+        },        {
             "name": "WORK",
             "type": "node",
             "request": "launch",

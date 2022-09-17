@@ -144,9 +144,11 @@ export function boundTriangle(ranges, boxes, opt) {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
 
-    const maxDistance = (opt.scoring.minSide !== undefined)
-        ? maxFAIDistance(maxTriDistance, boxes, opt)
-        : maxTriDistance;
+    let maxDistance = maxTriDistance;
+    if (opt.scoring.minSide !== undefined)
+        maxDistance = maxFAIDistance(maxDistance, boxes, opt);
+    if (opt.scoring.maxSide !== undefined)
+        maxDistance = maxTRIDistance(maxDistance, boxes, opt);
 
     if (maxDistance === 0)
         return 0;

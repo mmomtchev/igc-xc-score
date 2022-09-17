@@ -53,6 +53,7 @@ const tests = {
         { file: 'out-and-return-record.igc', score: 303.35 }
     ],
     XCLeague: [
+        { file: 'trifai-xcontest-307.57.igc', score: 427.35 },
         { file: 'out-and-return-record.igc', score: 605.07 }
     ]
 };

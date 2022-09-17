@@ -183,13 +183,13 @@ const scoringRules = {
      * @constant {object[]}
      */
     'XCLeague': [
-        /*{
+        {
             /**
              * This the XCLeague definition of Out-and-Return Distance
              * between 2 turnpoints
-             /
+             */
             name: 'Out-and-Return Distance',
-            multiplier: 0.1,
+            multiplier: 2,
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
             closingDistance: scoring.closingWithLimit,
@@ -198,7 +198,7 @@ const scoringRules = {
             rounding: round2,
             cardinality: 2,
             code: 'oar'
-        },*/
+        },
         {
             name: 'Flat Triangle',
             multiplier: 2.0,
