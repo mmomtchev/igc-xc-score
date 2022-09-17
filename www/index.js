@@ -71,6 +71,12 @@ const flightStyle = {
             color: 'mediumvioletred',
             width: 4
         })
+    }),
+    'box[0-9]': new Style({
+        stroke: new Stroke({
+            color: 'black',
+            width: 4
+        })
     })
 };
 
@@ -91,7 +97,8 @@ function loop() {
     const s = this.next();
     if (!s.done) {
         $('#spinner').show();
-        display(s.value.geojson());
+        // eslint-disable-next-line no-undef
+        display(s.value.geojson({ debug: __DEBUG__ }));
         runningProcess = window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
@@ -109,9 +116,13 @@ function loop() {
         let d = [];
         if (s.value.scoreInfo.ep)
             d.push(['in:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
-        for (const i in s.value.scoreInfo.tp)        
+        for (const i in s.value.scoreInfo.tp)
             if (!s.value.scoreInfo.ep) {
-                d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % s.value.scoreInfo.tp.length]]);
+                d.push([
+                    i + ':' + ((i + 1) % s.value.scoreInfo.tp.length),
+                    s.value.scoreInfo.tp[i],
+                    s.value.scoreInfo.tp[(i + 1) % s.value.scoreInfo.tp.length]
+                ]);
             }
         if (s.value.scoreInfo.ep)
             d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
@@ -184,7 +195,7 @@ let runningProcess;
 function runProcessing() {
     if (!igcFlight)
         return;
-    
+
     if (runningProcess) {
         window.cancelIdleCallback(runningProcess);
         runningProcess = undefined;
@@ -203,7 +214,7 @@ function runProcessing() {
 }
 
 // eslint-disable-next-line no-undef
-$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
+$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__} ${__DEBUG__ ? 'debug' : ''}`);
 
 Object.keys(igcScoring).map(scoring => {
     $('#igc-scoringRulesList').append(`<button class="dropdown-item ctrl-scoringRules" id="${scoring}">${scoring}</button>`);

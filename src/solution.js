@@ -23,7 +23,7 @@ export class Solution {
                     this.ranges[r] = new Range(this.ranges[r].start, this.ranges[r + 1].end);
 
             this.boxes[r] = new Box(this.ranges[r], opt.flight);
-        }        
+        }
         this.score = undefined;
         this.bound = undefined;
         this.id = id++;
@@ -99,7 +99,7 @@ export class Solution {
     }
 
     /*eslint no-empty: ["off"]*/
-    geojson() {
+    geojson({ debug }) {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
             /* c8 ignore next 8 */
@@ -114,14 +114,14 @@ export class Solution {
         }
         try {
             const tp = this.scoreInfo.tp;
-            for (let r of [0, 1, 2]) {
+            for (let r in tp) {
                 features.push(tp[r]
                     .geojson('tp' + r, {
                         id: 'tp' + r,
                         r: tp[r].r,
                         timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
-                if (r < 2 || this.scoreInfo.cp)
+                if (this.scoreInfo.cp)
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
@@ -129,15 +129,40 @@ export class Solution {
                             id: 'seg' + r,
                             'stroke': 'yellow',
                             'stroke-width': 4,
-                            d: tp[r].distanceEarth(tp[(r + 1) % 3])
+                            d: tp[r].distanceEarth(tp[(r + 1) % tp.length])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % 3].x, tp[(r + 1) % 3].y]],
+                            coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % tp.length].x, tp[(r + 1) % tp.length].y]],
                             style: { 'stroke': 'yellow', 'stroke-width': 4 }
                         }
                     });
             }
+            if (debug && this.boxes) {
+                for (const b in this.boxes) {
+                    features.push({
+                        type: 'Feature',
+                        id: 'box' + b,
+                        properties: {
+                            id: 'box' + b,
+                            'stroke': 'black',
+                            'stroke-width': 4
+                        },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [this.boxes[b].x1, this.boxes[b].y1],
+                                [this.boxes[b].x2, this.boxes[b].y1],
+                                [this.boxes[b].x2, this.boxes[b].y2],
+                                [this.boxes[b].x1, this.boxes[b].y2],
+                                [this.boxes[b].x1, this.boxes[b].y1],
+                            ],
+                            style: { 'stroke': 'black', 'stroke-width': 4 }
+                        }
+                    });
+                }
+            }
+            console.log(features);
         } catch (e) {
         }
         try {
@@ -286,7 +311,7 @@ export class Solution {
                 return;
         } else {
             if (this.ranges.some((range, i) => !range.contains(trace[i])))
-                return;            
+                return;
         }
         let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.opt.scoring.name} `;
         for (const range of this.ranges)

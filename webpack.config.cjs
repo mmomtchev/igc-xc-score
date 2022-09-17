@@ -36,6 +36,7 @@ module.exports = (env, argv) => ({
             __BUILD_GIT__: JSON.stringify(build_git),
             __BUILD_PKG__: JSON.stringify(build_pkg),
             __BUILD_DATE__: JSON.stringify(build_date),
+            __DEBUG__: JSON.stringify(argv.mode == 'development')
         })
     ],
     module: {
