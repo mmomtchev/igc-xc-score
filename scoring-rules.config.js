@@ -167,7 +167,7 @@ const scoringRules = {
      */
     'FAI-OAR': [
         {
-            name: 'Out-and-return distance',
+            name: 'Out-and-Return Distance',
             multiplier: 1,
             bound: scoring.boundOutAndReturn1,
             score: scoring.scoreOutAndReturn1,
@@ -183,13 +183,13 @@ const scoringRules = {
      * @constant {object[]}
      */
     'XCLeague': [
-        {
+        /*{
             /**
              * This the XCLeague definition of Out-and-Return Distance
              * between 2 turnpoints
-             */
-            name: 'Out-and-return distance',
-            multiplier: 2,
+             /
+            name: 'Out-and-Return Distance',
+            multiplier: 0.1,
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
             closingDistance: scoring.closingWithLimit,
@@ -198,6 +198,33 @@ const scoringRules = {
             rounding: round2,
             cardinality: 2,
             code: 'oar'
+        },*/
+        {
+            name: 'Flat Triangle',
+            multiplier: 2.0,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.15,
+            maxSide: 0.45,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.4,
+            closingDistanceFixed: 0.4,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 2.3,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.4,
+            closingDistanceFixed: 0.4,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
         }
     ]
 };

@@ -58,6 +58,28 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
     return Math.min(maxDistance, maxTriDistance);
 }
 
+// Upper limit for a flat triangle /w maxSide with vertices somewhere in boxes,
+// maxTriDistance is the upper limit of the unconstrained flat triangle
+function maxTRIDistance(maxTriDistance, boxes, opt) {
+    const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
+        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+    });
+
+    if (maxTriDistance < minTriDistance)
+        return 0;
+
+    const minAB = geom.minDistance2Rectangles([boxes[0], boxes[1]]);
+    const minBC = geom.minDistance2Rectangles([boxes[1], boxes[2]]);
+    const minCA = geom.minDistance2Rectangles([boxes[2], boxes[0]]);
+
+    const maxDistance = Math.max(minAB, minBC, minCA) / opt.scoring.maxSide;
+    if (maxDistance < minTriDistance)
+        return 0;
+
+    return Math.min(maxDistance, maxTriDistance);
+}
+
+
 // These are not used by any scoring method at the moment
 /* c8 ignore start */
 export function boundOpenTriangle(ranges, boxes, opt) {
@@ -69,6 +91,10 @@ export function boundOpenTriangle(ranges, boxes, opt) {
     });
     if (opt.scoring.minSide !== undefined) {
         if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
+            return 0;
+    }
+    if (opt.scoring.maxSide !== undefined) {
+        if (maxTRIDistance(maxTriDistance, boxes, opt) === 0)
             return 0;
     }
 
@@ -148,6 +174,12 @@ export function scoreTriangle(tp, opt) {
     if (opt.scoring.minSide !== undefined) {
         const minSide = opt.scoring.minSide * distance;
         if (d0 < minSide || d1 < minSide || d2 < minSide)
+            return { score: 0 };
+    }
+
+    if (opt.scoring.maxSide !== undefined) {
+        const maxSide = opt.scoring.maxSide * distance;
+        if (d0 > maxSide || d1 > maxSide || d2 > maxSide)
             return { score: 0 };
     }
 
