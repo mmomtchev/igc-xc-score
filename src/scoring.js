@@ -201,8 +201,12 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
 
         if (!cp)
             return 0;
-        const realMax = geom.maxDistance2Rectangles([boxes[1], new Box(cp.in.x, cp.in.y, cp.out.x, cp.out.y)]);
-        return (realMax * 2 + opt.scoring.closingDistanceFree - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+
+        const realMax = geom.maxDistance2Rectangles([boxes[1],
+            new Box(cp.in.x, cp.in.y, cp.out.x, cp.out.y)]);
+        const maxClosingGain = Math.max((opt.scoring.closingDistanceFree || 0) - cp.d, 0);
+
+        return (realMax + maxClosingGain - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
     }
 
     // Ranges overlap - bounding is impossible at this stage
