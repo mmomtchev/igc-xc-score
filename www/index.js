@@ -109,9 +109,10 @@ function loop() {
         let d = [];
         if (s.value.scoreInfo.ep)
             d.push(['in:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
-        for (let i of [0, 1, 2])
-            if (i != 2 || !s.value.scoreInfo.ep)
-                d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % 3]]);
+        for (const i in s.value.scoreInfo.tp)        
+            if (!s.value.scoreInfo.ep) {
+                d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % s.value.scoreInfo.tp.length]]);
+            }
         if (s.value.scoreInfo.ep)
             d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
 
