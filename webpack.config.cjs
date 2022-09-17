@@ -14,15 +14,15 @@ module.exports = (env, argv) => ({
         index: path.resolve(__dirname, 'www', 'index.js')
     },
     output: {
-        filename: '[name].bundle.js',
-        path: path.resolve(__dirname , 'dist', 'www'),
+        filename: 'bundle.js',
+        path: path.resolve(__dirname, 'dist', 'www'),
         publicPath: '/xc-score/'
     },
     resolve: {
         modules: ['node_modules'],
         alias: {
             'igc-xc-score': path.resolve(__dirname, 'index.js'),
-            jquery: 'jquery/dist/jquery.min.js',
+            jquery: 'jquery/dist/jquery.min.js'
         }
     },
     devtool: argv.mode == 'development' ? 'eval' : undefined,
@@ -47,9 +47,6 @@ module.exports = (env, argv) => ({
         ]
     },
     optimization: {
-        usedExports: true,
-        splitChunks: {
-            chunks: 'all'
-        }
+        usedExports: true
     }
 });
