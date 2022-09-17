@@ -122,7 +122,7 @@ function loop() {
 }
 
 let map;
-$(document).ready(() => {
+$(() => {
     $('#spinner').hide();
     geoJSONReader = new GeoJSON();
     flightDataSource = new VectorSource();
