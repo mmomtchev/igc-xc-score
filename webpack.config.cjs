@@ -14,7 +14,7 @@ module.exports = (env, argv) => ({
         index: path.resolve(__dirname, 'www', 'index.js')
     },
     output: {
-        filename: '[name].bundle.js',
+        filename: 'bundle.js',
         path: path.resolve(__dirname , 'dist', 'www'),
         publicPath: '/xc-score/'
     },
@@ -47,9 +47,6 @@ module.exports = (env, argv) => ({
         ]
     },
     optimization: {
-        usedExports: true,
-        splitChunks: {
-            chunks: 'all'
-        }
+        usedExports: true
     }
 });
