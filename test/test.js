@@ -59,7 +59,7 @@ const tests = {
         { file: 'SwansonlowD-2022-07-16.igc', score: 249.59 },
         { file: 'ChuS-2022-08-13.igc', score: 89.97 },
         { file: 'AshleyS-2022-07-16.igc', score: 130.48 },
-        { file: 'MurphyJ-2022-03-26.igc', score: 32.73 }
+        { file: 'MurphyJ-2022-03-26.igc', score: 24.55 }
     ]
 };
 

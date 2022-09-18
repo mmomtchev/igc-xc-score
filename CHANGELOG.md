@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [1.7.0] WIP
  - Add a two new types of flight, out-and-return distance with 1 and with 2 TPs
  - Add `maxSide` option for triangles
+ - Add `minDistance` option for all flights
  - Add the FAI rules
  - Add the XCLeague rules
  - Significantly reduce the size of the production build of the web demo

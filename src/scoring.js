@@ -21,6 +21,8 @@ export function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].end, opt.landing, boxes[2], opt);
     const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    if (maxDistance < (opt.scoring.minDistance || 0))
+        return 0;
     return maxDistance * opt.scoring.multiplier;
 }
 
@@ -32,7 +34,7 @@ export function scoreDistance3Points(tp, opt) {
     const all = [pin, tp[0], tp[1], tp[2], pout];
     for (let i = 0; i < all.length - 1; i++)
         distance += all[i].distanceEarth(all[i + 1]);
-    const score = distance * opt.scoring.multiplier;
+    const score = distance >= (opt.scoring.minDistance || 0) ? distance * opt.scoring.multiplier : 0;
     return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
 }
 
@@ -90,6 +92,8 @@ export function boundOpenTriangle(ranges, boxes, opt) {
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
+    if (maxTriDistance < (opt.scoring.minDistance || 0))
+        return 0;
     if (opt.scoring.minSide !== undefined) {
         if (maxFAIDistance(maxTriDistance, boxes, opt) === 0)
             return 0;
@@ -115,6 +119,9 @@ export function scoreOpenTriangle(tp, opt) {
     const d1 = tp[1].distanceEarth(tp[2]);
     const d2 = tp[2].distanceEarth(tp[0]);
     const triDistance = d0 + d1 + d2;
+
+    if (triDistance < (opt.scoring.minDistance || 0))
+        return { score: 0 };
 
     if (opt.scoring.minSide !== undefined) {
         const minSide = opt.scoring.minSide * triDistance;
@@ -145,6 +152,8 @@ export function boundTriangle(ranges, boxes, opt) {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
 
+    if (maxTriDistance < (opt.scoring.minDistance || 0))
+        return 0;
     let maxDistance = maxTriDistance;
     if (opt.scoring.minSide !== undefined)
         maxDistance = maxFAIDistance(maxDistance, boxes, opt);
@@ -174,6 +183,9 @@ export function scoreTriangle(tp, opt) {
     const d2 = tp[2].distanceEarth(tp[0]);
     const distance = d0 + d1 + d2;
 
+    if (distance < (opt.scoring.minDistance || 0))
+        return { score: 0 };
+
     if (opt.scoring.minSide !== undefined) {
         const minSide = opt.scoring.minSide * distance;
         if (d0 < minSide || d1 < minSide || d2 < minSide)
@@ -199,6 +211,9 @@ export function scoreTriangle(tp, opt) {
 export function boundOutAndReturn2(ranges, boxes, opt) {
     const maxDistance = geom.maxDistance2Rectangles(boxes) * 2;
 
+    if (maxDistance < (opt.scoring.minDistance || 0))
+        return 0;
+
     if (ranges[0].end < ranges[1].start) {
         // Ranges do not overlap
         const cp = geom.isTriangleClosed(ranges[0].end, ranges[1].start, maxDistance, opt);
@@ -215,6 +230,9 @@ export function boundOutAndReturn2(ranges, boxes, opt) {
 export function scoreOutAndReturn2(tp, opt) {
     const distance = tp[0].distanceEarth(tp[1]) * 2;
 
+    if (distance < (opt.scoring.minDistance || 0))
+        return { score: 0 };
+
     let cp = geom.isTriangleClosed(tp[0].r, tp[1].r, distance, opt);
     if (!cp)
         return { score: 0 };
@@ -228,6 +246,9 @@ export function scoreOutAndReturn2(tp, opt) {
 export function boundOutAndReturn1(ranges, boxes, opt) {
     const maxDistance = Math.max(geom.maxDistance2Rectangles([boxes[1], boxes[0]]),
         geom.maxDistance2Rectangles([boxes[1], boxes[2]]));
+
+    if (maxDistance < (opt.scoring.minDistance || 0))
+        return 0;
 
     if (ranges[0].end < ranges[2].start) {
         // Ranges do not overlap
@@ -246,6 +267,9 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
 // Score an out-and-return with 1 TPs once the point has been selected
 export function scoreOutAndReturn1(tp, opt) {
     const distance = Math.max(tp[0].distanceEarth(tp[1]), tp[1].distanceEarth(tp[2]));
+
+    if (distance < (opt.scoring.minDistance || 0))
+        return { score: 0 };
 
     const d = tp[0].distanceEarth(tp[2]);
     if (d > opt.scoring.closingDistance(distance, opt))

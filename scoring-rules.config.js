@@ -188,7 +188,7 @@ const scoringRules = {
              * This is the XCLeague definition of Out-and-Return Distance
              * between 2 turnpoints
              */
-            name: 'Out-and-Return Distance',
+            name: 'Out-and-Return Distance >=35km',
             multiplier: 2,
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
@@ -196,7 +196,32 @@ const scoringRules = {
             closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 2,
-            code: 'oar'
+            code: 'oar',
+            minDistance: 35
+        },
+        {
+            name: 'Out-and-Return Distance >=15km',
+            multiplier: 1.5,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 2,
+            code: 'oar',
+            minDistance: 15
+        },
+        {
+            name: 'Out-and-Return Distance >=5km (Clubs)',
+            multiplier: 1.2,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 2,
+            code: 'oar',
+            minDistance: 5
         },
         {
             name: 'Turnpoint Flight',
@@ -205,11 +230,12 @@ const scoringRules = {
             score: scoring.scoreDistance3Points,
             rounding: round2,
             cardinality: 3,
-            code: 'od'
+            code: 'od',
+            minDistance: 5
         },
         {
-            name: 'Flat Triangle',
-            multiplier: 2.0,
+            name: 'Flat Triangle >=35km',
+            multiplier: 2,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
             minSide: 0.15,
@@ -218,10 +244,39 @@ const scoringRules = {
             closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
-            code: 'tri'
+            code: 'tri',
+            minDistance: 35
         },
         {
-            name: 'FAI Triangle',
+            name: 'Flat Triangle >=15km',
+            multiplier: 1.5,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.15,
+            maxSide: 0.45,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri',
+            minDistance: 15
+        },
+        {
+            name: 'Flat Triangle >=5km (Clubs)',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.15,
+            maxSide: 0.45,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri',
+            minDistance: 5
+        },
+        {
+            name: 'FAI Triangle >=25km',
             multiplier: 2.3,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -230,7 +285,34 @@ const scoringRules = {
             closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
-            code: 'tri'
+            code: 'tri',
+            minDistance: 25
+        },
+        {
+            name: 'FAI Triangle >=15km',
+            multiplier: 2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri',
+            minDistance: 15
+        },
+        {
+            name: 'FAI Triangle >=5km (Clubs)',
+            multiplier: 1.5,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri',
+            minDistance: 5
         }
     ]
 };
