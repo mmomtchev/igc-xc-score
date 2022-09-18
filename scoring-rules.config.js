@@ -62,7 +62,7 @@ const scoringRules = {
      */
     'XContest': [
         {
-            name: 'Free flight',
+            name: 'Free Flight',
             multiplier: 1,
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
@@ -71,7 +71,7 @@ const scoringRules = {
             code: 'od'
         },
         {
-            name: 'Free triangle',
+            name: 'Free Triangle',
             multiplier: 1.2,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -82,7 +82,7 @@ const scoringRules = {
             code: 'tri'
         },
         {
-            name: 'FAI triangle',
+            name: 'FAI Triangle',
             multiplier: 1.4,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -94,7 +94,7 @@ const scoringRules = {
             code: 'fai'
         },
         {
-            name: 'Closed free triangle',
+            name: 'Closed Free Triangle',
             multiplier: 1.4,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -107,7 +107,7 @@ const scoringRules = {
             code: 'tri'
         },
         {
-            name: 'Closed FAI triangle',
+            name: 'Closed FAI Triangle',
             multiplier: 1.6,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
