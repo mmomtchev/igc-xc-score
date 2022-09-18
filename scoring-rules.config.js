@@ -185,7 +185,7 @@ const scoringRules = {
     'XCLeague': [
         {
             /**
-             * This the XCLeague definition of Out-and-Return Distance
+             * This is the XCLeague definition of Out-and-Return Distance
              * between 2 turnpoints
              */
             name: 'Out-and-Return Distance',

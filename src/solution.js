@@ -139,6 +139,7 @@ export class Solution {
                         }
                     });
             }
+            /* c8 ignore next 23 */
             if (this.opt.config.debug && this.boxes) {
                 for (const b in this.boxes) {
                     features.push({
