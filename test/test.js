@@ -18,8 +18,8 @@ const tests = {
         { file: 'd3p.igc', score: 60.77 },
         { file: 'fai.igc', score: 228.71 },
         { file: 'fai.igc', score: 228.72, config: { hp: true } },
-        { file: 'line.igc', score: 53.34, md5: '23584c29d94bc9ec136cb1861276258f' },
-        { file: 'tri.igc', score: 17.51, md5: 'c4ae239fff97533b9f42bd32469e8435' },
+        { file: 'line.igc', score: 53.34, md5: 'b719ccb5c9a708c740618d4cb9acb7e2' },
+        { file: 'tri.igc', score: 17.51, md5: '0fb3d6bccc3a0951fe1fd8b88b6766eb' },
         { file: 'record_de_france.igc', score: 422.02 },
         { file: 'record_de_france.igc', score: 421.99, config: { hp: true } },
         { file: 'zigzag.igc', score: 90.64 },
@@ -48,6 +48,18 @@ const tests = {
         { file: 'trifai-xcontest-307.57.igc', score: 308.26 },
         { file: 'freeflight-xcontest-465.33.igc', score: 465.58 },
         { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
+    ],
+    'FAI-OAR': [
+        { file: 'trifai-xcontest-307.57.igc', score: 150.56 },
+        { file: 'out-and-return-record.igc', score: 303.35 }
+    ],
+    XCLeague: [
+        { file: 'trifai-xcontest-307.57.igc', score: 426.97 },
+        { file: 'out-and-return-record.igc', score: 605.12 },
+        { file: 'SwansonlowD-2022-07-16.igc', score: 249.59 },
+        { file: 'ChuS-2022-08-13.igc', score: 89.97 },
+        { file: 'AshleyS-2022-07-16.igc', score: 130.48 },
+        { file: 'MurphyJ-2022-03-26.igc', score: 32.73 }
     ]
 };
 

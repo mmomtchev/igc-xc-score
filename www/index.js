@@ -1,11 +1,11 @@
-/*eslint-env jquery*/
+/* global __DEBUG__:false, __BUILD_PKG__:false, __BUILD_GIT__, __BUILD_DATE__ */
 import { Map, View } from 'ol';
 import { transformExtent } from 'ol/proj.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
 import { XYZ, Vector as VectorSource, OSM } from 'ol/source.js';
 import { defaults as defaultControls, ScaleLine } from 'ol/control.js';
-import { Circle as CircleStyle, Stroke, Style } from 'ol/style.js';
+import { Circle as CircleStyle, Text as TextStyle, Stroke, Style } from 'ol/style.js';
 import { easeOut } from 'ol/easing.js';
 import LayerSwitcher from 'ol-layerswitcher';
 
@@ -50,14 +50,22 @@ const flightStyle = {
         image: new CircleStyle({
             radius: 8,
             fill: null,
-            stroke: new Stroke({ color: 'coral', width: 4 })
+            stroke: new Stroke({ color: 'coral', width: 2 })
+        }),
+        text: new TextStyle({
+            text: '>',
+            stroke: new Stroke({ color: 'coral', width: 2 })
         })
     }),
     'land': new Style({
         image: new CircleStyle({
             radius: 8,
             fill: null,
-            stroke: new Stroke({ color: 'black', width: 4 })
+            stroke: new Stroke({ color: 'black', width: 2 })
+        }),
+        text: new TextStyle({
+            text: '\\',
+            stroke: new Stroke({ color: 'black', width: 2 })
         })
     }),
     'seg[0-9|_in|_out]': new Style({
@@ -71,6 +79,27 @@ const flightStyle = {
             color: 'mediumvioletred',
             width: 4
         })
+    }),
+    'box0': new Style({
+        stroke: new Stroke({
+            color: 'white',
+            width: 8
+        }),
+        zIndex: 1000
+    }),
+    'box1': new Style({
+        stroke: new Stroke({
+            color: 'grey',
+            width: 8
+        }),
+        zIndex: 1000
+    }),
+    'box2': new Style({
+        stroke: new Stroke({
+            color: 'black',
+            width: 8
+        }),
+        zIndex: 1000
     })
 };
 
@@ -82,16 +111,29 @@ function styleGet(feature) {
 
 let flightDataSource;
 let geoJSONReader;
-function display(geojson) {
+function display(geojson, style) {
     flightDataSource.clear();
-    flightDataSource.addFeatures(geoJSONReader.readFeatures(geojson, { featureProjection: 'EPSG:3857' }));
+    const features = geoJSONReader.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
+    if (style) {
+        for (const f of features)
+            f.setStyle(style);
+    }
+    flightDataSource.addFeatures(features);
+}
+
+function coordinates(point) {
+    return `${point.y.toFixed(4)}°:${point.x.toFixed(4)}°`;
 }
 
 function loop() {
     const s = this.next();
     if (!s.done) {
         $('#spinner').show();
-        display(s.value.geojson());
+        if (__DEBUG__) {
+            display(s.value.last.geojson());
+        } else {
+            display(s.value.geojson());
+        }
         runningProcess = window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
@@ -108,15 +150,30 @@ function loop() {
             r.push(`<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d}km</td>`);
         let d = [];
         if (s.value.scoreInfo.ep)
-            d.push(['in:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
-        for (let i of [0, 1, 2])
-            if (i != 2 || !s.value.scoreInfo.ep)
-                d.push([i + ':' + ((i + 1) % 3), s.value.scoreInfo.tp[i], s.value.scoreInfo.tp[(i + 1) % 3]]);
+            d.push(['START:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
+        for (const i in s.value.scoreInfo.tp)
+            d.push([
+                i + ':' + ((+i + 1) % s.value.scoreInfo.tp.length),
+                s.value.scoreInfo.tp[i],
+                s.value.scoreInfo.tp[(+i + 1) % s.value.scoreInfo.tp.length]
+            ]);
         if (s.value.scoreInfo.ep)
-            d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
+            d.push(['2:FINISH', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
 
-        for (let i of d)
-            r.push(`<td class="label">d ${i[0]}</td><td class="data">${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+        for (const i of d)
+            r.push(`<td class="label">d ${i[0]}</td><td class="data">` +
+                `${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+
+        if (s.value.scoreInfo.ep)
+            r.push('<td class="label">START</td><td class="data">' +
+                `${coordinates(s.value.scoreInfo.ep['start'])}km</td>`);
+        for (const i in s.value.scoreInfo.tp)
+            r.push(`<td class="label">TP${i}</td><td class="data">` +
+                `${coordinates(s.value.scoreInfo.tp[i])}</td>`);
+        if (s.value.scoreInfo.ep)
+            r.push('<td class="label">FINISH</td><td class="data">' +
+                `${coordinates(s.value.scoreInfo.ep['finish'])}</td>`);
+
         $('#status').html('<table class="table"><tr>' + r.join('</tr><tr>'));
     }
 }
@@ -183,7 +240,7 @@ let runningProcess;
 function runProcessing() {
     if (!igcFlight)
         return;
-    
+
     if (runningProcess) {
         window.cancelIdleCallback(runningProcess);
         runningProcess = undefined;
@@ -195,14 +252,14 @@ function runProcessing() {
         const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
             maxcycle: 100,
             hp: hp,
+            debug: { debug: __DEBUG__ },
             trim
         }, { timeout: 2000 });
         loop.call(it);
     });
 }
 
-// eslint-disable-next-line no-undef
-$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__}`);
+$('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__} ${__DEBUG__ ? 'debug' : ''}`);
 
 Object.keys(igcScoring).map(scoring => {
     $('#igc-scoringRulesList').append(`<button class="dropdown-item ctrl-scoringRules" id="${scoring}">${scoring}</button>`);

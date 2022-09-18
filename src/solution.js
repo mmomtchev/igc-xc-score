@@ -23,14 +23,14 @@ export class Solution {
                     this.ranges[r] = new Range(this.ranges[r].start, this.ranges[r + 1].end);
 
             this.boxes[r] = new Box(this.ranges[r], opt.flight);
-        }        
+        }
         this.score = undefined;
         this.bound = undefined;
         this.id = id++;
         if (this.opt.config && this.opt.config.debug) {
             /* c8 ignore next 2 */
             this.parent = parent;
-            this.trace();
+            this.trace('constructor');
         }
     }
 
@@ -63,7 +63,7 @@ export class Solution {
 
     do_bound() {
         this.bound = this.opt.scoring.bound(this.ranges, this.boxes, this.opt);
-        this.trace();
+        this.trace('bounding');
     }
 
     do_score() {
@@ -79,7 +79,7 @@ export class Solution {
 
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
-        this.trace();
+        this.trace('scoring');
     }
 
     contentEquals(self, other) {
@@ -114,14 +114,15 @@ export class Solution {
         }
         try {
             const tp = this.scoreInfo.tp;
-            for (let r of [0, 1, 2]) {
+            for (const r in tp) {
                 features.push(tp[r]
                     .geojson('tp' + r, {
                         id: 'tp' + r,
                         r: tp[r].r,
                         timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
-                if (r < 2 || this.scoreInfo.cp)
+                // Skip closing the circuit if there are endpoints
+                if (!(this.scoreInfo.ep && r == tp.length - 1))
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,
@@ -129,14 +130,38 @@ export class Solution {
                             id: 'seg' + r,
                             'stroke': 'yellow',
                             'stroke-width': 4,
-                            d: tp[r].distanceEarth(tp[(r + 1) % 3])
+                            d: tp[r].distanceEarth(tp[(r + 1) % tp.length])
                         },
                         geometry: {
                             type: 'LineString',
-                            coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % 3].x, tp[(r + 1) % 3].y]],
+                            coordinates: [[tp[r].x, tp[r].y], [tp[(r + 1) % tp.length].x, tp[(r + 1) % tp.length].y]],
                             style: { 'stroke': 'yellow', 'stroke-width': 4 }
                         }
                     });
+            }
+            if (this.opt.config.debug && this.boxes) {
+                for (const b in this.boxes) {
+                    features.push({
+                        type: 'Feature',
+                        id: 'box' + b,
+                        properties: {
+                            id: 'box' + b,
+                            'stroke': 'black',
+                            'stroke-width': 4
+                        },
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [
+                                [this.boxes[b].x1, this.boxes[b].y1],
+                                [this.boxes[b].x2, this.boxes[b].y1],
+                                [this.boxes[b].x2, this.boxes[b].y2],
+                                [this.boxes[b].x1, this.boxes[b].y2],
+                                [this.boxes[b].x1, this.boxes[b].y1],
+                            ],
+                            style: { 'stroke': 'black', 'stroke-width': 4 }
+                        }
+                    });
+                }
             }
         } catch (e) {
         }
@@ -286,7 +311,7 @@ export class Solution {
                 return;
         } else {
             if (this.ranges.some((range, i) => !range.contains(trace[i])))
-                return;            
+                return;
         }
         let r = `${msg ? msg : ''} solution tracing: ${this.id} ${this.opt.scoring.name} `;
         for (const range of this.ranges)

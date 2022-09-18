@@ -6,7 +6,7 @@ module.exports = {
         node: true
     },
     extends: [
-        "eslint:recommended"
+        'eslint:recommended'
     ],
     globals: {
         Atomics: 'readonly',
@@ -18,8 +18,8 @@ module.exports = {
     },
     rules: {
         quotes: ['error', 'single'],
-		semi: ['error', 'always'],
-		indent: ['error', 4]
+        semi: ['error', 'always'],
+        indent: ['error', 4]
     },
     overrides: [
         {
@@ -28,7 +28,8 @@ module.exports = {
                 browser: true,
                 es6: true,
                 commonjs: false,
-                node: false
+                node: false,
+                jquery: true
             },
             parserOptions: {
                 ecmaVersion: 2016,

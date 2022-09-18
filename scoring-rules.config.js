@@ -62,7 +62,7 @@ const scoringRules = {
      */
     'XContest': [
         {
-            name: 'Free flight',
+            name: 'Free Flight',
             multiplier: 1,
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
@@ -71,7 +71,7 @@ const scoringRules = {
             code: 'od'
         },
         {
-            name: 'Free triangle',
+            name: 'Free Triangle',
             multiplier: 1.2,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -82,7 +82,7 @@ const scoringRules = {
             code: 'tri'
         },
         {
-            name: 'FAI triangle',
+            name: 'FAI Triangle',
             multiplier: 1.4,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -94,7 +94,7 @@ const scoringRules = {
             code: 'fai'
         },
         {
-            name: 'Closed free triangle',
+            name: 'Closed Free Triangle',
             multiplier: 1.4,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -107,7 +107,7 @@ const scoringRules = {
             code: 'tri'
         },
         {
-            name: 'Closed FAI triangle',
+            name: 'Closed FAI Triangle',
             multiplier: 1.6,
             bound: scoring.boundTriangle,
             score: scoring.scoreTriangle,
@@ -119,6 +119,118 @@ const scoringRules = {
             rounding: round2,
             cardinality: 3,
             code: 'fai'
+        }
+    ],
+    /**
+     * @constant {object[]}
+     */
+    'FAI': [
+        {
+            name: 'Open Distance',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Free Triangle',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'fai'
+        },
+    ],
+    /**
+     * @constant {object[]}
+     * This is a special type of flight that does not have proper scoring
+     * It is used only for Out-and-Return Distance to one turnpoint records
+     */
+    'FAI-OAR': [
+        {
+            name: 'Out-and-Return Distance',
+            multiplier: 1,
+            bound: scoring.boundOutAndReturn1,
+            score: scoring.scoreOutAndReturn1,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'oar'
+        }
+    ],
+    /**
+     * @constant {object[]}
+     */
+    'XCLeague': [
+        {
+            /**
+             * This the XCLeague definition of Out-and-Return Distance
+             * between 2 turnpoints
+             */
+            name: 'Out-and-Return Distance',
+            multiplier: 2,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 2,
+            code: 'oar'
+        },
+        {
+            name: 'Turnpoint Flight',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Flat Triangle',
+            multiplier: 2.0,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.15,
+            maxSide: 0.45,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 2.3,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            cardinality: 3,
+            code: 'tri'
         }
     ]
 };

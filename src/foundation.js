@@ -6,9 +6,9 @@ import * as vincentys from './vincentys.js';
 export class Point {
     constructor(x, y) {
         if (Array.isArray(x)) {
-            this.x = x[y].longitude;
-            this.y = x[y].latitude;
-            this.r = y;
+            this.x = +x[y].longitude;
+            this.y = +x[y].latitude;
+            this.r = +y;
         } else {
             this.x = x;
             this.y = y;

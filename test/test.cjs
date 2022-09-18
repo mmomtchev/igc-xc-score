@@ -12,7 +12,7 @@ const defaultConfig = {
 
 const tests = {
     FFVL: [
-        { file: 'tri.igc', score: 17.51, md5: '141ceec48aa72108d2a0fa2790cf30e6' },
+        { file: 'tri.igc', score: 17.51, md5: '87f88b9084fe23ed60a74b939b7cf9cc' },
         { file: 'tri.igc', score: 17.51, config: { hp: true } }
     ]
 };

@@ -96,6 +96,8 @@ export default function* solver(flight, _scoringTypes, _config) {
                     }
                 }
                 solutionQueue.push(s);
+                if (config.debug)
+                    best.last = s;
             }
             if (processed > config.maxloop || (Date.now() - tstart) > config.maxcycle) {
                 break;

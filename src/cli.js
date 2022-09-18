@@ -11,6 +11,10 @@ function displayDistance(labela, labelb, a, b) {
         ''.padStart(4, ' '), a.distanceEarth(b).toFixed(2) + 'km');
 }
 
+function displayPoint(p) {
+    return `${p.r.toString().padStart(4, ' ')} : ${p.x.toFixed(3)}°:${p.y.toFixed(3)}°`;
+}
+
 let config = {};
 for (let arg of process.argv.slice(3)) {
     const kv = arg.split('=');
@@ -43,16 +47,16 @@ if (config.pipe) {
         // eslint-disable-next-line no-undef
         console.log(`Momtchil Momtchev (velivole.fr/meteo.guru) & contributors, © 2020-${typeof _year !== 'undefined' ? _year : 'present'}, LGPL 3.0`);
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest] [quiet=true] [pipe=true] [progress=<n>] ...');
-        console.log('flight.igc             is the flight track log');
-        console.log('out=flight.json        save the optimal solution in GeoJSON format');
-        console.log('maxtime=n              limit the execution time to n seconds');
-        console.log('scoring=FFVL|XContest  select the scoring rules');
-        console.log('quiet=true             suppress all output');
-        console.log('pipe=true              read flight data from stdin and write optimal solutions to stdout, works best with quiet');
-        console.log('progress=<n>           output an intermediate solution every n milliseconds, works best with pipe');
-        console.log('hp=true                enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
-        console.log('trim=true              auto-trim the flight log to its launch and landing points');
+        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI|XCLeague] [quiet=true] [pipe=true] [progress=<n>] ...');
+        console.log('flight.igc                           is the flight track log');
+        console.log('out=flight.json                      save the optimal solution in GeoJSON format');
+        console.log('maxtime=n                            limit the execution time to n seconds');
+        console.log('scoring=FFVL|XContest|FAI|XCLeague   select the scoring rules');
+        console.log('quiet=true                           suppress all output');
+        console.log('pipe=true                            read flight data from stdin and write optimal solutions to stdout, works best with quiet');
+        console.log('progress=<n>                         output an intermediate solution every n milliseconds, works best with pipe');
+        console.log('hp=true                              enable High Precision mode (twice slower, precision goes from 10m-20m to 0.6m)');
+        console.log('trim=true                            auto-trim the flight log to its launch and landing points');
         process.exit(1);
     }
     inf = process.argv[2];
@@ -107,12 +111,27 @@ try {
         if (best.scoreInfo !== undefined) {
             if (best.scoreInfo.ep && best.scoreInfo.ep['start'])
                 displayDistance('start', 'tp0', best.scoreInfo.ep['start'], best.scoreInfo.tp[0]);
-            for (let i of [0, 1])
+            let i = 0;
+            while(best.scoreInfo.tp[i + 1]) {
                 displayDistance(`tp${i}`, `tp${i + 1}`, best.scoreInfo.tp[i], best.scoreInfo.tp[i + 1]);
+                i++;
+            }
             if (best.scoreInfo.ep && best.scoreInfo.ep['finish'])
                 displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
-            else
+            else if (best.scoreInfo.tp[2])
                 displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
+            else
+                displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
+
+            if (config.debug) {
+                if (best.scoreInfo.ep)
+                    console.log(`str : ${displayPoint(best.scoreInfo.ep['start'])}`);
+                for (const i in best.scoreInfo.tp)
+                    console.log(`tp${(i)} : ${displayPoint(best.scoreInfo.tp[i])}`);
+                if (best.scoreInfo.ep)
+                    console.log(`fin : ${displayPoint(best.scoreInfo.ep['finish'])}`);
+            }
+            
             console.log('Best solution is'
 				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`

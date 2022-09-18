@@ -2,34 +2,32 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "TRI",
+            "name": "FFVL",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
-                "test/tri.igc",
-                "out=out.json"
+                "test/work.igc",
+                "out=out.json",
+                "debug=true",
+                "trace=763,3439,6002",
+                "verbose=true",
+                "trim=true"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "D3P",
+            "name": "XContest",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
-                "test/d3p.igc",
-                "out=out.json"
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "BIGFLAT",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/cli",
-            "args": [
-                "test/bigflat.igc"
+                "test/work.igc",
+                "scoring=XContest",
+                "debug=true",
+                "trace=763,3439,6002",
+                "verbose=true",
+                "trim=true"
             ],
             "console": "integratedTerminal"
         },
@@ -39,51 +37,40 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
-                "test/fai.igc"
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "LINE",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/cli",
-            "args": [
-                "test/line.igc",
+                "test/work.igc",
+                "scoring=FAI",
+                "debug=true",
+                "trace=763,3439,6002",
+                "verbose=true",
                 "trim=true"
             ],
             "console": "integratedTerminal"
         },
         {
-            "name": "ZIGZAG",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/cli",
-            "args": [
-                "test/zigzag.igc"
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "ZIGZAGTRI",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/cli",
-            "args": [
-                "test/flat-ffvl-26.37.igc"
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "WORK",
+            "name": "OAR FAI",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
                 "test/work.igc",
-                "out=out.json",
-                "maxtime=100",
+                "scoring=FAI-OAR",
                 "debug=true",
+                "trace=763,3439,6002",
+                "verbose=true",
+                "trim=true"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "XCLeague",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/cli",
+            "args": [
+                "test/work.igc",
+                "scoring=XCLeague",
+                "debug=true",
+                "trace=763,3439,6002",
                 "verbose=true",
                 "trim=true"
             ],
@@ -94,12 +81,8 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://${env:VELIVOLE_WORK}/xc-score",
-            "webRoot": "${env:HOME}/velivole/dev/www",
+            "webRoot": "${workspaceFolder}",
             "sourceMaps": true,
-            "sourceMapPathOverrides": {
-                "webpack:///./*": "${workspaceFolder}/*"
-            }
-        },
-        
+        }
     ]
 }
