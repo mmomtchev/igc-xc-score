@@ -239,6 +239,34 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
     return min;
 }
 
+// Verify if there is a closing between range_a and range_b
+// TODO: Implement spatial caching
+function findClosestPairIn2PartialSegments(range_a, range_b, opt) {
+    const rtree = new Flatbush(range_a.end + 1 - range_a.start);
+    const lc = Math.abs(Math.cos(util.radians(opt.flight.flightPoints[range_a.start].y)));
+    for (let i = range_a.start; i <= range_a.end; i++) {
+        const r = opt.flight.flightPoints[i];
+        rtree.add(r.x * lc, r.y, r.x * lc, r.y);
+    }
+    rtree.finish();
+
+    let min = { d: Infinity };
+    for (let i = range_b.start; i <= range_b.end; i++) {
+        const pout = opt.flight.flightPoints[i];
+        const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + range_a.start;
+        if (n !== undefined) {
+            const pin = opt.flight.flightPoints[n];
+            const d = pout.distanceEarth(pin);
+            if (d < min.d) {
+                min.d = d;
+                min.out = pout;
+                min.in = pin;
+            }
+        }
+    }
+    return min;
+}
+
 // Find the the furthest point between sega and segb from target
 // Exhaustive search with cache (O(n) worst case, O(log(n)) average)
 // The caching method works only when sega is the launch or segb is the landing
@@ -358,6 +386,15 @@ export function isTriangleClosed(p1, p2, distance, opt) {
             return f.o;
 
     const min = findClosestPairIn2Segments(p1, p2, opt);
+
+    if (min.d <= opt.scoring.closingDistance(distance, opt))
+        return min;
+    return false;
+}
+
+// Verify if there is a closing between sega and segb
+export function isOutAndReturnClosed(range_a, range_b, distance, opt) {
+    const min = findClosestPairIn2PartialSegments(range_a, range_b, opt);
 
     if (min.d <= opt.scoring.closingDistance(distance, opt))
         return min;

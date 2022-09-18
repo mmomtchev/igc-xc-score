@@ -30,7 +30,7 @@ export class Solution {
         if (this.opt.config && this.opt.config.debug) {
             /* c8 ignore next 2 */
             this.parent = parent;
-            this.trace();
+            this.trace('constructor');
         }
     }
 
@@ -63,7 +63,7 @@ export class Solution {
 
     do_bound() {
         this.bound = this.opt.scoring.bound(this.ranges, this.boxes, this.opt);
-        this.trace();
+        this.trace('bounding');
     }
 
     do_score() {
@@ -79,7 +79,7 @@ export class Solution {
 
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
         this.score = this.scoreInfo.score;
-        this.trace();
+        this.trace('scoring');
     }
 
     contentEquals(self, other) {
@@ -162,7 +162,6 @@ export class Solution {
                     });
                 }
             }
-            console.log(features);
         } catch (e) {
         }
         try {

@@ -25,7 +25,7 @@ module.exports = (env, argv) => ({
             jquery: 'jquery/dist/jquery.min.js'
         }
     },
-    devtool: argv.mode == 'development' ? 'eval' : undefined,
+    devtool: argv.mode == 'development' ? 'eval-source-map' : undefined,
     plugins: [
         new webpack.ProvidePlugin({
             $: 'jquery',

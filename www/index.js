@@ -1,11 +1,11 @@
-/*eslint-env jquery*/
+/* global __DEBUG__:false, __BUILD_PKG__:false, __BUILD_GIT__, __BUILD_DATE__ */
 import { Map, View } from 'ol';
 import { transformExtent } from 'ol/proj.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
 import { XYZ, Vector as VectorSource, OSM } from 'ol/source.js';
 import { defaults as defaultControls, ScaleLine } from 'ol/control.js';
-import { Circle as CircleStyle, Stroke, Style } from 'ol/style.js';
+import { Circle as CircleStyle, Text as TextStyle, Stroke, Style } from 'ol/style.js';
 import { easeOut } from 'ol/easing.js';
 import LayerSwitcher from 'ol-layerswitcher';
 
@@ -50,14 +50,22 @@ const flightStyle = {
         image: new CircleStyle({
             radius: 8,
             fill: null,
-            stroke: new Stroke({ color: 'coral', width: 4 })
+            stroke: new Stroke({ color: 'coral', width: 2 })
+        }),
+        text: new TextStyle({
+            text: '>',
+            stroke: new Stroke({ color: 'coral', width: 2 })
         })
     }),
     'land': new Style({
         image: new CircleStyle({
             radius: 8,
             fill: null,
-            stroke: new Stroke({ color: 'black', width: 4 })
+            stroke: new Stroke({ color: 'black', width: 2 })
+        }),
+        text: new TextStyle({
+            text: '\\',
+            stroke: new Stroke({ color: 'black', width: 2 })
         })
     }),
     'seg[0-9|_in|_out]': new Style({
@@ -72,11 +80,26 @@ const flightStyle = {
             width: 4
         })
     }),
-    'box[0-9]': new Style({
+    'box0': new Style({
+        stroke: new Stroke({
+            color: 'white',
+            width: 8
+        }),
+        zIndex: 1000
+    }),
+    'box1': new Style({
+        stroke: new Stroke({
+            color: 'grey',
+            width: 8
+        }),
+        zIndex: 1000
+    }),
+    'box2': new Style({
         stroke: new Stroke({
             color: 'black',
-            width: 4
-        })
+            width: 8
+        }),
+        zIndex: 1000
     })
 };
 
@@ -88,17 +111,25 @@ function styleGet(feature) {
 
 let flightDataSource;
 let geoJSONReader;
-function display(geojson) {
+function display(geojson, style) {
     flightDataSource.clear();
-    flightDataSource.addFeatures(geoJSONReader.readFeatures(geojson, { featureProjection: 'EPSG:3857' }));
+    const features = geoJSONReader.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
+    if (style) {
+        for (const f of features)
+            f.setStyle(style);
+    }
+    flightDataSource.addFeatures(features);
 }
 
 function loop() {
     const s = this.next();
     if (!s.done) {
         $('#spinner').show();
-        // eslint-disable-next-line no-undef
-        display(s.value.geojson());
+        if (__DEBUG__) {
+            display(s.value.last.geojson());
+        } else {
+            display(s.value.geojson());
+        }
         runningProcess = window.requestIdleCallback(loop.bind(this));
         $('#status').html(`trying solutions, best so far is ${s.value.score} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
@@ -119,9 +150,9 @@ function loop() {
         for (const i in s.value.scoreInfo.tp)
             if (!s.value.scoreInfo.ep) {
                 d.push([
-                    i + ':' + ((i + 1) % s.value.scoreInfo.tp.length),
+                    i + ':' + ((+i + 1) % s.value.scoreInfo.tp.length),
                     s.value.scoreInfo.tp[i],
-                    s.value.scoreInfo.tp[(i + 1) % s.value.scoreInfo.tp.length]
+                    s.value.scoreInfo.tp[(+i + 1) % s.value.scoreInfo.tp.length]
                 ]);
             }
         if (s.value.scoreInfo.ep)
@@ -207,7 +238,6 @@ function runProcessing() {
         const it = igcSolver(igcFlight, igcScoring[$('#igc-scoringRules').html()], {
             maxcycle: 100,
             hp: hp,
-            // eslint-disable-next-line no-undef
             debug: { debug: __DEBUG__ },
             trim
         }, { timeout: 2000 });
@@ -215,7 +245,6 @@ function runProcessing() {
     });
 }
 
-// eslint-disable-next-line no-undef
 $('#igc-xc-score-version').html(`${__BUILD_PKG__.name} ${__BUILD_PKG__.version} ${__BUILD_GIT__} ${__BUILD_DATE__} ${__DEBUG__ ? 'debug' : ''}`);
 
 Object.keys(igcScoring).map(scoring => {

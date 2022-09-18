@@ -75,13 +75,24 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "OAR FAI",
+            "name": "OAR FAI xcontest",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/cli",
+            "args": [
+                "test/trifai-xcontest-307.57.igc",
+                "scoring=FAI-OAR"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "OAR FAI record",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/src/cli",
             "args": [
                 "test/out-and-return-record.igc",
-                "scoring=FAI"
+                "scoring=FAI-OAR",
             ],
             "console": "integratedTerminal"
         },
@@ -116,6 +127,7 @@
                 "out=out.json",
                 "maxtime=100",
                 "debug=true",
+                "trace=458,18763,35384",
                 "verbose=true",
                 "trim=true"
             ],
@@ -126,12 +138,8 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://${env:VELIVOLE_WORK}/xc-score",
-            "webRoot": "${env:HOME}/velivole/dev/www",
+            "webRoot": "${workspaceFolder}",
             "sourceMaps": true,
-            "sourceMapPathOverrides": {
-                "webpack:///./*": "${workspaceFolder}/*"
-            }
-        },
-        
+        }
     ]
 }

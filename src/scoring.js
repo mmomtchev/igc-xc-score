@@ -1,6 +1,5 @@
 'use strict';
 
-import { Box, Range } from './foundation.js';
 import * as geom from './geom.js';
 
 export function closingPenalty(cd, opt) {
@@ -225,22 +224,17 @@ export function scoreOutAndReturn2(tp, opt) {
 
 // Upper limit for an out-and-return with 1 TP (FAI) with a TP somewhere in boxes
 export function boundOutAndReturn1(ranges, boxes, opt) {
-    if (!opt.flight.fullRange)
-        opt.flight.fullRange = new Box(new Range(opt.launch, opt.landing), opt.flight);
-    const maxDistance = geom.maxDistance2Rectangles([boxes[1], opt.flight.fullRange]);
+    const maxDistance = Math.max(geom.maxDistance2Rectangles([boxes[1], boxes[0]]),
+        geom.maxDistance2Rectangles([boxes[1], boxes[2]]));
 
     if (ranges[0].end < ranges[2].start) {
         // Ranges do not overlap
-        const cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxDistance, opt);
+        const cp = geom.isOutAndReturnClosed(ranges[0], ranges[2], maxDistance, opt);
 
         if (!cp)
             return 0;
 
-        const realMax = geom.maxDistance2Rectangles([boxes[1],
-            new Box(cp.in.x, cp.in.y, cp.out.x, cp.out.y)]);
-        const maxClosingGain = Math.max((opt.scoring.closingDistanceFree || 0) - cp.d, 0);
-
-        return (realMax + maxClosingGain - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
+        return (maxDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
     }
 
     // Ranges overlap - bounding is impossible at this stage
@@ -251,20 +245,20 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
 export function scoreOutAndReturn1(tp, opt) {
     const distance = Math.max(tp[0].distanceEarth(tp[1]), tp[1].distanceEarth(tp[2]));
 
-    let cp = geom.isTriangleClosed(tp[0].r, tp[2].r, distance, opt);
-    if (!cp)
+    const d = tp[0].distanceEarth(tp[2]);
+    if (d > opt.scoring.closingDistance(distance, opt))
         return { score: 0 };
 
     // Select the better second turn point
     let tp2;
-    if (tp[1].distanceEarth(cp.in) > tp[1].distanceEarth(cp.out))
-        tp2 = cp.in;
+    if (tp[1].distanceEarth(tp[0]) > tp[1].distanceEarth(tp[2]))
+        tp2 = tp[0];
     else
-        tp2 = cp.out;
+        tp2 = tp[2];
 
     const realDistance = tp[1].distanceEarth(tp2);
 
-    let score = (realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
+    let score = (realDistance - closingPenalty(d, opt)) * 2 * opt.scoring.multiplier;
 
-    return { distance: realDistance, score, tp: [tp[1], tp2], cp };
+    return { distance: realDistance, score, tp: [tp[1], tp2], cp: { d, in: tp[0], out: tp[2] } };
 }
