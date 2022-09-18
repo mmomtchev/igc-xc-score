@@ -39,6 +39,7 @@ export function scoreDistance3Points(tp, opt) {
 // Upper limit for a FAI triangle with vertices somewhere in boxes,
 // maxTriDistance is the upper limit of the flat triangle
 function maxFAIDistance(maxTriDistance, boxes, opt) {
+    // smallest triangle with we could possibly have for these boxes
     const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
         return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
     });
@@ -46,11 +47,15 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
     if (maxTriDistance < minTriDistance)
         return 0;
 
+    // biggest possible leg for each side
     const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
     const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
     const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
 
+    // our FAI triangle is limited to maxDistance
     const maxDistance = Math.min(maxAB, maxBC, maxCA) / opt.scoring.minSide;
+
+    // Is the maximum FAI triangle smaller than the minimum possible triangle?
     if (maxDistance < minTriDistance)
         return 0;
 
@@ -60,22 +65,19 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
 // Upper limit for a flat triangle /w maxSide with vertices somewhere in boxes,
 // maxTriDistance is the upper limit of the unconstrained flat triangle
 function maxTRIDistance(maxTriDistance, boxes, opt) {
-    const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
-    });
-
-    if (maxTriDistance < minTriDistance)
-        return 0;
-
+    // smallest possible leg for each side
     const minAB = geom.minDistance2Rectangles([boxes[0], boxes[1]]);
     const minBC = geom.minDistance2Rectangles([boxes[1], boxes[2]]);
     const minCA = geom.minDistance2Rectangles([boxes[2], boxes[0]]);
 
-    const maxDistance = Math.max(minAB, minBC, minCA) / opt.scoring.maxSide;
-    if (maxDistance < minTriDistance)
+    // our constrained triangle cannot be smaller then minDistance
+    const minDistance = Math.max(minAB, minBC, minCA) / opt.scoring.maxSide;
+
+    // Is the minimum constrained triangle bigger than the maximum possible triangle?
+    if (minDistance > maxTriDistance)
         return 0;
 
-    return Math.min(maxDistance, maxTriDistance);
+    return maxTriDistance;
 }
 
 

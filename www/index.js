@@ -121,6 +121,10 @@ function display(geojson, style) {
     flightDataSource.addFeatures(features);
 }
 
+function coordinates(point) {
+    return `${point.y.toFixed(4)}°:${point.x.toFixed(4)}°`;
+}
+
 function loop() {
     const s = this.next();
     if (!s.done) {
@@ -146,20 +150,30 @@ function loop() {
             r.push(`<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d}km</td>`);
         let d = [];
         if (s.value.scoreInfo.ep)
-            d.push(['in:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
+            d.push(['START:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
         for (const i in s.value.scoreInfo.tp)
-            if (!s.value.scoreInfo.ep) {
-                d.push([
-                    i + ':' + ((+i + 1) % s.value.scoreInfo.tp.length),
-                    s.value.scoreInfo.tp[i],
-                    s.value.scoreInfo.tp[(+i + 1) % s.value.scoreInfo.tp.length]
-                ]);
-            }
+            d.push([
+                i + ':' + ((+i + 1) % s.value.scoreInfo.tp.length),
+                s.value.scoreInfo.tp[i],
+                s.value.scoreInfo.tp[(+i + 1) % s.value.scoreInfo.tp.length]
+            ]);
         if (s.value.scoreInfo.ep)
-            d.push(['2:out', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
+            d.push(['2:FINISH', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
 
-        for (let i of d)
-            r.push(`<td class="label">d ${i[0]}</td><td class="data">${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+        for (const i of d)
+            r.push(`<td class="label">d ${i[0]}</td><td class="data">` +
+                `${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+
+        if (s.value.scoreInfo.ep)
+            r.push('<td class="label">START</td><td class="data">' +
+                `${coordinates(s.value.scoreInfo.ep['start'])}km</td>`);
+        for (const i in s.value.scoreInfo.tp)
+            r.push(`<td class="label">TP${i}</td><td class="data">` +
+                `${coordinates(s.value.scoreInfo.tp[i])}</td>`);
+        if (s.value.scoreInfo.ep)
+            r.push('<td class="label">FINISH</td><td class="data">' +
+                `${coordinates(s.value.scoreInfo.ep['finish'])}</td>`);
+
         $('#status').html('<table class="table"><tr>' + r.join('</tr><tr>'));
     }
 }

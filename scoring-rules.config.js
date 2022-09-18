@@ -193,11 +193,19 @@ const scoringRules = {
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
             closingDistance: scoring.closingWithLimit,
-            closingDistanceFree: 0.4,
-            closingDistanceFixed: 0.4,
+            closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 2,
             code: 'oar'
+        },
+        {
+            name: 'Turnpoint Flight',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            cardinality: 3,
+            code: 'od'
         },
         {
             name: 'Flat Triangle',
@@ -207,8 +215,7 @@ const scoringRules = {
             minSide: 0.15,
             maxSide: 0.45,
             closingDistance: scoring.closingWithLimit,
-            closingDistanceFree: 0.4,
-            closingDistanceFixed: 0.4,
+            closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
             code: 'tri'
@@ -220,8 +227,7 @@ const scoringRules = {
             score: scoring.scoreTriangle,
             minSide: 0.28,
             closingDistance: scoring.closingWithLimit,
-            closingDistanceFree: 0.4,
-            closingDistanceFixed: 0.4,
+            closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
             code: 'tri'

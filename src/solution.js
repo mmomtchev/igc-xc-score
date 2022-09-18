@@ -114,14 +114,15 @@ export class Solution {
         }
         try {
             const tp = this.scoreInfo.tp;
-            for (let r in tp) {
+            for (const r in tp) {
                 features.push(tp[r]
                     .geojson('tp' + r, {
                         id: 'tp' + r,
                         r: tp[r].r,
                         timestamp: this.opt.flight.filtered[tp[r].r].timestamp
                     }));
-                if (this.scoreInfo.cp)
+                // Skip closing the circuit if there are endpoints
+                if (!(this.scoreInfo.ep && r == tp.length - 1))
                     features.push({
                         type: 'Feature',
                         id: 'seg' + r,

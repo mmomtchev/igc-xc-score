@@ -3,3 +3,6 @@ node_modules
 dist
 coverage
 doc
+test/work.igc
+out.json
+flight.json

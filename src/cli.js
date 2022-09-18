@@ -11,6 +11,10 @@ function displayDistance(labela, labelb, a, b) {
         ''.padStart(4, ' '), a.distanceEarth(b).toFixed(2) + 'km');
 }
 
+function displayPoint(p) {
+    return `${p.r.toString().padStart(4, ' ')} : ${p.x.toFixed(3)}°:${p.y.toFixed(3)}°`;
+}
+
 let config = {};
 for (let arg of process.argv.slice(3)) {
     const kv = arg.split('=');
@@ -118,6 +122,15 @@ try {
                 displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
             else
                 displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
+
+            if (config.debug) {
+                if (best.scoreInfo.ep)
+                    console.log(`str : ${displayPoint(best.scoreInfo.ep['start'])}`);
+                for (const i in best.scoreInfo.tp)
+                    console.log(`tp${(i)} : ${displayPoint(best.scoreInfo.tp[i])}`);
+                if (best.scoreInfo.ep)
+                    console.log(`fin : ${displayPoint(best.scoreInfo.ep['finish'])}`);
+            }
             
             console.log('Best solution is'
 				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
