@@ -345,7 +345,7 @@ export function adjustFAICylinders(score, opt) {
         break;
     case 'oar':
         {
-            const realDistance = score.tp[0].distanceEarth(score.tp[1]);
+            const realDistance = score.tp[0].distanceEarth(score.tp[1]) - opt.scoring.cylinders;
             score.score = score.minDistance >= (opt.scoring.minDistance || 0) ?
                 (realDistance - closingPenalty(realDistance, opt)) * 2 * opt.scoring.multiplier : 0;
         }
@@ -356,6 +356,7 @@ export function adjustFAICylinders(score, opt) {
             const all = [score.ep.start, score.tp[0], score.tp[1], score.tp[2], score.ep.finish];
             for (let i = 0; i < all.length - 1; i++)
                 distance += all[i].distanceEarth(all[i + 1]);
+            distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
             score.score = distance >= (opt.scoring.minDistance || 0) ?
                 distance * opt.scoring.multiplier : 0;
         }
