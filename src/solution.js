@@ -119,7 +119,9 @@ export class Solution {
                     .geojson('tp' + r, {
                         id: 'tp' + r,
                         r: tp[r].r,
-                        timestamp: this.opt.flight.filtered[tp[r].r].timestamp
+                        timestamp: tp[r].r !== undefined ?
+                            this.opt.flight.filtered[tp[r].r].timestamp :
+                            undefined
                     }));
                 // Skip closing the circuit if there are endpoints
                 if (!(this.scoreInfo.ep && r == tp.length - 1))

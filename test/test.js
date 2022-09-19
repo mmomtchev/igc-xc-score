@@ -50,8 +50,14 @@ const tests = {
         { file: 'opentri-xcontest-428.31.igc', score: 428.59 }
     ],
     'FAI-OAR': [
-        { file: 'trifai-xcontest-307.57.igc', score: 150.56 },
-        { file: 'out-and-return-record.igc', score: 303.35 }
+        { file: 'trifai-xcontest-307.57.igc', score: 149.77 },
+        { file: 'out-and-return-record.igc', score: 302.56 }
+    ],
+    'FAI': [
+        { file: 'trifai-xcontest-189.65.igc', score: 130.78 },
+        { file: 'trifai-xcontest-307.57.igc', score: 264.44 },
+        { file: 'trifai-xcontest-452.21.igc', score: 291.33 },
+        { file: 'fai.igc', score: 228.71 }
     ],
     XCLeague: [
         { file: 'trifai-xcontest-307.57.igc', score: 426.97 },

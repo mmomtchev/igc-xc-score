@@ -1,5 +1,6 @@
 'use strict';
 
+import { Box, Point } from './foundation.js';
 import * as geom from './geom.js';
 
 export function closingPenalty(cd, opt) {
@@ -244,8 +245,14 @@ export function scoreOutAndReturn2(tp, opt) {
 
 // Upper limit for an out-and-return with 1 TP (FAI) with a TP somewhere in boxes
 export function boundOutAndReturn1(ranges, boxes, opt) {
-    const maxDistance = Math.max(geom.maxDistance2Rectangles([boxes[1], boxes[0]]),
-        geom.maxDistance2Rectangles([boxes[1], boxes[2]]));
+    // Merge box[0] and box[2]
+    const box2 = new Box(
+        Math.min(boxes[0].x1, boxes[2].x1),
+        Math.min(boxes[0].y1, boxes[2].y1),
+        Math.max(boxes[0].x2, boxes[2].x2),
+        Math.max(boxes[0].y2, boxes[2].y2),
+    );
+    const maxDistance = geom.maxDistance2Rectangles([boxes[1], box2]);
 
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
@@ -257,7 +264,17 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
         if (!cp)
             return 0;
 
-        return (maxDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
+        // The final closing point has to be somewhere in this box
+        // (this is the box containing all the medians of all lines
+        // starting in box[0] and ending in box[2])
+        const box2 = new Box(
+            (boxes[0].x1 + boxes[2].x1) / 2,
+            (boxes[0].y1 + boxes[2].y1) / 2,
+            (boxes[0].x2 + boxes[2].x2) / 2,
+            (boxes[0].y2 + boxes[2].y2) / 2
+        );
+        const realDistance = geom.maxDistance2Rectangles([boxes[1], box2]);
+        return (realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
     }
 
     // Ranges overlap - bounding is impossible at this stage
@@ -275,16 +292,82 @@ export function scoreOutAndReturn1(tp, opt) {
     if (d > opt.scoring.closingDistance(distance, opt))
         return { score: 0 };
 
-    // Select the better second turn point
-    let tp2;
-    if (tp[1].distanceEarth(tp[0]) > tp[1].distanceEarth(tp[2]))
-        tp2 = tp[0];
-    else
-        tp2 = tp[2];
-
+    // Create the second turn point on the middle of the closing line
+    const tp2 = new Point((tp[0].x + tp[2].x) / 2, (tp[0].y + tp[2].y) / 2);
     const realDistance = tp[1].distanceEarth(tp2);
 
     let score = (realDistance - closingPenalty(d, opt)) * 2 * opt.scoring.multiplier;
 
     return { distance: realDistance, score, tp: [tp[1], tp2], cp: { d, in: tp[0], out: tp[2] } };
+}
+
+// These implement the FAI Sporting Code, Section 7D, Paragraph 5.2.5
+// https://www.fai.org/sites/default/files/civl/documents/sporting_code_s7_d_-_records_and_badges_2022.pdf
+// In igc-xc-score all TPs are lying on the track
+// They are to be transformed to the best possible cylinders
+export function adjustFAICylinders(score, opt) {
+    // Find the centroid of the turnpoints
+    // https://www.mathopenref.com/coordcentroid.html
+    let x = score.tp.reduce((a, t) => a + t.x, 0) / score.tp.length;
+    let y = score.tp.reduce((a, t) => a + t.y, 0) / score.tp.length;
+    const centroid = new Point(x, y);
+
+    // Move away each TP by 'cylinders' (400m)
+    // https://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
+    // We can safely assume that the Earth is flat for a distance of 400m
+    // (ie unless we are very near the poles, the curvature will be much less than the 10m declared accuracy)
+    function moveAway(point, origin) {
+        const d0 = point.distanceEarth(origin);
+        const t = (d0 + opt.scoring.cylinders) / d0;
+        point.x = (1 - t) * origin.x + t * point.x;
+        point.y = (1 - t) * origin.y + t * point.y;
+    }
+
+    for (const i in score.tp) {
+        if (score.tp[i].r === undefined) {
+            // The second TP of an Out-and-Return flight is not lying on the track
+            // and it is already a cylinder TP
+            continue;
+        }
+        moveAway(score.tp[i], centroid);
+    }
+
+    // If there are end-points (free distance flight), they are to be moved away
+    // from their nearest respective TP
+    if (score.ep && score.ep.start)
+        moveAway(score.ep.start, score.tp[0]);
+    if (score.ep && score.ep.finish)
+        moveAway(score.ep.finish, score.tp[2]);
+
+    switch (opt.scoring.code) {
+    case 'tri':
+    case 'fai':
+        {
+            const d0 = score.tp[0].distanceEarth(score.tp[1]);
+            const d1 = score.tp[1].distanceEarth(score.tp[2]);
+            const d2 = score.tp[2].distanceEarth(score.tp[0]);
+            score.distance = d0 + d1 + d2 - opt.scoring.cylinders * 2 * 3;
+            score.score = score.distance >= (opt.scoring.minDistance || 0) ? 
+                (score.distance - closingPenalty(score.cp.d, opt)) * opt.scoring.multiplier : 0;
+        }
+        break;
+    case 'oar':
+        {
+            const realDistance = score.tp[0].distanceEarth(score.tp[1]) - opt.scoring.cylinders;
+            score.score = score.minDistance >= (opt.scoring.minDistance || 0) ?
+                (realDistance - closingPenalty(realDistance, opt)) * 2 * opt.scoring.multiplier : 0;
+        }
+        break;
+    case 'od':
+        {
+            let distance;
+            const all = [score.ep.start, score.tp[0], score.tp[1], score.tp[2], score.ep.finish];
+            for (let i = 0; i < all.length - 1; i++)
+                distance += all[i].distanceEarth(all[i + 1]);
+            distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
+            score.score = distance >= (opt.scoring.minDistance || 0) ?
+                distance * opt.scoring.multiplier : 0;
+        }
+        break;
+    }
 }
