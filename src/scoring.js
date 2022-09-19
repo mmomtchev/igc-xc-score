@@ -293,30 +293,43 @@ export function scoreOutAndReturn1(tp, opt) {
     return { distance: realDistance, score, tp: [tp[1], tp2], cp: { d, in: tp[0], out: tp[2] } };
 }
 
-// This implements the FAI Sporting Code, Section 7D, Paragraph 5.2.5
+// These implement the FAI Sporting Code, Section 7D, Paragraph 5.2.5
 // https://www.fai.org/sites/default/files/civl/documents/sporting_code_s7_d_-_records_and_badges_2022.pdf
 // In igc-xc-score all TPs are lying on the track
 // They are to be transformed to the best possible cylinders
 export function adjustFAICylinders(score, opt) {
     // Find the centroid of the turnpoints
     // https://www.mathopenref.com/coordcentroid.html
-    let x = score.tp.reduce((a, t) => a + t.x, 0) / 3;
-    let y = score.tp.reduce((a, t) => a + t.y, 0) / 3;
+    let x = score.tp.reduce((a, t) => a + t.x, 0) / score.tp.length;
+    let y = score.tp.reduce((a, t) => a + t.y, 0) / score.tp.length;
     const centroid = new Point(x, y);
 
     // Move away each TP by 'cylinders' (400m)
     // https://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
     // We can safely assume that the Earth is flat for a distance of 400m
     // (ie unless we are very near the poles, the curvature will be much less than the 10m declared accuracy)
-    for (const i in score.tp) {
-        const d0 = score.tp[i].distanceEarth(centroid);
+    function moveAway(point, origin) {
+        const d0 = point.distanceEarth(origin);
         const t = (d0 + opt.scoring.cylinders) / d0;
-        const xt = (1 - t) * x + t * score.tp[i].x;
-        const yt = (1 - t) * y + t * score.tp[i].y;
-        score.tp[i].x = xt;
-        score.tp[i].y = yt;
-        score.tp[i].r = undefined;
+        point.x = (1 - t) * origin.x + t * point.x;
+        point.y = (1 - t) * origin.y + t * point.y;
     }
+
+    for (const i in score.tp) {
+        if (score.tp[i].r === undefined) {
+            // The second TP of an Out-and-Return flight is not lying on the track
+            // and it is already a cylinder TP
+            continue;
+        }
+        moveAway(score.tp[i], centroid);
+    }
+
+    // If there are end-points (free distance flight), they are to be moved away
+    // from their nearest respective TP
+    if (score.ep && score.ep.start)
+        moveAway(score.ep.start, score.tp[0]);
+    if (score.ep && score.ep.finish)
+        moveAway(score.ep.finish, score.tp[2]);
 
     switch (opt.scoring.code) {
     case 'tri':
@@ -326,8 +339,25 @@ export function adjustFAICylinders(score, opt) {
             const d1 = score.tp[1].distanceEarth(score.tp[2]);
             const d2 = score.tp[2].distanceEarth(score.tp[0]);
             score.distance = d0 + d1 + d2 - opt.scoring.cylinders * 2 * 3;
-            score.score = (score.distance - closingPenalty(score.cp.d, opt))
-                * opt.scoring.multiplier;
+            score.score = score.distance >= (opt.scoring.minDistance || 0) ? 
+                (score.distance - closingPenalty(score.cp.d, opt)) * opt.scoring.multiplier : 0;
+        }
+        break;
+    case 'oar':
+        {
+            const realDistance = score.tp[0].distanceEarth(score.tp[1]);
+            score.score = score.minDistance >= (opt.scoring.minDistance || 0) ?
+                (realDistance - closingPenalty(realDistance, opt)) * 2 * opt.scoring.multiplier : 0;
+        }
+        break;
+    case 'od':
+        {
+            let distance;
+            const all = [score.ep.start, score.tp[0], score.tp[1], score.tp[2], score.ep.finish];
+            for (let i = 0; i < all.length - 1; i++)
+                distance += all[i].distanceEarth(all[i + 1]);
+            score.score = distance >= (opt.scoring.minDistance || 0) ?
+                distance * opt.scoring.multiplier : 0;
         }
         break;
     }

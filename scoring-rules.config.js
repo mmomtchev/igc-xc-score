@@ -132,7 +132,9 @@ const scoringRules = {
             score: scoring.scoreDistance3Points,
             rounding: round2,
             cardinality: 3,
-            code: 'od'
+            code: 'od',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
         },
         {
             name: 'Free Triangle',
@@ -180,7 +182,9 @@ const scoringRules = {
             closingDistanceFixed: 0.8,
             rounding: round2,
             cardinality: 3,
-            code: 'oar'
+            code: 'oar',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
         }
     ],
     /**
