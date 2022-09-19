@@ -245,8 +245,14 @@ export function scoreOutAndReturn2(tp, opt) {
 
 // Upper limit for an out-and-return with 1 TP (FAI) with a TP somewhere in boxes
 export function boundOutAndReturn1(ranges, boxes, opt) {
-    const maxDistance = Math.max(geom.maxDistance2Rectangles([boxes[1], boxes[0]]),
-        geom.maxDistance2Rectangles([boxes[1], boxes[2]]));
+    // Merge box[0] and box[2]
+    const box2 = new Box(
+        Math.min(boxes[0].x1, boxes[2].x1),
+        Math.min(boxes[0].y1, boxes[2].y1),
+        Math.max(boxes[0].x2, boxes[2].x2),
+        Math.max(boxes[0].y2, boxes[2].y2),
+    );
+    const maxDistance = geom.maxDistance2Rectangles([boxes[1], box2]);
 
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
@@ -259,6 +265,8 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
             return 0;
 
         // The final closing point has to be somewhere in this box
+        // (this is the box containing all the medians of all lines
+        // starting in box[0] and ending in box[2])
         const box2 = new Box(
             (boxes[0].x1 + boxes[2].x1) / 2,
             (boxes[0].y1 + boxes[2].y1) / 2,
