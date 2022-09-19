@@ -25,13 +25,15 @@
     "nexe:mac": "nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
     "nexe": "npm run nexe:linux && npm run nexe:win && npm run nexe:mac",
     "www": "webpack --mode=production && cp www/index.html www/pacman.svg dist/www",
+    "wwwdist": "zip -j dist/igc-xc-score-web.zip dist/www/*",
     "build": "rollup -c && npm run nexe && npm run www && npm run doc",
     "c8": "npx c8 node --experimental-specifier-resolution=node --no-warnings test/test.js",
     "lcov": "npx c8 report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | bash",
     "preversion": "npm test",
     "version": "npm run build && git add package.json",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags && npm run upload",
+    "upload": "npm run wwwdist && echo gh release create -d -t $npm_package_version v$npm_package_version dist/igc-xc-score*"
   },
   "repository": {
     "type": "git",
