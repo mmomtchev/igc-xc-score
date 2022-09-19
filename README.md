@@ -80,6 +80,14 @@ You can try a demo here: [https://www.meteo.guru/xc-score/](https://www.meteo.gu
 
 The sources used for this demo are in the www directory.
 
+### Installing the webpage on your own webserver
+
+If you do not need to customize it, you can simply download `igc-xc-score-web.zip` from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases) and unzip it in a directory on your webserver. If you want to integrate the software on your website, read the section *The solver library* below.
+
+### Installing the webpage on your computer for offline use
+
+Download `igc-xc-score-web.zip` from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases) and unzip it in a directory on your computer, then open a browser window and navigate to `file:///` to wherever you unzipped the folder.
+
 ## Usage
 
 ### The prepackaged command-line tool
@@ -122,7 +130,7 @@ node src/cli
 
 ### The solver library
 
-Calling the solver from another Node.js program is easy, you should look at *index.js* and *test.js* for examples
+Calling the solver from another Node.js program is easy, you should look at `src/cli.js` (the CLI tool) and `src/test.js` (the unit tests) for examples.
 
 #### CJS
 ```JS
@@ -148,8 +156,6 @@ if (result.optimal)
 *solver* is a generator function that can be called multiple times with a maximum execution time. Each successive call will return a better solution if such a solution has been found until an optimal solution is reached.
 I strongly recommend you to use the *lenient=true* option of igc-parser as a large portion of the IGC files in the paragliding world are coming from devices that do not fully adhere to the IGC standard - especially the smartphone apps some pilots use.
 *Be advised that in JS, a for..of loop will ignore the final return value of a generator. Do not use a for..of loop. Look at index.js for a proper solution.*
-
-It supports resetting or it will automatically reset itself if an optimal solution has been found.
 
 *solver* accepts the following options in its third argument:
 ```JS
@@ -185,6 +191,8 @@ window.requestIdleCallback(() => {
 ### Integrating with a non-JS desktop application
 
 Probably the easiest way to embed the solver in a non-JS desktop application is to use the provided executable in pipe (stdin/stdout) mode. It expects an IGC file as its and input and it will output the possible solutions in GeoJSON format. See the section below on flight instruments if the file size is a problem.
+
+Or, you can also check my project [libnode](https://github.com/libnode) for a direct solution for embedding Node.js code in a C/C++ application.
 
 ### Using this module in memory/CPU-constrained embedded environments (ie flight instruments)
 
