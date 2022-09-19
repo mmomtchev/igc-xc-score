@@ -39,9 +39,9 @@
             "args": [
                 "test/work.igc",
                 "scoring=FAI",
-                "debug=true",
-                "trace=763,3439,6002",
-                "verbose=true",
+                "debug=false",
+                "trace=false",
+                "verbose=false",
                 "trim=true"
             ],
             "console": "integratedTerminal"
@@ -69,9 +69,9 @@
             "args": [
                 "test/work.igc",
                 "scoring=XCLeague",
-                "debug=true",
-                "trace=763,3439,6002",
-                "verbose=true",
+                "debug=false",
+                "trace=false",
+                "verbose=false",
                 "trim=true"
             ],
             "console": "integratedTerminal"

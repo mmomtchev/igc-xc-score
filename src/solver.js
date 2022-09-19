@@ -115,6 +115,9 @@ export default function* solver(flight, _scoringTypes, _config) {
             best.optimal = false;
 
         if (best.optimal) {
+            if (best.opt.scoring.post) {
+                best.opt.scoring.post(best.scoreInfo, best.opt);
+            }
             best.score = best.opt.scoring.rounding(best.score);
             if (best.scoreInfo) {
                 best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
