@@ -54,11 +54,11 @@ const tests = {
         { file: 'out-and-return-record.igc', score: 302.6 }
     ],
     'FAI': [
-        { file: 'trifai-xcontest-189.65.igc', score: 130.13 },
-        { file: 'trifai-xcontest-307.57.igc', score: 263.76 },
-        { file: 'trifai-xcontest-452.21.igc', score: 290.63 },
-        { file: 'record_de_france.igc', score: 421.08 },
-        { file: 'fai.igc', score: 228.16 }
+        { file: 'trifai-xcontest-189.65.igc', score: 130.1 },
+        { file: 'trifai-xcontest-307.57.igc', score: 263.8 },
+        { file: 'trifai-xcontest-452.21.igc', score: 290.6 },
+        { file: 'record_de_france.igc', score: 421.1 },
+        { file: 'fai.igc', score: 228.2 }
     ],
     XCLeague: [
         { file: 'trifai-xcontest-307.57.igc', score: 427 },

@@ -91,13 +91,15 @@ export default function* solver(flight, _scoringTypes, _config) {
                 processed++;
                 if (s.score >= best.score && s.score > 0) {
                     best = s;
-                    if (solutionQueue.length > 10000 && solutionQueue.findLeast().value.bound <= best.score) {
+                    if (solutionQueue.findLeast().value.bound <= best.score) {
                         const garbageBest = solutionQueue.findGreatestLessThanOrEqual({ bound: best.score });
                         if (garbageBest !== undefined) {
                             const cutoff = solutionQueue.indexOf(garbageBest.value);
                             solutionQueue.splice(0, cutoff + 1).length;
                         }
                     }
+                } else {
+                    delete s.scoreInfo;
                 }
                 solutionQueue.push(s);
                 if (config.debug)
@@ -119,16 +121,6 @@ export default function* solver(flight, _scoringTypes, _config) {
             best.optimal = false;
 
         if (best.optimal) {
-            if (best.opt.scoring.post) {
-                best.opt.scoring.post(best.scoreInfo, best.opt);
-                best.score = best.scoreInfo.score;
-            }
-            best.score = best.opt.scoring.rounding(best.scoreInfo.score);
-            if (best.scoreInfo) {
-                best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp)
-                    best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
-            }
             reset = true;
             return best;
         } else

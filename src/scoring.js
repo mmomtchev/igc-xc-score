@@ -36,7 +36,7 @@ export function boundDistance3Points(ranges, boxes, opt) {
         geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]));
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
-    return opt.scoring.rounding(maxDistance * opt.scoring.multiplier);
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score of a 3TP distance flight with all 3 points selected
@@ -138,10 +138,10 @@ export function boundOpenTriangle(ranges, boxes, opt) {
         cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxTriDistance, opt);
         if (!cp)
             return 0;
-        return opt.scoring.rounding((maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier);
+        return finalRounding((maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
-    return opt.scoring.rounding(maxD3PDistance * opt.scoring.multiplier);
+    return finalRounding(maxD3PDistance * opt.scoring.multiplier, opt);
 }
 
 export function scoreOpenTriangle(tp, opt) {
@@ -211,11 +211,11 @@ export function boundTriangle(ranges, boxes, opt) {
         cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxDistance, opt);
         if (!cp)
             return 0;
-        return opt.scoring.rounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier);
+        return finalRounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return opt.scoring.rounding(maxDistance * opt.scoring.multiplier);
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score a triangle once all 3 points have been selected
@@ -271,11 +271,11 @@ export function boundOutAndReturn2(ranges, boxes, opt) {
         const cp = geom.isTriangleClosed(ranges[0].end, ranges[1].start, maxDistance, opt);
         if (!cp)
             return 0;
-        return opt.scoring.rounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier);
+        return finalRounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return opt.scoring.rounding(maxDistance * opt.scoring.multiplier);
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score an out-and-return with 2 TPs once the 2 points have been selected
@@ -331,11 +331,11 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
             (boxes[0].y2 + boxes[2].y2) / 2
         );
         const realDistance = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[1], box2]));
-        return opt.scoring.rounding((realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier);
+        return finalRounding((realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return opt.scoring.rounding(maxDistance * 2 * opt.scoring.multiplier);
+    return finalRounding(maxDistance * 2 * opt.scoring.multiplier, opt);
 }
 
 // Score an out-and-return with 1 TPs once the point has been selected
@@ -359,7 +359,7 @@ export function scoreOutAndReturn1(tp, opt) {
         {name: 'TP2 : TP1', start: tp2, finish: tp[0], d: leg}
     ];
 
-    return { distance, score, tp: [tp[1], tp2], cp: { closing, in: tp[0], out: tp[2] }, legs };
+    return { distance, score, tp: [tp[1], tp2], cp: { d: closing, in: tp[0], out: tp[2] }, legs };
 }
 
 // These implement the FAI Sporting Code, Section 7D, Paragraph 5.2.5
@@ -367,6 +367,10 @@ export function scoreOutAndReturn1(tp, opt) {
 // In igc-xc-score all TPs are lying on the track
 // They are to be transformed to the best possible cylinders
 export function adjustFAICylinders(score, opt) {
+    // Do not readjust incomplete solutions
+    if (!score.tp || !score.legs || score.score == 0)
+        return;
+
     // Move away each TP by 'cylinders' (400m)
     // https://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
     // We can safely assume that the Earth is flat for a distance of 400m
@@ -374,8 +378,9 @@ export function adjustFAICylinders(score, opt) {
     function moveAway(point, origin) {
         const d0 = point.distanceEarth(origin);
         const t = (d0 + opt.scoring.cylinders) / d0;
-        point.x = (1 - t) * origin.x + t * point.x;
-        point.y = (1 - t) * origin.y + t * point.y;
+        const x = (1 - t) * origin.x + t * point.x;
+        const y = (1 - t) * origin.y + t * point.y;
+        return new Point(x, y);
     }
 
     // For each TP we have to determine a new location that lies on a line
@@ -383,6 +388,7 @@ export function adjustFAICylinders(score, opt) {
     // and the TP itself
     // (For a triangle, this would be the centroid of the triangle, but
     // for an open flight every TP is to be moved away from a different center)
+    const newTP = [];
     for (const i in score.tp) {
         if (score.tp[i].r === undefined) {
             // The second TP of an Out-and-Return flight is not lying on the track
@@ -413,15 +419,18 @@ export function adjustFAICylinders(score, opt) {
             next = score.tp[next];
 
         const centroid = new Point((previous.x + next.x) / 2, (previous.y + next.y) / 2);
-        moveAway(score.tp[i], centroid);
+        newTP[i] = moveAway(score.tp[i], centroid);
     }
+    for (const i in score.tp)
+        if (newTP[i])
+            score.tp[i] = newTP[i];
 
     // If there are end-points (free distance flight), they are to be moved away
     // from their nearest respective TP
     if (score.ep && score.ep.start)
-        moveAway(score.ep.start, score.tp[0]);
+        score.ep.start = moveAway(score.ep.start, score.tp[0]);
     if (score.ep && score.ep.finish)
-        moveAway(score.ep.finish, score.tp[2]);
+        score.ep.finish = moveAway(score.ep.finish, score.tp[2]);
 
     switch (opt.scoring.code) {
     case 'tri':

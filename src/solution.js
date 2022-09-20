@@ -78,6 +78,9 @@ export class Solution {
             tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
 
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
+        if (this.opt.scoring.post) {
+            this.opt.scoring.post(this.scoreInfo, this.opt);
+        }
         this.score = this.scoreInfo.score;
         this.trace('scoring');
     }

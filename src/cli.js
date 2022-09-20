@@ -7,7 +7,7 @@ import * as util from './util.js';
 import scoringRules from '../scoring-rules.config.js';
 
 function displayPoint(p) {
-    return `${p.r.toString().padStart(4, ' ')} : ${p.x.toFixed(5)}°:${p.y.toFixed(5)}°`;
+    return `${(p.r || '').toString().padStart(4, ' ')} : ${p.x.toFixed(5)}°:${p.y.toFixed(5)}°`;
 }
 
 let config = {};
