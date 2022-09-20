@@ -28,7 +28,7 @@ export class Solution {
         this.bound = undefined;
         this.id = id++;
         if (this.opt.config && this.opt.config.debug) {
-            /* c8 ignore next 2 */
+            /* c8 ignore next 3 */
             this.parent = parent;
             this.trace('constructor');
         }
@@ -102,7 +102,7 @@ export class Solution {
     geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
-            /* c8 ignore next 8 */
+            /* c8 ignore next 9 */
             for (let r = 0; r < this.ranges.length; r++)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -141,7 +141,7 @@ export class Solution {
                         }
                     });
             }
-            /* c8 ignore next 23 */
+            /* c8 ignore next 24 */
             if (this.opt.config.debug && this.boxes) {
                 for (const b in this.boxes) {
                     features.push({
@@ -166,6 +166,7 @@ export class Solution {
                     });
                 }
             }
+        /* c8 ignore next 2 */
         } catch (e) {
         }
         try {
@@ -237,6 +238,7 @@ export class Solution {
                     });
                 }
             }
+        /* c8 ignore next 2 */
         } catch (e) {
         }
         for (let li = 0; li < this.opt.flight.ll.length; li++) {
