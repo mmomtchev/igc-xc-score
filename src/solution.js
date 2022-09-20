@@ -291,10 +291,10 @@ export class Solution {
     toString() {
         let s = `${this.opt.scoring.name}`;
         if (this.score)
-            s += ` ${this.opt.scoring.rounding(this.score)} points`;
+            s += ` ${this.score} points`;
         if (this.scoreInfo)
-            s += ` ${this.opt.scoring.rounding(this.scoreInfo.distance)}km`;
-        s += ` ( <${this.bound.toFixed(4)} )`;
+            s += ` ${this.scoreInfo.distance.toFixed(2)}km`;
+        s += ` ( <${this.bound.toFixed(2)} )`;
         if (this.opt.config && this.opt.config.debug) {
             s += ` { id: ${this.id} `;
             for (let r of this.ranges)

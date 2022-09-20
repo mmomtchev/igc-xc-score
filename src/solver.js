@@ -74,7 +74,7 @@ export default function* solver(flight, _scoringTypes, _config) {
 
             let current = solutionQueue.pop();
 
-            if (current.opt.scoring.rounding(current.bound) <= best.opt.scoring.rounding(best.score)) {
+            if (current.bound <= best.score) {
                 solutionQueue.clear();
                 break;
             }

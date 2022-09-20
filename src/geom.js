@@ -214,7 +214,7 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
         if (n !== undefined) {
             const pin = opt.flight.flightPoints[n];
-            const d = pout.distanceEarth(pin);
+            const d = opt.scoring.rounding(pout.distanceEarth(pin));
             if (d < min.d) {
                 min.d = d;
                 min.out = pout;
@@ -227,7 +227,7 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
     if (precomputedNext !== undefined) {
         const pout = precomputedNext.o.out;
         const pin = precomputedNext.o.in;
-        const d = pout.distanceEarth(pin);
+        const d = opt.scoring.rounding(pout.distanceEarth(pin));
         if (d < min.d) {
             min.d = d;
             min.out = pout;
@@ -256,7 +256,7 @@ function findClosestPairIn2PartialSegments(range_a, range_b, opt) {
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + range_a.start;
         if (n !== undefined) {
             const pin = opt.flight.flightPoints[n];
-            const d = pout.distanceEarth(pin);
+            const d = opt.scoring.rounding(pout.distanceEarth(pin));
             if (d < min.d) {
                 min.d = d;
                 min.out = pout;

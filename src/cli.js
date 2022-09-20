@@ -6,13 +6,8 @@ import { Solution } from './solution.js';
 import * as util from './util.js';
 import scoringRules from '../scoring-rules.config.js';
 
-function displayDistance(labela, labelb, a, b) {
-    console.log(labela.padStart(6, ' '), labelb.padStart(6, ' '),
-        ''.padStart(4, ' '), a.distanceEarth(b).toFixed(2) + 'km');
-}
-
 function displayPoint(p) {
-    return `${p.r.toString().padStart(4, ' ')} : ${p.x.toFixed(3)}°:${p.y.toFixed(3)}°`;
+    return `${p.r.toString().padStart(4, ' ')} : ${p.x.toFixed(5)}°:${p.y.toFixed(5)}°`;
 }
 
 let config = {};
@@ -88,7 +83,8 @@ try {
                 process.stdout.write('best so far is ' + best + '                                                               \n');
         }
         if (!config.quiet)
-            process.stdout.write(`processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
+            process.stdout.write(
+                `processing solutions, current upper bound is ${best.currentUpperBound.toFixed(4)}             \r`);
         if (config.maxtime !== undefined && Date.now() > tend) {
             if (!config.quiet)
                 process.stdout.write('max execution time reached, no optimal solution found                                         \r');
@@ -108,22 +104,13 @@ try {
     if (!config.quiet) {
         for (let l of flight.ll) {
             console.log(`Launch at fix ${l.launch}, ${flight.filtered[l.launch].time}`);
-            console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1}, ${flight.filtered[l.landing].time}`);
+            console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1}` +
+                `${flight.filtered[l.landing].time}`);
         }
         if (best.scoreInfo !== undefined) {
-            if (best.scoreInfo.ep && best.scoreInfo.ep['start'])
-                displayDistance('start', 'tp0', best.scoreInfo.ep['start'], best.scoreInfo.tp[0]);
-            let i = 0;
-            while(best.scoreInfo.tp[i + 1]) {
-                displayDistance(`tp${i}`, `tp${i + 1}`, best.scoreInfo.tp[i], best.scoreInfo.tp[i + 1]);
-                i++;
+            for (const leg of best.scoreInfo.legs) {
+                console.log(`${leg.name.padStart(10, ' ')} : ${leg.d.toString().padStart(8, ' ')}km (${leg.start.distanceEarth(leg.finish).toFixed(3)}km)`);
             }
-            if (best.scoreInfo.ep && best.scoreInfo.ep['finish'])
-                displayDistance('tp2', 'finish', best.scoreInfo.tp[2], best.scoreInfo.ep['finish']);
-            else if (best.scoreInfo.tp[2])
-                displayDistance('tp2', 'tp0', best.scoreInfo.tp[2], best.scoreInfo.tp[0]);
-            else
-                displayDistance('tp1', 'tp0', best.scoreInfo.tp[1], best.scoreInfo.tp[0]);
 
             if (config.debug) {
                 if (best.scoreInfo.ep)
@@ -135,15 +122,19 @@ try {
             }
             
             console.log('Best solution is'
-				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal') + util.consoleColors.reset}`
+				+ ` ${(best.optimal ? util.consoleColors.fg.green + 'optimal' : util.consoleColors.fg.red + 'not optimal')
+                    + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
 				+ ` ${util.consoleColors.fg.green}${best.score} points,`
-				+ ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`
+				+ ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km,`
+				+ ` multiplier is ${best.opt.scoring.multiplier}`
 				+ (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
+				+ (best.scoreInfo.penalty ? ` [ penalty is ${best.scoreInfo.penalty}km ]` : '')
 				+ (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)
 				+ util.consoleColors.reset);
         } else
-            console.log(`no solution found, try increasing maximum running time, potential maximum score could be up to ${best.bound.toFixed(2)} points`);
+            console.log('no solution found, try increasing maximum running time,' +
+                `potential maximum score could be up to ${best.bound.toFixed(2)} points`);
     }
 } catch (e) {
     console.error(e.message);

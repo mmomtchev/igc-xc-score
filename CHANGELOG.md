@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `minDistance` option for all flights
  - Add the FAI rules
  - Add the XCLeague rules
+ - Adopt new rounding rules
+ - Add `legs` with the scoring distance of each leg to the result
+ - Add `penalty` with the penalty to the result
+ - Start numbering the turnpoints at 1 for the user-facing result
  - Significantly reduce the size of the production build of the web demo
  - Do not depend on the order of the CLI arguments
 
