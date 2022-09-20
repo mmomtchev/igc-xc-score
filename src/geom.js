@@ -225,6 +225,9 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
 
     // then we compare it to the one we already know for [lastUnknown..end]
     if (precomputedNext !== undefined) {
+        // TODO
+        // This part is not covered by the unit tests since the introduction of the rounding
+        // Find a flight that triggers it
         const pout = precomputedNext.o.out;
         const pin = precomputedNext.o.in;
         const d = opt.scoring.rounding(pout.distanceEarth(pin));
