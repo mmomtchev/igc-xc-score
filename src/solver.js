@@ -57,7 +57,11 @@ export default function* solver(flight, _scoringTypes, _config) {
     }
 
     let best = solutionRoots[0];
-    let solutionQueue = new SortedSet(solutionRoots, Solution.prototype.contentEquals, Solution.prototype.contentCompare);
+    let solutionQueue = new SortedSet(
+        solutionRoots,
+        Solution.prototype.contentEquals,
+        Solution.prototype.contentCompare
+    );
     let processed = 0;
 
     let tcum = 0;

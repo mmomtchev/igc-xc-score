@@ -20,7 +20,7 @@ module.exports = {
         quotes: ['error', 'single'],
         semi: ['error', 'always'],
         indent: ['error', 4],
-        'max-len': ['error', { 'code': 120, ignoreUrls: true, ignoreStrings: true }]
+        'max-len': ['error', { 'code': 120, ignoreUrls: true, ignoreStrings: true, ignoreComments: true }]
     },
     overrides: [
         {
