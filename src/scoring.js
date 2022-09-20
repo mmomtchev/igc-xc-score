@@ -306,12 +306,6 @@ export function scoreOutAndReturn1(tp, opt) {
 // In igc-xc-score all TPs are lying on the track
 // They are to be transformed to the best possible cylinders
 export function adjustFAICylinders(score, opt) {
-    // Find the centroid of the turnpoints
-    // https://www.mathopenref.com/coordcentroid.html
-    let x = score.tp.reduce((a, t) => a + t.x, 0) / score.tp.length;
-    let y = score.tp.reduce((a, t) => a + t.y, 0) / score.tp.length;
-    const centroid = new Point(x, y);
-
     // Move away each TP by 'cylinders' (400m)
     // https://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
     // We can safely assume that the Earth is flat for a distance of 400m
@@ -323,12 +317,41 @@ export function adjustFAICylinders(score, opt) {
         point.y = (1 - t) * origin.y + t * point.y;
     }
 
+    // For each TP we have to determine a new location that lies on a line
+    // determined by the middle of the line between the previous and the next TP
+    // and the TP itself
+    // (For a triangle, this would be the centroid of the triangle, but
+    // for an open flight every TP is to be moved away from a different center)
     for (const i in score.tp) {
         if (score.tp[i].r === undefined) {
             // The second TP of an Out-and-Return flight is not lying on the track
             // and it is already a cylinder TP
             continue;
         }
+
+        let previous = +i - 1;
+        if (previous < 0) {
+            if (score.ep)
+                // Open flight - the previous one is START
+                previous = score.ep.start;
+            else
+                // Circuit flight - the previous one is the last TP
+                previous = score.tp[score.tp.length - 1];
+        } else
+            previous = score.tp[previous];
+
+        let next = +i + 1;
+        if (next >= score.tp.length) {
+            if (score.ep)
+                // Open flight - the next one is FINISH
+                next = score.ep.finish;
+            else
+                // Circuit flight - the next one is the first TP
+                next = score.tp[0];
+        } else
+            next = score.tp[next];
+
+        const centroid = new Point((previous.x + next.x) / 2, (previous.y + next.y) / 2);
         moveAway(score.tp[i], centroid);
     }
 
