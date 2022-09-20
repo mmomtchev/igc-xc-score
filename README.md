@@ -65,13 +65,14 @@ As a side note, while the GPS navigation system coordinates are relative to WGS8
 
 ### Rounding of the result
 
-No cross-country league has completely unambiguous score and distance rounding rules - in fact XContest is the only one to have any rounding rules. Until the leagues decide to resolve the ambiguity, `igc-xc-score` has adopted its own rounding rules:
+No cross-country league has completely unambiguous score and distance rounding rules - in fact only FAI and XContest have any rounding rules at all. Until the leagues decide to resolve the ambiguity, `igc-xc-score` has adopted its own rounding rules:
 * All legs and closing distances are rounded separately
 * The legs are summed and the penalty is calculated
 * The triangle closing, `minSide` and `maxSide` are checked against the rounded results
 * The penalty is rounded and it is applied
+* The final distance is rounded according to the final rounding rule if there is a special final rounding rule
 * The multiplier is applied
-* The final score is rounded
+* The final score is rounded according to the final rounding rule if there is a special final rounding rule, otherwise it is rounded normally
 
 If you don't have lots of experience with floating point numbers on a computer, keep in mind that some fractional numbers that are round in decimal notation are not round in binary notation. **If you are a simple user of the interface this does not concern you.** If you are using the library to develop 3rd party software and using the raw floating numbers, you should study the example web page or the CLI program - pay attention to `toFixed()` calls - you will need to do the same in your code - or otherwise your users will complain that `99.04` sometimes appears as `99.03999999999999`.
 

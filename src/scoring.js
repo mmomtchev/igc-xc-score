@@ -20,6 +20,14 @@ export function closingWithPenalty(distance, opt) {
     return Infinity;
 }
 
+export function finalRounding(v, opt) {
+    if (opt.scoring.finalRounding)
+        return opt.scoring.finalRounding(v);
+    if (opt.scoring.rounding)
+        return opt.scoring.rounding(v);
+    return v;
+}
+
 // Upper limit for a 3TP distance flight with 3 TPs in boxes
 export function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
@@ -49,8 +57,9 @@ export function scoreDistance3Points(tp, opt) {
         legs[i].start = all[i];
         legs[i].finish = all[i+1];
     }
+    distance = finalRounding(distance, opt);
     const score = distance >= (opt.scoring.minDistance || 0) ?
-        opt.scoring.rounding(distance * opt.scoring.multiplier) :
+        finalRounding(distance * opt.scoring.multiplier, opt) :
         0;
     return { distance, score, tp: tp, ep: { start: pin, finish: pout }, legs };
 }
@@ -170,8 +179,9 @@ export function scoreOpenTriangle(tp, opt) {
         legs[i].start = all[i];
         legs[i].finish = all[i+1];
     }
+    distance = finalRounding(distance, opt);
 
-    const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
+    const score = finalRounding(distance * opt.scoring.multiplier, opt) - closingPenalty(cp.d, opt);
     return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp, legs };
 }
 /* c8 ignore stop */
@@ -223,6 +233,7 @@ export function scoreTriangle(tp, opt) {
         legs[i].finish = tp[(i + 1) % tp.length];
     }
 
+    distance = finalRounding(distance, opt);
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
 
@@ -243,7 +254,7 @@ export function scoreTriangle(tp, opt) {
         return { score: 0 };
 
     const penalty = closingPenalty(cp.d, opt);
-    let score = opt.scoring.rounding((distance - penalty) * opt.scoring.multiplier);
+    let score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
 
     return { distance, score, tp, cp, legs, penalty };
 }
@@ -269,7 +280,8 @@ export function boundOutAndReturn2(ranges, boxes, opt) {
 
 // Score an out-and-return with 2 TPs once the 2 points have been selected
 export function scoreOutAndReturn2(tp, opt) {
-    const distance = opt.scoring.rounding(tp[0].distanceEarth(tp[1])) * 2;
+    const leg = opt.scoring.rounding(tp[0].distanceEarth(tp[1]));
+    const distance = finalRounding(leg * 2, opt);
 
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
@@ -279,10 +291,10 @@ export function scoreOutAndReturn2(tp, opt) {
         return { score: 0 };
 
     const penalty = closingPenalty(cp.d, opt);
-    const score = opt.scoring.rounding((distance - penalty) * opt.scoring.multiplier);
+    const score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
     const legs = [
-        {name: 'TP1 : TP2', start: tp[0], finish: tp[1], d: distance},
-        {name: 'TP2 : TP1', start: tp[1], finish: tp[0], d: distance}
+        {name: 'TP1 : TP2', start: tp[0], finish: tp[1], d: leg},
+        {name: 'TP2 : TP1', start: tp[1], finish: tp[0], d: leg}
     ];
 
     return { distance, score, tp, cp, legs, penalty };
@@ -330,7 +342,8 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
 export function scoreOutAndReturn1(tp, opt) {
     // Create the second turn point on the middle of the closing line
     const tp2 = new Point((tp[0].x + tp[2].x) / 2, (tp[0].y + tp[2].y) / 2);
-    const distance = opt.scoring.rounding(tp[1].distanceEarth(tp2));
+    const leg = opt.scoring.rounding(tp[1].distanceEarth(tp2));
+    const distance = finalRounding(leg * 2, opt);
 
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
@@ -340,10 +353,10 @@ export function scoreOutAndReturn1(tp, opt) {
         return { score: 0 };
 
     const penalty = closingPenalty(closing, opt);
-    const score = (distance - penalty) * 2 * opt.scoring.multiplier;
+    const score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
     const legs = [
-        {name: 'TP1 : TP2', start: tp[0], finish: tp2, d: distance},
-        {name: 'TP2 : TP1', start: tp2, finish: tp[0], d: distance}
+        {name: 'TP1 : TP2', start: tp[0], finish: tp2, d: leg},
+        {name: 'TP2 : TP1', start: tp2, finish: tp[0], d: leg}
     ];
 
     return { distance, score, tp: [tp[1], tp2], cp: { closing, in: tp[0], out: tp[2] }, legs };
@@ -446,4 +459,6 @@ export function adjustFAICylinders(score, opt) {
         }
         break;
     }
+    score.distance = finalRounding(score.distance, opt);
+    score.score = finalRounding(score.score, opt);
 }

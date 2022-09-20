@@ -50,8 +50,8 @@ const tests = {
         { file: 'opentri-xcontest-428.31.igc', score: 428.6 }
     ],
     'FAI-OAR': [
-        { file: 'trifai-xcontest-307.57.igc', score: 149.78 },
-        { file: 'out-and-return-record.igc', score: 302.58 }
+        { file: 'trifai-xcontest-307.57.igc', score: 149.8 },
+        { file: 'out-and-return-record.igc', score: 302.6 }
     ],
     'FAI': [
         { file: 'trifai-xcontest-189.65.igc', score: 130.13 },
@@ -61,12 +61,12 @@ const tests = {
         { file: 'fai.igc', score: 228.16 }
     ],
     XCLeague: [
-        { file: 'trifai-xcontest-307.57.igc', score: 426.98 },
-        { file: 'out-and-return-record.igc', score: 605.16 },
+        { file: 'trifai-xcontest-307.57.igc', score: 427 },
+        { file: 'out-and-return-record.igc', score: 605.2 },
         { file: 'SwansonlowD-2022-07-16.igc', score: 249.6 },
-        { file: 'ChuS-2022-08-13.igc', score: 89.97 },
-        { file: 'AshleyS-2022-07-16.igc', score: 130.52 },
-        { file: 'MurphyJ-2022-03-26.igc', score: 24.55 }
+        { file: 'ChuS-2022-08-13.igc', score: 90 },
+        { file: 'AshleyS-2022-07-16.igc', score: 130.6 },
+        { file: 'MurphyJ-2022-03-26.igc', score: 24.6 }
     ]
 };
 

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `legs` with the scoring distance of each leg to the result
  - Add `penalty` with the penalty to the result
  - Start numbering the turnpoints at 1 for the user-facing result
+ - Add `finalRounding` for leagues that round the final result to less decimal points than the legs
  - Significantly reduce the size of the production build of the web demo
  - Do not depend on the order of the CLI arguments
 

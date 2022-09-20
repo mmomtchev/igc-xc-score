@@ -160,6 +160,7 @@ const scoringRules = {
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'fai',
             cylinders: 0.4,
@@ -181,6 +182,7 @@ const scoringRules = {
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'oar',
             cylinders: 0.4,
@@ -203,6 +205,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 35
@@ -215,6 +218,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 15
@@ -227,6 +231,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 5
@@ -237,6 +242,7 @@ const scoringRules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'od',
             minDistance: 5
@@ -251,6 +257,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 35
@@ -265,6 +272,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 15
@@ -279,6 +287,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 5
@@ -292,6 +301,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 25
@@ -305,6 +315,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 15
@@ -318,6 +329,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 5
@@ -327,6 +339,10 @@ const scoringRules = {
 
 function round2(score) {
     return parseFloat(parseFloat(score).toFixed(2));
+}
+
+function round1(score) {
+    return parseFloat(parseFloat(score).toFixed(1));
 }
 
 export default scoringRules;
