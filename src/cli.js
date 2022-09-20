@@ -16,16 +16,20 @@ function displayPoint(p) {
 }
 
 let config = {};
-for (let arg of process.argv.slice(3)) {
-    const kv = arg.split('=');
-    if (!isNaN(kv[1]))
-        config[kv[0]] = parseInt(kv[1]);
-    else if (kv[1] === 'true')
-        config[kv[0]] = true;
-    else if (kv[1] === 'false')
-        config[kv[0]] = false;
-    else
-        config[kv[0]] = kv[1];
+for (let arg of process.argv.slice(2)) {
+    if (!arg.includes('='))
+        config.in = arg;
+    else {
+        const kv = arg.split('=');
+        if (!isNaN(kv[1]))
+            config[kv[0]] = parseInt(kv[1]);
+        else if (kv[1] === 'true')
+            config[kv[0]] = true;
+        else if (kv[1] === 'false')
+            config[kv[0]] = false;
+        else
+            config[kv[0]] = kv[1];
+    }
 }
 
 if (Object.keys(config).length && !config.quiet)
@@ -36,18 +40,18 @@ if (config.scoring && !scoringRules[config.scoring]) {
     process.exit(2);
 }
 
-let inf, outf;
+let inf = config.in, outf = config.out;
 if (config.pipe) {
     inf = 0;
     outf = 1;
 } else {
-    if (!process.argv[2]) {
+    if (inf == undefined) {
         // eslint-disable-next-line no-undef
         console.log(`igc-xc-score ${typeof _version !== 'undefined' ? _version : 'from source'}`);
         // eslint-disable-next-line no-undef
         console.log(`Momtchil Momtchev (velivole.fr/meteo.guru) & contributors, © 2020-${typeof _year !== 'undefined' ? _year : 'present'}, LGPL 3.0`);
         console.log('Usage:');
-        console.log('igc-xc-score <flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI|XCLeague] [quiet=true] [pipe=true] [progress=<n>] ...');
+        console.log('igc-xc-score [in=]<flight.igc> [out=flight.json] [maxtime=<n>] [scoring=FFVL|XContest|FAI|XCLeague] [quiet=true] [pipe=true] [progress=<n>] ...');
         console.log('flight.igc                           is the flight track log');
         console.log('out=flight.json                      save the optimal solution in GeoJSON format');
         console.log('maxtime=n                            limit the execution time to n seconds');
@@ -59,8 +63,6 @@ if (config.pipe) {
         console.log('trim=true                            auto-trim the flight log to its launch and landing points');
         process.exit(1);
     }
-    inf = process.argv[2];
-    outf = config.out;
 }
 try {
     const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'), { lenient: true });

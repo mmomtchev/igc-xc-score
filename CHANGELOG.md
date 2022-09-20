@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add the FAI rules
  - Add the XCLeague rules
  - Significantly reduce the size of the production build of the web demo
+ - Do not depend on the order of the CLI arguments
 
 ## [1.6.1] 2022-05-12
 
