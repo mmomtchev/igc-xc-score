@@ -232,6 +232,9 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
         const pin = precomputedNext.o.in;
         const d = opt.scoring.rounding(pout.distanceEarth(pin));
         if (d < min.d) {
+            console.log('This flight is very interesting because it has multiple possible closings, please consider submitting it' +
+                ' for the unit testing of this program' +
+                ' by opening an issue on https://github.com/mmomtchev/igc-xc-score');
             min.d = d;
             min.out = pout;
             min.in = pin;
