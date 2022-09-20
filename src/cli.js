@@ -104,12 +104,12 @@ try {
     if (!config.quiet) {
         for (let l of flight.ll) {
             console.log(`Launch at fix ${l.launch}, ${flight.filtered[l.launch].time}`);
-            console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1}` +
+            console.log(`Landing at fix n-${flight.filtered.length - l.landing - 1} ` +
                 `${flight.filtered[l.landing].time}`);
         }
         if (best.scoreInfo !== undefined) {
             for (const leg of best.scoreInfo.legs) {
-                console.log(`${leg.name.padStart(10, ' ')} : ${leg.d.toString().padStart(8, ' ')}km (${leg.start.distanceEarth(leg.finish).toFixed(3)}km)`);
+                console.log(`${leg.name.padStart(12, ' ')} : ${leg.d.toFixed(2).padStart(8, ' ')}km (${leg.start.distanceEarth(leg.finish).toFixed(3)}km)`);
             }
 
             if (config.debug) {

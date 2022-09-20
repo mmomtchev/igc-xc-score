@@ -429,20 +429,17 @@ export function adjustFAICylinders(score, opt) {
         {
             score.distance = 0;
             for (let i = 0; i < score.legs.length; i++) {
-                score.legs[i].d = opt.scoring.rounding(score.tp[i].distanceEarth(score.tp[(i + 1) % score.tp.length]));
+                score.legs[i].d = opt.scoring.rounding(score.tp[i].distanceEarth(score.tp[(i + 1) % score.tp.length]))
+                    - opt.scoring.cylinders * 2;
                 score.distance += score.legs[i].d;
             }
-            score.distance -= opt.scoring.cylinders * 2 * 3;
-            score.score = score.distance >= (opt.scoring.minDistance || 0) ? 
-                opt.scoring.rounding((score.distance - closingPenalty(score.cp.d, opt)) * opt.scoring.multiplier) : 0;
         }
         break;
     case 'oar':
         {
             const distance = opt.scoring.rounding(score.tp[0].distanceEarth(score.tp[1])) - opt.scoring.cylinders;
             score.legs[0].d = score.legs[1].d = distance;
-            score.score = score.minDistance >= (opt.scoring.minDistance || 0) ?
-                opt.scoring.rounding((distance - closingPenalty(distance, opt)) * 2 * opt.scoring.multiplier) : 0;
+            score.distance = distance * 2;
         }
         break;
     case 'od':
@@ -451,14 +448,13 @@ export function adjustFAICylinders(score, opt) {
             score.distance = 0;
             for (let i = 0; i < all.length - 1; i++) {
                 score.legs[i].d = opt.scoring.rounding(all[i].distanceEarth(all[i + 1]));
+                score.legs[i].d -= opt.scoring.cylinders * 2;
                 score.distance += score.legs[i].d;
             }
-            score.distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
-            score.score = score.distance >= (opt.scoring.minDistance || 0) ?
-                opt.scoring.rounding(score.distance * opt.scoring.multiplier) : 0;
         }
         break;
     }
     score.distance = finalRounding(score.distance, opt);
-    score.score = finalRounding(score.score, opt);
+    score.score = score.distance >= (opt.scoring.minDistance || 0) ?
+        finalRounding((score.distance - (score.penalty || 0)) * opt.scoring.multiplier, opt) : 0;
 }

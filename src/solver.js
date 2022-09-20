@@ -121,6 +121,7 @@ export default function* solver(flight, _scoringTypes, _config) {
         if (best.optimal) {
             if (best.opt.scoring.post) {
                 best.opt.scoring.post(best.scoreInfo, best.opt);
+                best.score = best.scoreInfo.score;
             }
             best.score = best.opt.scoring.rounding(best.scoreInfo.score);
             if (best.scoreInfo) {
