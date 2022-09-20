@@ -377,19 +377,19 @@ export function adjustFAICylinders(score, opt) {
     case 'oar':
         {
             const realDistance = score.tp[0].distanceEarth(score.tp[1]) - opt.scoring.cylinders;
-            score.score = score.minDistance >= (opt.scoring.minDistance || 0) ?
-                (realDistance - closingPenalty(realDistance, opt)) * 2 * opt.scoring.multiplier : 0;
+            score.score = score.distance >= (opt.scoring.minDistance || 0) ?
+                (realDistance - closingPenalty(score.cp.d, opt)) * 2 * opt.scoring.multiplier : 0;
         }
         break;
     case 'od':
         {
-            let distance;
+            score.distance = 0;
             const all = [score.ep.start, score.tp[0], score.tp[1], score.tp[2], score.ep.finish];
             for (let i = 0; i < all.length - 1; i++)
-                distance += all[i].distanceEarth(all[i + 1]);
-            distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
-            score.score = distance >= (opt.scoring.minDistance || 0) ?
-                distance * opt.scoring.multiplier : 0;
+                score.distance += all[i].distanceEarth(all[i + 1]);
+            score.distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
+            score.score = score.distance >= (opt.scoring.minDistance || 0) ?
+                score.distance * opt.scoring.multiplier : 0;
         }
         break;
     }
