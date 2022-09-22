@@ -34,7 +34,7 @@
     "preversion": "npm test",
     "version": "npm run build && git add package.json",
     "postversion": "git push && git push --tags && npm run upload",
-    "upload": "npm run wwwdist && echo gh release create -d -t $npm_package_version v$npm_package_version dist/igc-xc-score*"
+    "upload": "npm run wwwdist && echo gh release create -d -t $npm_package_version --notes '' v$npm_package_version dist/igc-xc-score*"
   },
   "repository": {
     "type": "git",
