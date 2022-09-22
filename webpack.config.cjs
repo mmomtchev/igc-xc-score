@@ -1,5 +1,6 @@
 'use strict';
 const webpack = require('webpack');
+const CopyPlugin = require('copy-webpack-plugin');
 const path = require('path');
 const exec = require('child_process');
 
@@ -37,6 +38,12 @@ module.exports = (env, argv) => ({
             __BUILD_PKG__: JSON.stringify(build_pkg),
             __BUILD_DATE__: JSON.stringify(build_date),
             __DEBUG__: JSON.stringify(argv.mode == 'development')
+        }),
+        new CopyPlugin({
+            patterns: [
+                { from: 'www/index.html', to: 'index.html' },
+                { from: 'www/pacman.svg', to: 'pacman.svg' }
+            ]
         })
     ],
     module: {
