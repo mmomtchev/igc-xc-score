@@ -230,7 +230,11 @@ This will lower the executable size down to about 10Mb on Windows and 15Mb on Li
 
 #### If CPU/memory is the problem
 
-I have lots of experience working on ARM and MIPS platforms, so you can contact me for porting the library to your specific device, but this definitely won't be free or open-source software. Debugging a very complex mathematical algorithm in C++ on a small electronic board with an integrated hardware debugger is not a leisure project.
+I have lots of experience working on ARM and MIPS platforms, so you can contact me for porting the library to your specific device, but this definitely won't be free or open-source software. Debugging a very complex mathematical algorithm in C++ on a small electronic board with an integrated hardware debugger is not a leisure project. Porting this software to an integrated low-level ARM/MIPS board is a 1-month project.
+
+#### Implementing continuous dynamic search
+
+Modifying the algorithm to allow it to continuously search in-flight for nearby points that maximize the score is also possible and it is a 2-weeks project.
 
 ## Program Output
 
