@@ -119,6 +119,8 @@ try {
                     console.log(`tp${(i)} : ${displayPoint(best.scoreInfo.tp[i])}`);
                 if (best.scoreInfo.ep)
                     console.log(`fin : ${displayPoint(best.scoreInfo.ep['finish'])}`);
+                console.log(`Processed ${(best.processed)/1000}K solutions for ${best.time/1000}s` +
+                    ` (${(best.processed/best.time).toFixed(3)}Ks/s)`);
             }
             
             console.log('Best solution is'
