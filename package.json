@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "npm run test:es && npm run test:cjs && npm run eslint",
-    "test:es": "node --experimental-specifier-resolution=node test/test",
+    "test:es": "node --max-old-space-size=2048 --experimental-specifier-resolution=node -- test/test",
     "test:cjs": "node test/test.cjs",
     "eslint": "eslint src",
     "doc": "jsdoc -d doc src/solver.js scoring-rules.config.js",
