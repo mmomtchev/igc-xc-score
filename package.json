@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "npm run test:es && npm run test:cjs && npm run eslint",
-    "test:es": "node --max-old-space-size=2048 --experimental-specifier-resolution=node -- test/test",
+    "test:es": "node --max-old-space-size=2048 test/test",
     "test:cjs": "node test/test.cjs",
     "eslint": "eslint src",
     "doc": "jsdoc -d doc src/solver.js scoring-rules.config.js",
@@ -28,7 +28,7 @@
     "watch": "webpack --mode=development --watch",
     "wwwdist": "zip -j dist/igc-xc-score-web.zip dist/www/*",
     "build": "rollup -c && npm run nexe && npm run www && npm run doc",
-    "c8": "npx c8 node --experimental-specifier-resolution=node --no-warnings test/test.js",
+    "c8": "npx c8 node --no-warnings test/test.js",
     "lcov": "npx c8 report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "curl -s https://codecov.io/bash | bash",
     "preversion": "npm test",
