@@ -126,7 +126,7 @@ const scoringRules = {
      */
     'FAI': [
         {
-            name: 'Open Distance',
+            name: 'Free Distance around 3 TPs',
             multiplier: 1,
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
@@ -171,11 +171,13 @@ const scoringRules = {
     ],
     /**
      * @constant {object[]}
-     * This is a special type of flight that does not have proper scoring
-     * It is used only for Out-and-Return Distance to one turnpoint records
      */
     'FAI-OAR': [
         {
+            /**
+             * This is the FAI definition of Out-and-Return Distance
+             * with a single TP
+             */
             name: 'Out-and-Return Distance',
             multiplier: 1,
             bound: scoring.boundOutAndReturn1,
@@ -186,6 +188,26 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
+            code: 'oar',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
+        }
+    ],
+    'FAI-OAR2': [
+        {
+            /**
+             * This type of flight is very similar to XCLeague
+             * Out-and-Return distance
+             */
+            name: 'Out-and-Return Flight around 2 TPs',
+            multiplier: 1,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 2,
             code: 'oar',
             cylinders: 0.4,
             post: scoring.adjustFAICylinders
