@@ -71,8 +71,10 @@ export default function* solver(flight, _scoringTypes, _config) {
             if (processed % 100 === 0) {
                 if (typeof process !== 'undefined' && process.memoryUsage) {
                     const mem = process.memoryUsage();
-                    if (mem.heapUsed / mem.heapTotal > 0.98)
+                    if (mem.heapUsed / mem.heapTotal > 0.98) {
+                        console.error(`Out of memory: ${mem.heapUsed/1024}KiB used of ${mem.heapTotal/1024}KiB total`);
                         break;
+                    }
                 }
             }
 
