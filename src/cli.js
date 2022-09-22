@@ -1,5 +1,6 @@
 'use strict';
 import * as fs from 'fs';
+import * as v8 from 'v8';
 import IGCParser from 'igc-parser';
 import solver from './solver.js';
 import { Solution } from './solution.js';
@@ -61,7 +62,8 @@ if (config.pipe) {
 }
 try {
     const flight = IGCParser.parse(fs.readFileSync(inf, 'utf8'), { lenient: true });
-    config.env = { fs };
+    // These allow to enable debug and memory reporting when running in Node.js
+    config.env = { fs, v8 };
 
     let best;
     const tend = Date.now() + config.maxtime * 1000;

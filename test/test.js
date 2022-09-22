@@ -2,6 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as v8 from 'v8';
 import IGCParser from 'igc-parser';
 import { solver, scoringRules } from '../index.js';
 import * as util from '../src/util.js';
@@ -9,7 +10,10 @@ import { Point } from '../src/foundation.js';
 
 const defaultConfig = {
     quiet: true,
-    trim: true
+    trim: true,
+    env: {
+        fs, v8
+    }
 };
 
 const tests = {

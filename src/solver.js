@@ -69,10 +69,11 @@ export default function* solver(flight, _scoringTypes, _config) {
         const tstart = Date.now();
         while (solutionQueue.length > 0) {
             if (processed % 100 === 0) {
-                if (typeof process !== 'undefined' && process.memoryUsage) {
-                    const mem = process.memoryUsage();
-                    if (mem.heapUsed / mem.heapTotal > 0.98) {
-                        console.error(`Out of memory: ${mem.heapUsed/1024}KiB used of ${mem.heapTotal/1024}KiB total`);
+                if (config.env && config.env.v8 !== 'undefined') {
+                    const mem = config.env.v8.getHeapStatistics();
+                    if (mem.used_heap_size / mem.heap_size_limit > 0.98) {
+                        console.error(`Out of memory: ${mem.used_heap_size/1024}KiB used` +
+                        ` of ${mem.heap_size_limit/1024}KiB total`);
                         break;
                     }
                 }
