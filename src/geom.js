@@ -323,6 +323,7 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
             if (sega <= precomputed.o.r && precomputed.o.r <= segb) {
                 distanceVMax = v.distanceEarth(precomputed.o);
                 fVpoint = precomputed.o;
+            /* c8 ignore next 2 */
             } else
                 throw new Error('furthestPoints cache inconsistency');
 
