@@ -143,6 +143,7 @@ export function maxDistanceNRectangles(boxes) {
             miny = Math.min(miny, boxes[r].y);
             maxx = Math.max(maxx, boxes[r].x);
             maxy = Math.max(maxy, boxes[r].y);
+        /* c8 ignore next 2 */
         } else
             throw new TypeError('boxes must contain only Box or Point');
         path[r] = [];
@@ -214,7 +215,7 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + opt.launch;
         if (n !== undefined) {
             const pin = opt.flight.flightPoints[n];
-            const d = pout.distanceEarth(pin);
+            const d = opt.scoring.rounding(pout.distanceEarth(pin));
             if (d < min.d) {
                 min.d = d;
                 min.out = pout;
@@ -225,10 +226,16 @@ export function findClosestPairIn2Segments(p1, p2, opt) {
 
     // then we compare it to the one we already know for [lastUnknown..end]
     if (precomputedNext !== undefined) {
+        // TODO
+        // This part is not covered by the unit tests since the introduction of the rounding
+        // Find a flight that triggers it
         const pout = precomputedNext.o.out;
         const pin = precomputedNext.o.in;
-        const d = pout.distanceEarth(pin);
+        const d = opt.scoring.rounding(pout.distanceEarth(pin));
         if (d < min.d) {
+            console.log('This flight is very interesting because it has multiple possible closings, please consider submitting it' +
+                ' for the unit testing of this program' +
+                ' by opening an issue on https://github.com/mmomtchev/igc-xc-score');
             min.d = d;
             min.out = pout;
             min.in = pin;
@@ -256,7 +263,7 @@ function findClosestPairIn2PartialSegments(range_a, range_b, opt) {
         const n = rtree.neighbors(pout.x * lc, pout.y, 1)[0] + range_a.start;
         if (n !== undefined) {
             const pin = opt.flight.flightPoints[n];
-            const d = pout.distanceEarth(pin);
+            const d = opt.scoring.rounding(pout.distanceEarth(pin));
             if (d < min.d) {
                 min.d = d;
                 min.out = pout;
@@ -278,6 +285,7 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
         points = target.vertices();
     else if (target instanceof Point)
         points = [target];
+    /* c8 ignore next 2 */
     else
         throw new TypeError('target must be either Point or Box');
 
@@ -289,6 +297,7 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
     } else if (segb === opt.landing) {
         pos = 1;
         zSearch = +sega;
+    /* c8 ignore next 2 */
     } else
         throw new RangeError('this function supports seeking only from the launch or the landing point');
 
@@ -314,6 +323,7 @@ export function findFurthestPointInSegment(sega, segb, target, opt) {
             if (sega <= precomputed.o.r && precomputed.o.r <= segb) {
                 distanceVMax = v.distanceEarth(precomputed.o);
                 fVpoint = precomputed.o;
+            /* c8 ignore next 2 */
             } else
                 throw new Error('furthestPoints cache inconsistency');
 

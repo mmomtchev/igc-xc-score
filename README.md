@@ -63,6 +63,23 @@ As a side note, while the GPS navigation system coordinates are relative to WGS8
 
 *En France [l'ellipsoïde de référence](https://geodesie.ign.fr/contenu/fichiers/documentation/SRCfrance.pdf) normalisé par l'IGN est le GRS80 pour la métropole et le WGS84 pour les DOM-TOM. Le géoïde utilisé est celui du RGF93. Les deux ellipsoïdes sont absolument équivalents, à moins d'un millimètre près, et l'utilisation des coordonnées WGS84 est admise par l'IGN sans [aucune transformation supplémentaire](https://geodesie.ign.fr/contenu/fichiers/documentation/pedagogiques/TransformationsCoordonneesGeodesiques.pdf).*
 
+### Rounding of the result
+
+No cross-country league has completely unambiguous score and distance rounding rules - in fact only FAI and XContest have any rounding rules at all. Until the leagues decide to resolve the ambiguity, `igc-xc-score` has adopted its own rounding rules:
+* All legs and closing distances are rounded separately
+* The legs are summed and the penalty is calculated
+* The triangle closing, `minSide` and `maxSide` are checked against the rounded results
+* The penalty is rounded and it is applied
+* The final distance is rounded according to the final rounding rule if there is a special final rounding rule
+* The multiplier is applied
+* The final score is rounded according to the final rounding rule if there is a special final rounding rule, otherwise it is rounded normally
+
+If you don't have lots of experience with floating point numbers on a computer, keep in mind that some fractional numbers that are round in decimal notation are not round in binary notation. **If you are a simple user of the interface this does not concern you.** If you are using the library to develop 3rd party software and using the raw floating numbers, you should study the example web page or the CLI program - pay attention to `toFixed()` calls - you will need to do the same in your code - or otherwise your users will complain that `99.04` sometimes appears as `99.03999999999999`.
+
+### FAI Records rules
+
+The FAI rules are scored using turnpoints in cylinders according to the FAI Sporting Code Section 7D. As this scoring is very peculiar, very complex and used only for evaluating FAI records, **I have focused only on obtaining a perfect result** and I haven't implemented time-saving optimizations. As a result, this scoring is very slow, taking up to 10 minutes for some flights. If there is more interest in scoring flights with cylinder TPs, and especially if any company or institution is willing to sponsor this work (1 week), it will be possible to greatly speed up this algorithm. If you are interested in contributing the required code yourself, I can provide guidance (for free). The missing part is the bounding of the possible solutions that fails to take into account that the real score will be slightly lower than the simple sum of the legs distances. Thus, the `adjustFAICylinders` has to be adapted to work with the bounding functions to avoid trying huge amounts of useless solutions.
+
 ### Launch and landing detection
 
 The tool includes a launch and landing detection based upon a moving average of the vertical and the horizontal (ground) speed. It should correctly segment flight logs containing multiple launches and landings and will score the best flight. It can not distinguish a glider that is completely immobile up in the air for a set period of time (ie, gliding into a wind equal to its airspeed while soaring at its sink rate) from a glider that has landed, but outside of this somewhat rare (and very precarious) situation, or maybe a car climbing a twisty mountain road, it should work well in most typical hike and fly cases. The values, including the number of seconds used for the moving average, can be tweaked in *flight.js*.

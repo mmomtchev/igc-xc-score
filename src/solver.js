@@ -57,7 +57,11 @@ export default function* solver(flight, _scoringTypes, _config) {
     }
 
     let best = solutionRoots[0];
-    let solutionQueue = new SortedSet(solutionRoots, Solution.prototype.contentEquals, Solution.prototype.contentCompare);
+    let solutionQueue = new SortedSet(
+        solutionRoots,
+        Solution.prototype.contentEquals,
+        Solution.prototype.contentCompare
+    );
     let processed = 0;
 
     let tcum = 0;
@@ -65,16 +69,20 @@ export default function* solver(flight, _scoringTypes, _config) {
         const tstart = Date.now();
         while (solutionQueue.length > 0) {
             if (processed % 100 === 0) {
-                if (typeof process !== 'undefined' && process.memoryUsage) {
-                    const mem = process.memoryUsage();
-                    if (mem.heapUsed / mem.heapTotal > 0.98)
+                if (config.env && config.env.v8 !== 'undefined') {
+                    const mem = config.env.v8.getHeapStatistics();
+                    if (mem.used_heap_size / mem.heap_size_limit > 0.98) {
+                        /* c8 ignore next 4 */
+                        console.error(`Out of memory: ${mem.used_heap_size/1024}KiB used` +
+                            ` of ${mem.heap_size_limit/1024}KiB total`);
                         break;
+                    }
                 }
             }
 
             let current = solutionQueue.pop();
 
-            if (current.opt.scoring.rounding(current.bound) <= best.opt.scoring.rounding(best.score)) {
+            if (current.bound <= best.score) {
                 solutionQueue.clear();
                 break;
             }
@@ -87,13 +95,15 @@ export default function* solver(flight, _scoringTypes, _config) {
                 processed++;
                 if (s.score >= best.score && s.score > 0) {
                     best = s;
-                    if (solutionQueue.length > 10000 && solutionQueue.findLeast().value.bound <= best.score) {
+                    if (solutionQueue.findLeast().value.bound <= best.score) {
                         const garbageBest = solutionQueue.findGreatestLessThanOrEqual({ bound: best.score });
                         if (garbageBest !== undefined) {
                             const cutoff = solutionQueue.indexOf(garbageBest.value);
                             solutionQueue.splice(0, cutoff + 1).length;
                         }
                     }
+                } else {
+                    delete s.scoreInfo;
                 }
                 solutionQueue.push(s);
                 if (config.debug)
@@ -115,15 +125,6 @@ export default function* solver(flight, _scoringTypes, _config) {
             best.optimal = false;
 
         if (best.optimal) {
-            if (best.opt.scoring.post) {
-                best.opt.scoring.post(best.scoreInfo, best.opt);
-            }
-            best.score = best.opt.scoring.rounding(best.scoreInfo.score);
-            if (best.scoreInfo) {
-                best.scoreInfo.distance = best.opt.scoring.rounding(best.scoreInfo.distance);
-                if (best.scoreInfo.cp)
-                    best.scoreInfo.cp.d = best.opt.scoring.rounding(best.scoreInfo.cp.d);
-            }
             reset = true;
             return best;
         } else

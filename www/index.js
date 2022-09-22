@@ -122,7 +122,7 @@ function display(geojson, style) {
 }
 
 function coordinates(point) {
-    return `${point.y.toFixed(4)}°:${point.x.toFixed(4)}°`;
+    return `${point.y.toFixed(4)}° : ${point.x.toFixed(4)}°`;
 }
 
 function loop() {
@@ -135,7 +135,7 @@ function loop() {
             display(s.value.geojson());
         }
         runningProcess = window.requestIdleCallback(loop.bind(this));
-        $('#status').html(`trying solutions, best so far is ${s.value.score} points`
+        $('#status').html(`trying solutions, best so far is ${s.value.score.toFixed(2)} points`
             + `<p>theoretical best could be up to ${parseFloat(s.value.currentUpperBound).toFixed(2)} points`);
     } else {
         runningProcess = undefined;
@@ -144,29 +144,22 @@ function loop() {
         let r = [
             `<td class="label">Best possible</td><td class="data">${s.value.score} points</td>`,
             `<td class="label">${s.value.opt.scoring.name}</td>`
-            + `<td class="data">${s.value.scoreInfo.distance}km</td>`
+            + `<td class="data">${s.value.scoreInfo.distance.toFixed(2)}km</td>`
         ];
         if (s.value.scoreInfo.cp)
-            r.push(`<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d}km</td>`);
-        let d = [];
-        if (s.value.scoreInfo.ep)
-            d.push(['START:0', s.value.scoreInfo.ep['start'], s.value.scoreInfo.tp[0]]);
-        for (const i in s.value.scoreInfo.tp)
-            d.push([
-                i + ':' + ((+i + 1) % s.value.scoreInfo.tp.length),
-                s.value.scoreInfo.tp[i],
-                s.value.scoreInfo.tp[(+i + 1) % s.value.scoreInfo.tp.length]
-            ]);
-        if (s.value.scoreInfo.ep)
-            d.push(['2:FINISH', s.value.scoreInfo.tp[2], s.value.scoreInfo.ep['finish']]);
-
-        for (const i of d)
-            r.push(`<td class="label">d ${i[0]}</td><td class="data">` +
-                `${i[1].distanceEarth(i[2]).toFixed(3)}km</td>`);
+            r.push(
+                `<td class="label">closing distance</td><td class="data">${s.value.scoreInfo.cp.d.toFixed(2)}km</td>`);
+        if (s.value.scoreInfo.penalty)
+            r.push(`<td class="label">penalty</td><td class="data">${s.value.scoreInfo.penalty.toFixed(2)}km</td>`);
+        r.push(`<td class="label">multiplier</td><td class="data">${s.value.opt.scoring.multiplier}</td>`);
+        
+        for (const leg of s.value.scoreInfo.legs)
+            r.push(`<td class="label">${leg.name}</td><td class="data">` +
+                `${leg.d.toFixed(2)}km (${leg.start.distanceEarth(leg.finish).toFixed(3)}km)</td>`);
 
         if (s.value.scoreInfo.ep)
             r.push('<td class="label">START</td><td class="data">' +
-                `${coordinates(s.value.scoreInfo.ep['start'])}km</td>`);
+                `${coordinates(s.value.scoreInfo.ep['start'])}</td>`);
         for (const i in s.value.scoreInfo.tp)
             r.push(`<td class="label">TP${i}</td><td class="data">` +
                 `${coordinates(s.value.scoreInfo.tp[i])}</td>`);

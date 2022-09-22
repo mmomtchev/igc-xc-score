@@ -4,11 +4,14 @@ import { Box, Point } from './foundation.js';
 import * as geom from './geom.js';
 
 export function closingPenalty(cd, opt) {
-    return (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0);
+    return opt.scoring.rounding(
+        (cd > (opt.scoring.closingDistanceFree || 0) ? cd : 0));
 }
 
 export function closingWithLimit(distance, opt) {
-    return Math.max(opt.scoring.closingDistanceFixed || 0, distance * (opt.scoring.closingDistanceRelative || 0));
+    return opt.scoring.rounding(
+        Math.max(opt.scoring.closingDistanceFixed || 0,
+            distance * (opt.scoring.closingDistanceRelative || 0)));
 }
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
@@ -17,14 +20,23 @@ export function closingWithPenalty(distance, opt) {
     return Infinity;
 }
 
+export function finalRounding(v, opt) {
+    if (opt.scoring.finalRounding)
+        return opt.scoring.finalRounding(v);
+    if (opt.scoring.rounding)
+        return opt.scoring.rounding(v);
+    return v;
+}
+
 // Upper limit for a 3TP distance flight with 3 TPs in boxes
 export function boundDistance3Points(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].end, opt.landing, boxes[2], opt);
-    const maxDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    const maxDistance = opt.scoring.rounding(
+        geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]));
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
-    return maxDistance * opt.scoring.multiplier;
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score of a 3TP distance flight with all 3 points selected
@@ -33,10 +45,23 @@ export function scoreDistance3Points(tp, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i = 0; i < all.length - 1; i++)
-        distance += all[i].distanceEarth(all[i + 1]);
-    const score = distance >= (opt.scoring.minDistance || 0) ? distance * opt.scoring.multiplier : 0;
-    return { distance, score, tp: tp, ep: { start: pin, finish: pout } };
+    const legs = [
+        {name: 'START : TP1'},
+        {name: 'TP1 : TP2'},
+        {name: 'TP2 : TP3'},
+        {name: 'TP3 : FINISH'}
+    ];
+    for (let i = 0; i < all.length - 1; i++) {
+        legs[i].d = opt.scoring.rounding(all[i].distanceEarth(all[i + 1]));
+        distance += legs[i].d;
+        legs[i].start = all[i];
+        legs[i].finish = all[i+1];
+    }
+    distance = finalRounding(distance, opt);
+    const score = distance >= (opt.scoring.minDistance || 0) ?
+        finalRounding(distance * opt.scoring.multiplier, opt) :
+        0;
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, legs };
 }
 
 // Upper limit for a FAI triangle with vertices somewhere in boxes,
@@ -44,19 +69,21 @@ export function scoreDistance3Points(tp, opt) {
 function maxFAIDistance(maxTriDistance, boxes, opt) {
     // smallest triangle with we could possibly have for these boxes
     const minTriDistance = geom.minDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+        return opt.scoring.rounding(i.distanceEarth(j)) +
+            opt.scoring.rounding(j.distanceEarth(k)) +
+            opt.scoring.rounding(k.distanceEarth(i));
     });
 
     if (maxTriDistance < minTriDistance)
         return 0;
 
     // biggest possible leg for each side
-    const maxAB = geom.maxDistance2Rectangles([boxes[0], boxes[1]]);
-    const maxBC = geom.maxDistance2Rectangles([boxes[1], boxes[2]]);
-    const maxCA = geom.maxDistance2Rectangles([boxes[2], boxes[0]]);
+    const maxAB = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[0], boxes[1]]));
+    const maxBC = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[1], boxes[2]]));
+    const maxCA = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[2], boxes[0]]));
 
     // our FAI triangle is limited to maxDistance
-    const maxDistance = Math.min(maxAB, maxBC, maxCA) / opt.scoring.minSide;
+    const maxDistance = opt.scoring.rounding(Math.min(maxAB, maxBC, maxCA) / opt.scoring.minSide);
 
     // Is the maximum FAI triangle smaller than the minimum possible triangle?
     if (maxDistance < minTriDistance)
@@ -69,12 +96,12 @@ function maxFAIDistance(maxTriDistance, boxes, opt) {
 // maxTriDistance is the upper limit of the unconstrained flat triangle
 function maxTRIDistance(maxTriDistance, boxes, opt) {
     // smallest possible leg for each side
-    const minAB = geom.minDistance2Rectangles([boxes[0], boxes[1]]);
-    const minBC = geom.minDistance2Rectangles([boxes[1], boxes[2]]);
-    const minCA = geom.minDistance2Rectangles([boxes[2], boxes[0]]);
+    const minAB = opt.scoring.rounding(geom.minDistance2Rectangles([boxes[0], boxes[1]]));
+    const minBC = opt.scoring.rounding(geom.minDistance2Rectangles([boxes[1], boxes[2]]));
+    const minCA = opt.scoring.rounding(geom.minDistance2Rectangles([boxes[2], boxes[0]]));
 
     // our constrained triangle cannot be smaller then minDistance
-    const minDistance = Math.max(minAB, minBC, minCA) / opt.scoring.maxSide;
+    const minDistance = opt.scoring.rounding(Math.max(minAB, minBC, minCA) / opt.scoring.maxSide);
 
     // Is the minimum constrained triangle bigger than the maximum possible triangle?
     if (minDistance > maxTriDistance)
@@ -89,9 +116,11 @@ function maxTRIDistance(maxTriDistance, boxes, opt) {
 export function boundOpenTriangle(ranges, boxes, opt) {
     const pin = geom.findFurthestPointInSegment(opt.launch, ranges[0].start, boxes[0], opt);
     const pout = geom.findFurthestPointInSegment(ranges[2].end, opt.landing, boxes[2], opt);
-    const maxD3PDistance = geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]);
+    const maxD3PDistance = opt.scoring.rounding(geom.maxDistanceNRectangles([pin, boxes[0], boxes[1], boxes[2], pout]));
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+        return opt.scoring.rounding(i.distanceEarth(j)) +
+            opt.scoring.rounding(j.distanceEarth(k)) +
+            opt.scoring.rounding(k.distanceEarth(i));
     });
     if (maxTriDistance < (opt.scoring.minDistance || 0))
         return 0;
@@ -109,16 +138,16 @@ export function boundOpenTriangle(ranges, boxes, opt) {
         cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxTriDistance, opt);
         if (!cp)
             return 0;
-        return (maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+        return finalRounding((maxD3PDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
-    return maxD3PDistance * opt.scoring.multiplier;
+    return finalRounding(maxD3PDistance * opt.scoring.multiplier, opt);
 }
 
 export function scoreOpenTriangle(tp, opt) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
+    const d0 = opt.scoring.rounding(tp[0].distanceEarth(tp[1]));
+    const d1 = opt.scoring.rounding(tp[1].distanceEarth(tp[2]));
+    const d2 = opt.scoring.rounding(tp[2].distanceEarth(tp[0]));
     const triDistance = d0 + d1 + d2;
 
     if (triDistance < (opt.scoring.minDistance || 0))
@@ -134,23 +163,35 @@ export function scoreOpenTriangle(tp, opt) {
     if (!cp)
         return { score: 0 };
 
-    let d3pDistance = 0;
     const pin = geom.findFurthestPointInSegment(opt.launch, tp[0].r, tp[0], opt);
     const pout = geom.findFurthestPointInSegment(tp[2].r, opt.landing, tp[2], opt);
     const all = [pin, tp[0], tp[1], tp[2], pout];
-    for (let i = 0; i < all.length - 1; i++)
-        d3pDistance += all[i].distanceEarth(all[i + 1]);
+    const legs = [
+        {name: 'START : TP1'},
+        {name: 'TP1 : TP2'},
+        {name: 'TP2 : TP3'},
+        {name: 'TP3 : FINISH'}
+    ];
+    let distance = 0;
+    for (let i = 0; i < all.length - 1; i++) {
+        legs[i].d = opt.scoring.rounding(all[i].distanceEarth(all[i + 1]));
+        distance += legs[i].d;
+        legs[i].start = all[i];
+        legs[i].finish = all[i+1];
+    }
+    distance = finalRounding(distance, opt);
 
-    const distance = d3pDistance;
-    const score = distance * opt.scoring.multiplier - closingPenalty(cp.d, opt);
-    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp };
+    const score = finalRounding(distance * opt.scoring.multiplier, opt) - closingPenalty(cp.d, opt);
+    return { distance, score, tp: tp, ep: { start: pin, finish: pout }, cp, legs };
 }
 /* c8 ignore stop */
 
 // Upper limit for a flat triangle with vertices somewhere in boxes
 export function boundTriangle(ranges, boxes, opt) {
     const maxTriDistance = geom.maxDistance3Rectangles(boxes, (i, j, k) => {
-        return i.distanceEarth(j) + j.distanceEarth(k) + k.distanceEarth(i);
+        return opt.scoring.rounding(i.distanceEarth(j)) +
+            opt.scoring.rounding(j.distanceEarth(k)) +
+            opt.scoring.rounding(k.distanceEarth(i));
     });
 
     if (maxTriDistance < (opt.scoring.minDistance || 0))
@@ -170,32 +211,41 @@ export function boundTriangle(ranges, boxes, opt) {
         cp = geom.isTriangleClosed(ranges[0].end, ranges[2].start, maxDistance, opt);
         if (!cp)
             return 0;
-        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+        return finalRounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return maxDistance * opt.scoring.multiplier;
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score a triangle once all 3 points have been selected
 export function scoreTriangle(tp, opt) {
-    const d0 = tp[0].distanceEarth(tp[1]);
-    const d1 = tp[1].distanceEarth(tp[2]);
-    const d2 = tp[2].distanceEarth(tp[0]);
-    const distance = d0 + d1 + d2;
+    let distance = 0;
+    const legs = [
+        {name: 'TP1 : TP2'},
+        {name: 'TP2 : TP3'},
+        {name: 'TP3 : TP1'}
+    ];
+    for (let i = 0; i < tp.length; i++) {
+        legs[i].d = opt.scoring.rounding(tp[i].distanceEarth(tp[(i + 1) % tp.length]));
+        distance += legs[i].d;
+        legs[i].start = tp[i];
+        legs[i].finish = tp[(i + 1) % tp.length];
+    }
 
+    distance = finalRounding(distance, opt);
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
 
     if (opt.scoring.minSide !== undefined) {
         const minSide = opt.scoring.minSide * distance;
-        if (d0 < minSide || d1 < minSide || d2 < minSide)
+        if (legs[0].d < minSide || legs[1].d < minSide || legs[2].d < minSide)
             return { score: 0 };
     }
 
     if (opt.scoring.maxSide !== undefined) {
         const maxSide = opt.scoring.maxSide * distance;
-        if (d0 > maxSide || d1 > maxSide || d2 > maxSide)
+        if (legs[0].d > maxSide || legs[1].d > maxSide || legs[2].d > maxSide)
             return { score: 0 };
     }
 
@@ -203,14 +253,15 @@ export function scoreTriangle(tp, opt) {
     if (!cp)
         return { score: 0 };
 
-    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    const penalty = closingPenalty(cp.d, opt);
+    let score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
 
-    return { distance, score, tp, cp };
+    return { distance, score, tp, cp, legs, penalty };
 }
 
 // Upper limit for an out-and-return with 2 TPs (XCLeague) with TPs somewhere in boxes
 export function boundOutAndReturn2(ranges, boxes, opt) {
-    const maxDistance = geom.maxDistance2Rectangles(boxes) * 2;
+    const maxDistance = opt.scoring.rounding(geom.maxDistance2Rectangles(boxes)) * 2;
 
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
@@ -220,16 +271,17 @@ export function boundOutAndReturn2(ranges, boxes, opt) {
         const cp = geom.isTriangleClosed(ranges[0].end, ranges[1].start, maxDistance, opt);
         if (!cp)
             return 0;
-        return (maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+        return finalRounding((maxDistance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return maxDistance * opt.scoring.multiplier;
+    return finalRounding(maxDistance * opt.scoring.multiplier, opt);
 }
 
 // Score an out-and-return with 2 TPs once the 2 points have been selected
 export function scoreOutAndReturn2(tp, opt) {
-    const distance = tp[0].distanceEarth(tp[1]) * 2;
+    const leg = opt.scoring.rounding(tp[0].distanceEarth(tp[1]));
+    const distance = finalRounding(leg * 2, opt);
 
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
@@ -238,9 +290,14 @@ export function scoreOutAndReturn2(tp, opt) {
     if (!cp)
         return { score: 0 };
 
-    let score = (distance - closingPenalty(cp.d, opt)) * opt.scoring.multiplier;
+    const penalty = closingPenalty(cp.d, opt);
+    const score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
+    const legs = [
+        {name: 'TP1 : TP2', start: tp[0], finish: tp[1], d: leg},
+        {name: 'TP2 : TP1', start: tp[1], finish: tp[0], d: leg}
+    ];
 
-    return { distance, score, tp, cp };
+    return { distance, score, tp, cp, legs, penalty };
 }
 
 // Upper limit for an out-and-return with 1 TP (FAI) with a TP somewhere in boxes
@@ -252,7 +309,7 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
         Math.max(boxes[0].x2, boxes[2].x2),
         Math.max(boxes[0].y2, boxes[2].y2),
     );
-    const maxDistance = geom.maxDistance2Rectangles([boxes[1], box2]);
+    const maxDistance = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[1], box2]));
 
     if (maxDistance < (opt.scoring.minDistance || 0))
         return 0;
@@ -273,32 +330,36 @@ export function boundOutAndReturn1(ranges, boxes, opt) {
             (boxes[0].x2 + boxes[2].x2) / 2,
             (boxes[0].y2 + boxes[2].y2) / 2
         );
-        const realDistance = geom.maxDistance2Rectangles([boxes[1], box2]);
-        return (realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier;
+        const realDistance = opt.scoring.rounding(geom.maxDistance2Rectangles([boxes[1], box2]));
+        return finalRounding((realDistance - closingPenalty(cp.d, opt)) * 2 * opt.scoring.multiplier, opt);
     }
 
     // Ranges overlap - bounding is impossible at this stage
-    return maxDistance * 2 * opt.scoring.multiplier;
+    return finalRounding(maxDistance * 2 * opt.scoring.multiplier, opt);
 }
 
 // Score an out-and-return with 1 TPs once the point has been selected
 export function scoreOutAndReturn1(tp, opt) {
-    const distance = Math.max(tp[0].distanceEarth(tp[1]), tp[1].distanceEarth(tp[2]));
+    // Create the second turn point on the middle of the closing line
+    const tp2 = new Point((tp[0].x + tp[2].x) / 2, (tp[0].y + tp[2].y) / 2);
+    const leg = opt.scoring.rounding(tp[1].distanceEarth(tp2));
+    const distance = finalRounding(leg * 2, opt);
 
     if (distance < (opt.scoring.minDistance || 0))
         return { score: 0 };
 
-    const d = tp[0].distanceEarth(tp[2]);
-    if (d > opt.scoring.closingDistance(distance, opt))
+    const closing = opt.scoring.rounding(tp[0].distanceEarth(tp[2]));
+    if (closing > opt.scoring.closingDistance(distance, opt))
         return { score: 0 };
 
-    // Create the second turn point on the middle of the closing line
-    const tp2 = new Point((tp[0].x + tp[2].x) / 2, (tp[0].y + tp[2].y) / 2);
-    const realDistance = tp[1].distanceEarth(tp2);
+    const penalty = closingPenalty(closing, opt);
+    const score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
+    const legs = [
+        {name: 'TP1 : TP2', start: tp[0], finish: tp2, d: leg},
+        {name: 'TP2 : TP1', start: tp2, finish: tp[0], d: leg}
+    ];
 
-    let score = (realDistance - closingPenalty(d, opt)) * 2 * opt.scoring.multiplier;
-
-    return { distance: realDistance, score, tp: [tp[1], tp2], cp: { d, in: tp[0], out: tp[2] } };
+    return { distance, score, tp: [tp[1], tp2], cp: { d: closing, in: tp[0], out: tp[2] }, legs };
 }
 
 // These implement the FAI Sporting Code, Section 7D, Paragraph 5.2.5
@@ -306,6 +367,10 @@ export function scoreOutAndReturn1(tp, opt) {
 // In igc-xc-score all TPs are lying on the track
 // They are to be transformed to the best possible cylinders
 export function adjustFAICylinders(score, opt) {
+    // Do not readjust incomplete solutions
+    if (!score.tp || !score.legs || score.score == 0)
+        return;
+
     // Move away each TP by 'cylinders' (400m)
     // https://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
     // We can safely assume that the Earth is flat for a distance of 400m
@@ -313,8 +378,9 @@ export function adjustFAICylinders(score, opt) {
     function moveAway(point, origin) {
         const d0 = point.distanceEarth(origin);
         const t = (d0 + opt.scoring.cylinders) / d0;
-        point.x = (1 - t) * origin.x + t * point.x;
-        point.y = (1 - t) * origin.y + t * point.y;
+        const x = (1 - t) * origin.x + t * point.x;
+        const y = (1 - t) * origin.y + t * point.y;
+        return new Point(x, y);
     }
 
     // For each TP we have to determine a new location that lies on a line
@@ -322,6 +388,7 @@ export function adjustFAICylinders(score, opt) {
     // and the TP itself
     // (For a triangle, this would be the centroid of the triangle, but
     // for an open flight every TP is to be moved away from a different center)
+    const newTP = [];
     for (const i in score.tp) {
         if (score.tp[i].r === undefined) {
             // The second TP of an Out-and-Return flight is not lying on the track
@@ -352,45 +419,51 @@ export function adjustFAICylinders(score, opt) {
             next = score.tp[next];
 
         const centroid = new Point((previous.x + next.x) / 2, (previous.y + next.y) / 2);
-        moveAway(score.tp[i], centroid);
+        newTP[i] = moveAway(score.tp[i], centroid);
     }
+    for (const i in score.tp)
+        if (newTP[i])
+            score.tp[i] = newTP[i];
 
     // If there are end-points (free distance flight), they are to be moved away
     // from their nearest respective TP
     if (score.ep && score.ep.start)
-        moveAway(score.ep.start, score.tp[0]);
+        score.ep.start = moveAway(score.ep.start, score.tp[0]);
     if (score.ep && score.ep.finish)
-        moveAway(score.ep.finish, score.tp[2]);
+        score.ep.finish = moveAway(score.ep.finish, score.tp[2]);
 
     switch (opt.scoring.code) {
     case 'tri':
     case 'fai':
         {
-            const d0 = score.tp[0].distanceEarth(score.tp[1]);
-            const d1 = score.tp[1].distanceEarth(score.tp[2]);
-            const d2 = score.tp[2].distanceEarth(score.tp[0]);
-            score.distance = d0 + d1 + d2 - opt.scoring.cylinders * 2 * 3;
-            score.score = score.distance >= (opt.scoring.minDistance || 0) ? 
-                (score.distance - closingPenalty(score.cp.d, opt)) * opt.scoring.multiplier : 0;
+            score.distance = 0;
+            for (let i = 0; i < score.legs.length; i++) {
+                score.legs[i].d = opt.scoring.rounding(score.tp[i].distanceEarth(score.tp[(i + 1) % score.tp.length]))
+                    - opt.scoring.cylinders * 2;
+                score.distance += score.legs[i].d;
+            }
         }
         break;
     case 'oar':
         {
-            const realDistance = score.tp[0].distanceEarth(score.tp[1]) - opt.scoring.cylinders;
-            score.score = score.distance >= (opt.scoring.minDistance || 0) ?
-                (realDistance - closingPenalty(score.cp.d, opt)) * 2 * opt.scoring.multiplier : 0;
+            const distance = opt.scoring.rounding(score.tp[0].distanceEarth(score.tp[1])) - opt.scoring.cylinders;
+            score.legs[0].d = score.legs[1].d = distance;
+            score.distance = distance * 2;
         }
         break;
     case 'od':
         {
-            score.distance = 0;
             const all = [score.ep.start, score.tp[0], score.tp[1], score.tp[2], score.ep.finish];
-            for (let i = 0; i < all.length - 1; i++)
-                score.distance += all[i].distanceEarth(all[i + 1]);
-            score.distance -= opt.scoring.cylinders * 2 * 3 + opt.scoring.cylinders * 2;
-            score.score = score.distance >= (opt.scoring.minDistance || 0) ?
-                score.distance * opt.scoring.multiplier : 0;
+            score.distance = 0;
+            for (let i = 0; i < all.length - 1; i++) {
+                score.legs[i].d = opt.scoring.rounding(all[i].distanceEarth(all[i + 1]));
+                score.legs[i].d -= opt.scoring.cylinders * 2;
+                score.distance += score.legs[i].d;
+            }
         }
         break;
     }
+    score.distance = finalRounding(score.distance, opt);
+    score.score = score.distance >= (opt.scoring.minDistance || 0) ?
+        finalRounding((score.distance - (score.penalty || 0)) * opt.scoring.multiplier, opt) : 0;
 }

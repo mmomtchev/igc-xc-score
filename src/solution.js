@@ -28,7 +28,7 @@ export class Solution {
         this.bound = undefined;
         this.id = id++;
         if (this.opt.config && this.opt.config.debug) {
-            /* c8 ignore next 2 */
+            /* c8 ignore next 3 */
             this.parent = parent;
             this.trace('constructor');
         }
@@ -78,6 +78,9 @@ export class Solution {
             tp[r] = new Point(this.opt.flight.filtered, this.ranges[r].center());
 
         this.scoreInfo = this.opt.scoring.score(tp, this.opt);
+        if (this.opt.scoring.post) {
+            this.opt.scoring.post(this.scoreInfo, this.opt);
+        }
         this.score = this.scoreInfo.score;
         this.trace('scoring');
     }
@@ -102,7 +105,7 @@ export class Solution {
     geojson() {
         let features = [];
         if (this.opt.config && this.opt.config.debug) {
-            /* c8 ignore next 8 */
+            /* c8 ignore next 9 */
             for (let r = 0; r < this.ranges.length; r++)
                 features.push((new Box(this.ranges[r], this.opt.flight))
                     .geojson('box' + r, {
@@ -141,7 +144,7 @@ export class Solution {
                         }
                     });
             }
-            /* c8 ignore next 23 */
+            /* c8 ignore next 24 */
             if (this.opt.config.debug && this.boxes) {
                 for (const b in this.boxes) {
                     features.push({
@@ -166,6 +169,7 @@ export class Solution {
                     });
                 }
             }
+        /* c8 ignore next 2 */
         } catch (e) {
         }
         try {
@@ -237,6 +241,7 @@ export class Solution {
                     });
                 }
             }
+        /* c8 ignore next 2 */
         } catch (e) {
         }
         for (let li = 0; li < this.opt.flight.ll.length; li++) {
@@ -291,10 +296,10 @@ export class Solution {
     toString() {
         let s = `${this.opt.scoring.name}`;
         if (this.score)
-            s += ` ${this.opt.scoring.rounding(this.score)} points`;
+            s += ` ${this.score} points`;
         if (this.scoreInfo)
-            s += ` ${this.opt.scoring.rounding(this.scoreInfo.distance)}km`;
-        s += ` ( <${this.bound.toFixed(4)} )`;
+            s += ` ${this.scoreInfo.distance.toFixed(2)}km`;
+        s += ` ( <${this.bound.toFixed(2)} )`;
         if (this.opt.config && this.opt.config.debug) {
             s += ` { id: ${this.id} `;
             for (let r of this.ranges)

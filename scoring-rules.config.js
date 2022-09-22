@@ -126,11 +126,12 @@ const scoringRules = {
      */
     'FAI': [
         {
-            name: 'Open Distance',
+            name: 'Free Distance around 3 TPs',
             multiplier: 1,
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'od',
             cylinders: 0.4,
@@ -145,6 +146,7 @@ const scoringRules = {
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             cylinders: 0.4,
@@ -160,6 +162,7 @@ const scoringRules = {
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'fai',
             cylinders: 0.4,
@@ -168,11 +171,13 @@ const scoringRules = {
     ],
     /**
      * @constant {object[]}
-     * This is a special type of flight that does not have proper scoring
-     * It is used only for Out-and-Return Distance to one turnpoint records
      */
     'FAI-OAR': [
         {
+            /**
+             * This is the FAI definition of Out-and-Return Distance
+             * with a single TP
+             */
             name: 'Out-and-Return Distance',
             multiplier: 1,
             bound: scoring.boundOutAndReturn1,
@@ -181,7 +186,28 @@ const scoringRules = {
             closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
+            code: 'oar',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
+        }
+    ],
+    'FAI-OAR2': [
+        {
+            /**
+             * This type of flight is very similar to XCLeague
+             * Out-and-Return distance
+             */
+            name: 'Out-and-Return Flight around 2 TPs',
+            multiplier: 1,
+            bound: scoring.boundOutAndReturn2,
+            score: scoring.scoreOutAndReturn2,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 2,
             code: 'oar',
             cylinders: 0.4,
             post: scoring.adjustFAICylinders
@@ -203,6 +229,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 35
@@ -215,6 +242,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 15
@@ -227,6 +255,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 2,
             code: 'oar',
             minDistance: 5
@@ -237,6 +266,7 @@ const scoringRules = {
             bound: scoring.boundDistance3Points,
             score: scoring.scoreDistance3Points,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'od',
             minDistance: 5
@@ -251,6 +281,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 35
@@ -265,6 +296,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 15
@@ -279,6 +311,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 5
@@ -292,6 +325,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 25
@@ -305,6 +339,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 15
@@ -318,6 +353,7 @@ const scoringRules = {
             closingDistance: scoring.closingWithLimit,
             closingDistanceFixed: 0.8,
             rounding: round2,
+            finalRounding: round1,
             cardinality: 3,
             code: 'tri',
             minDistance: 5
@@ -327,6 +363,10 @@ const scoringRules = {
 
 function round2(score) {
     return parseFloat(parseFloat(score).toFixed(2));
+}
+
+function round1(score) {
+    return parseFloat(parseFloat(score).toFixed(1));
 }
 
 export default scoringRules;

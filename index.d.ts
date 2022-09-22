@@ -3,9 +3,20 @@ export as namespace XCScoring;
 import { IGCFile } from 'igc-parser';
 
 interface Point {
+	/** Longitude */
 	x: number;
+	/** Latitude */
 	y: number;
+	/** GPS fix number in the tracklog */
 	r: number;
+}
+
+interface Leg {
+	name: string;
+	/** Scoring distance */
+	d: number;
+	start: Point;
+	finish: Point;
 }
 
 interface ClosingPoints {
@@ -23,7 +34,10 @@ interface ScoreInfo {
 	cp?: ClosingPoints;
 	ep?: EndPoints;
 	tp?: Point[];
+	legs?: Leg[];
+	/** Distance without penalty applied */
 	distance: number;
+	penalty: number;
 	score: number;
 }
 
