@@ -72,8 +72,9 @@ export default function* solver(flight, _scoringTypes, _config) {
                 if (config.env && config.env.v8 !== 'undefined') {
                     const mem = config.env.v8.getHeapStatistics();
                     if (mem.used_heap_size / mem.heap_size_limit > 0.98) {
+                        /* c8 ignore next 4 */
                         console.error(`Out of memory: ${mem.used_heap_size/1024}KiB used` +
-                        ` of ${mem.heap_size_limit/1024}KiB total`);
+                            ` of ${mem.heap_size_limit/1024}KiB total`);
                         break;
                     }
                 }
