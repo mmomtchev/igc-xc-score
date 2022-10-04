@@ -1,6 +1,6 @@
 export as namespace XCScoring;
 
-import { IGCFile } from 'igc-parser';
+import { BRecord, IGCFile } from 'igc-parser';
 
 interface Point {
 	/** Longitude */
@@ -49,6 +49,10 @@ interface Scoring {
 
 interface Opt {
 	scoring: Scoring;
+	flight: IGCFile & {
+		/** Filtered GPS fixes when invalid=false, GPS fix number is relative to this array */
+		filtered: BRecord[];
+	};
 }
 
 interface Solution {
@@ -63,5 +67,5 @@ interface Solution {
 	time?: number;
 }
 
-export function solver(flight: IGCFile, scoringRules: object, config: { [key: string]: any }) : Iterator<Solution, Solution>;
+export function solver(flight: IGCFile, scoringRules: object, config?: { [key: string]: any }) : Iterator<Solution, Solution>;
 export const scoringRules: { [key: string]: object[] };

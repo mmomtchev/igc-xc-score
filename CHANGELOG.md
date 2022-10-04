@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 # [1.7.0] WIP
- - Add a two new types of flight, out-and-return distance with 1 and with 2 TPs
+ - Add two new types of flight, out-and-return distance with 1 and with 2 TPs
  - Add `maxSide` option for triangles
  - Add `minDistance` option for all flights
  - Add the FAI rules
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `finalRounding` for leagues that round the final result to less decimal points than the legs
  - Significantly reduce the size of the production build of the web demo
  - Do not depend on the order of the CLI arguments
+ - Document some of the hidden values in the result
 
 ## [1.6.1] 2022-05-12
 
