@@ -133,9 +133,7 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
-            code: 'od',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'od'
         },
         {
             name: 'Free Triangle',
@@ -148,9 +146,7 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
-            code: 'tri',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'tri'
         },
         {
             name: 'FAI Triangle',
@@ -164,9 +160,7 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
-            code: 'fai',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'fai'
         },
     ],
     /**
@@ -188,9 +182,7 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
-            code: 'oar',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'oar'
         }
     ],
     'FAI-OAR2': [
@@ -204,13 +196,12 @@ const scoringRules = {
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
             closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
             finalRounding: round1,
             cardinality: 2,
-            code: 'oar',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'oar'
         }
     ],
     /**
