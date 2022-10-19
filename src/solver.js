@@ -95,7 +95,7 @@ export default function* solver(flight, _scoringTypes, _config) {
                 processed++;
                 if (s.score >= best.score && s.score > 0) {
                     best = s;
-                    if (solutionQueue.findLeast().value.bound <= best.score) {
+                    if (solutionQueue.findLeast() && solutionQueue.findLeast().value.bound <= best.score) {
                         const garbageBest = solutionQueue.findGreatestLessThanOrEqual({ bound: best.score });
                         if (garbageBest !== undefined) {
                             const cutoff = solutionQueue.indexOf(garbageBest.value);
