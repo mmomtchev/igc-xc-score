@@ -355,8 +355,8 @@ export function scoreOutAndReturn1(tp, opt) {
     const penalty = closingPenalty(closing, opt);
     const score = finalRounding((distance - penalty) * opt.scoring.multiplier, opt);
     const legs = [
-        {name: 'TP1 : TP2', start: tp[0], finish: tp2, d: leg},
-        {name: 'TP2 : TP1', start: tp2, finish: tp[0], d: leg}
+        {name: 'TP1 : TP2', start: tp[1], finish: tp2, d: leg},
+        {name: 'TP2 : TP1', start: tp2, finish: tp[1], d: leg}
     ];
 
     return { distance, score, tp: [tp[1], tp2], cp: { d: closing, in: tp[0], out: tp[2] }, legs };
