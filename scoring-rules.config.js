@@ -17,6 +17,7 @@ import * as scoring from './src/scoring.js';
  */
 const scoringRules = {
     /**
+     * FFVL Rules
      * @constant {object[]}
      */
     'FFVL': [
@@ -58,6 +59,7 @@ const scoringRules = {
         }
     ],
     /**
+     * XContest Rules
      * @constant {object[]}
      */
     'XContest': [
@@ -122,6 +124,7 @@ const scoringRules = {
         }
     ],
     /**
+     * FAI Scoring Rules w/o cylinders
      * @constant {object[]}
      */
     'FAI': [
@@ -164,6 +167,7 @@ const scoringRules = {
         },
     ],
     /**
+     * FAI Out-and-Return Distance evaluation w/o scoring multiplier
      * @constant {object[]}
      */
     'FAI-OAR': [
@@ -185,6 +189,10 @@ const scoringRules = {
             code: 'oar'
         }
     ],
+    /**
+     * FAI Out-and-Return Distance around 2 TPs w/o scoring multiplier
+     * @constant {object[]}
+     */
     'FAI-OAR2': [
         {
             /**
@@ -205,6 +213,7 @@ const scoringRules = {
         }
     ],
     /**
+     * XCLeague Rules
      * @constant {object[]}
      */
     'XCLeague': [
