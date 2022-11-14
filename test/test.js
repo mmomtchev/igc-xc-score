@@ -64,6 +64,9 @@ const tests = {
         { file: 'record_de_france.igc', score: 422 },
         { file: 'fai.igc', score: 228.6 }
     ],
+    'FAI-Cylinders': [
+        { file: 'trifai-xcontest-189.65.igc', score: 130.1 },
+    ],
     XCLeague: [
         { file: 'trifai-xcontest-307.57.igc', score: 427 },
         { file: 'out-and-return-record.igc', score: 605.2 },

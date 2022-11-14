@@ -366,9 +366,6 @@ export function scoreOutAndReturn1(tp, opt) {
 // https://www.fai.org/sites/default/files/civl/documents/sporting_code_s7_d_-_records_and_badges_2022.pdf
 // In igc-xc-score all TPs are lying on the track
 // They are to be transformed to the best possible cylinders
-
-// These are not used by any scoring method at the moment
-/* c8 ignore start */
 export function adjustFAICylinders(score, opt) {
     // Do not readjust incomplete solutions
     if (!score.tp || !score.legs || score.score == 0)
@@ -470,4 +467,3 @@ export function adjustFAICylinders(score, opt) {
     score.score = score.distance >= (opt.scoring.minDistance || 0) ?
         finalRounding((score.distance - (score.penalty || 0)) * opt.scoring.multiplier, opt) : 0;
 }
-/* c8 ignore stop */

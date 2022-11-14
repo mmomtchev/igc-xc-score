@@ -164,7 +164,56 @@ const scoringRules = {
             finalRounding: round1,
             cardinality: 3,
             code: 'fai'
+        }
+    ],
+    /**
+     * FAI Scoring Rules w/ cylinders
+     * @constant {object[]}
+     */
+    'FAI-Cylinders': [
+        {
+            name: 'Free Distance around 3 TPs',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'od',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
         },
+        {
+            name: 'Free Triangle',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'tri',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'fai',
+            cylinders: 0.4,
+            post: scoring.adjustFAICylinders
+        }
     ],
     /**
      * FAI Out-and-Return Distance evaluation w/o scoring multiplier
