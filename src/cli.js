@@ -130,8 +130,9 @@ try {
                     + util.consoleColors.reset}`
 				+ ` ${util.consoleColors.fg.yellow}${best.opt.scoring.name}`
 				+ ` ${util.consoleColors.fg.green}${best.score} points,`
-				+ ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km,`
-				+ ` multiplier is ${best.opt.scoring.multiplier}`
+				+ ` ${util.consoleColors.fg.yellow}${best.scoreInfo.distance}km`);
+
+            console.log(`Multiplier is ${best.opt.scoring.multiplier}`
 				+ (best.opt.scoring.closingDistance ? ` [ closing distance is ${best.scoreInfo.cp.d}km ]` : '')
 				+ (best.scoreInfo.penalty ? ` [ penalty is ${best.scoreInfo.penalty}km ]` : '')
 				+ (best.optimal ? '' : ` potential maximum score could be up to ${best.bound.toFixed(2)} points`)

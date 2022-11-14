@@ -17,6 +17,7 @@ import * as scoring from './src/scoring.js';
  */
 const scoringRules = {
     /**
+     * FFVL Rules
      * @constant {object[]}
      */
     'FFVL': [
@@ -58,6 +59,7 @@ const scoringRules = {
         }
     ],
     /**
+     * XContest Rules
      * @constant {object[]}
      */
     'XContest': [
@@ -122,9 +124,53 @@ const scoringRules = {
         }
     ],
     /**
+     * FAI Scoring Rules w/o cylinders
      * @constant {object[]}
      */
     'FAI': [
+        {
+            name: 'Free Distance around 3 TPs',
+            multiplier: 1,
+            bound: scoring.boundDistance3Points,
+            score: scoring.scoreDistance3Points,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'od'
+        },
+        {
+            name: 'Free Triangle',
+            multiplier: 1.2,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'tri'
+        },
+        {
+            name: 'FAI Triangle',
+            multiplier: 1.4,
+            bound: scoring.boundTriangle,
+            score: scoring.scoreTriangle,
+            minSide: 0.28,
+            closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
+            closingDistanceFixed: 0.8,
+            rounding: round2,
+            finalRounding: round1,
+            cardinality: 3,
+            code: 'fai'
+        }
+    ],
+    /**
+     * FAI Scoring Rules w/ cylinders
+     * @constant {object[]}
+     */
+    'FAI-Cylinders': [
         {
             name: 'Free Distance around 3 TPs',
             multiplier: 1,
@@ -167,9 +213,10 @@ const scoringRules = {
             code: 'fai',
             cylinders: 0.4,
             post: scoring.adjustFAICylinders
-        },
+        }
     ],
     /**
+     * FAI Out-and-Return Distance evaluation w/o scoring multiplier
      * @constant {object[]}
      */
     'FAI-OAR': [
@@ -188,11 +235,13 @@ const scoringRules = {
             rounding: round2,
             finalRounding: round1,
             cardinality: 3,
-            code: 'oar',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'oar'
         }
     ],
+    /**
+     * FAI Out-and-Return Distance around 2 TPs w/o scoring multiplier
+     * @constant {object[]}
+     */
     'FAI-OAR2': [
         {
             /**
@@ -204,16 +253,16 @@ const scoringRules = {
             bound: scoring.boundOutAndReturn2,
             score: scoring.scoreOutAndReturn2,
             closingDistance: scoring.closingWithLimit,
+            closingDistanceFree: 0.8,
             closingDistanceFixed: 0.8,
             rounding: round2,
             finalRounding: round1,
             cardinality: 2,
-            code: 'oar',
-            cylinders: 0.4,
-            post: scoring.adjustFAICylinders
+            code: 'oar'
         }
     ],
     /**
+     * XCLeague Rules
      * @constant {object[]}
      */
     'XCLeague': [
