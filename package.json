@@ -1,6 +1,6 @@
 {
   "name": "igc-xc-score",
-  "version": "1.7.0-beta.1",
+  "version": "1.7.0",
   "description": "igc-xc-score is a paragliding and hang-gliding XC scoring program in vanilla JS",
   "main": "dist/index.cjs",
   "module": "index.js",
