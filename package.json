@@ -73,7 +73,7 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
-    "jquery": "^3.6.1",
+    "jquery": "^3.6.2",
     "jsdoc": "^3.6.11",
     "nexe": "^4.0.0-rc.1",
     "ol": "^6.15.1",
