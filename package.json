@@ -54,7 +54,7 @@
   "homepage": "https://github.com/mmomtchev/igc-xc-score#readme",
   "dependencies": {
     "collections": "^5.1.13",
-    "flatbush": "^4.0.0",
+    "flatbush": "^4.2.0",
     "igc-parser": "^1.1.0",
     "rbush": "^3.0.1"
   },
