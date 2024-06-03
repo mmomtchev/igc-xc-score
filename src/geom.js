@@ -5,7 +5,6 @@ import * as util from './util.js';
 import { Box, Point } from './foundation.js';
 
 import Flatbush from 'flatbush';
-import Map from 'collections/map.js';
 import RBush from 'rbush';
 
 /* Paragliding Competition Tracklog Optimization, Ondřej Palkovský
