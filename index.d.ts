@@ -53,6 +53,10 @@ interface Opt {
 		/** Filtered GPS fixes when invalid=false, GPS fix number is relative to this array */
 		filtered: BRecord[];
 	};
+	/** launch and landing are the indices of the fixes identified as launch and landing **/
+	launch: number;
+	landing: number;
+	config: { [key: string]: any };
 }
 
 interface Solution {
