@@ -5,8 +5,8 @@ import * as scoring from './src/scoring.js';
  * These are the scoring types
  * @enum {object[][]} scoringRules
  *
- * The differences are mostly in the mutipliers and the way the closing distances of the triangles are calculated
- * 
+ * The differences are mostly in the multipliers and the way the closing distances of the triangles are calculated
+ *
  * These are the tools that are already implemented in scoring.js/geom.js:
  * @param {function} closingDistance is the triangle closing type, you choose between two types:
  *      closingWithLimit - closing distance is limited
