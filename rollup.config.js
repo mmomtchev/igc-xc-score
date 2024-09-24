@@ -2,9 +2,11 @@ import resolve from '@rollup/plugin-node-resolve';
 import builtins from 'builtin-modules';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import executable from 'rollup-plugin-executable';
-const version = require('./package.json').version;
+
+import * as fs from 'node:fs';
+const version = JSON.parse(fs.readFileSync('./package.json')).version;
 
 const intro = `const [ _version, _year ] = [ '${version}', '${new Date().getFullYear()}']`;
 
