@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Maintenance release with updated dependencies
  - Add the `closingDistanceFixed`, `closingDistanceFree`, `closingDistanceRelative` fields to the TypeScript types
  - Drop Node.js 16 support
+ - Rebuilding the webpage now works on Windows
 
 # [1.7.0] 2022-11-15
  - Add two new types of flight, out-and-return distance with 1 and with 2 TPs
