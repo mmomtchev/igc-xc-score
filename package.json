@@ -15,14 +15,14 @@
     "igc-xc-score": "dist/igc-xc-score.cjs"
   },
   "scripts": {
-    "test": "npm run test:es && npm run test:cjs && npm run eslint",
+    "test": "npm run test:es && npm run test:cjs && npm run lint",
     "test:es": "node --max-old-space-size=2048 test/test",
     "test:cjs": "node test/test.cjs",
-    "eslint": "npx eslint src",
+    "lint": "npx eslint src",
     "doc": "npx jsdoc -d doc src/solver.js scoring-rules.config.js",
-    "nexe:linux": "npx nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score-linux-x86-x64 -t linux-x64-12.16.2",
+    "nexe:linux": "npx nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score-linux -t linux-x64-12.16.2",
     "nexe:win": "npx nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score.exe -t windows-x64-12.16.3",
-    "nexe:mac": "npx nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score-macos -t darwin-x64-12.15.0",
+    "nexe:mac": "npx nexe -i dist/igc-xc-score.cjs -o dist/igc-xc-score-macos -t mac-x64-12.16.3",
     "nexe": "npm run nexe:linux && npm run nexe:win && npm run nexe:mac",
     "www": "npx webpack --mode=production",
     "watch": "npx webpack --mode=development --watch",

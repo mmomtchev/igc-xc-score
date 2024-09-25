@@ -6,7 +6,8 @@ const exec = require('child_process');
 
 const build_pkg = require('./package.json');
 const build_git = exec.execSync('git rev-parse --short HEAD').toString();
-const build_date = exec.execSync('date -u +"%Y-%m-%d"').toString();
+const now = new Date;
+const build_date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
 
 module.exports = (env, argv) => ({
     mode: 'none',
