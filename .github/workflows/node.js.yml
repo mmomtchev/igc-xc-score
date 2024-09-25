@@ -27,7 +27,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run lint
-    - run: |
+    - name: nexe test
+      run: |
         ./dist/`node -p \
           '({"linux": "igc-xc-score-linux", "darwin": "igc-xc-score-macos", "win32": "igc-xc-score.exe"}[os.platform()])'` \
           test/marcourt.igc
