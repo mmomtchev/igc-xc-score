@@ -45,6 +45,12 @@ interface Scoring {
 	name: string;
 	code: string;
 	multiplier: number;
+	/** Fixed closing distance that is always accepted */
+	closingDistanceFixed?: number;
+	/** Closing distance that does not incur any scoring penalty */
+	closingDistanceFree?: number;
+	/** Closing distance that is relative to the full triangle length but incurs a penalty */
+	closingDistanceRelative?: number;
 }
 
 interface Opt {
