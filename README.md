@@ -101,9 +101,17 @@ The sources used for this demo are in the www directory.
 
 If you do not need to customize it, you can simply download `igc-xc-score-web.zip` from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases) and unzip it in a directory on your webserver. If you want to integrate the software on your website, read the section *The solver library* below.
 
-### Installing the webpage on your computer for offline use
+### Installing the webpage on your computer for offline use (**user**)
 
 Download `igc-xc-score-web.zip` from the [releases section](https://github.com/mmomtchev/igc-xc-score/releases) and unzip it in a directory on your computer, then open a browser window and navigate to `file:///` to wherever you unzipped the folder.
+
+### Run the web demo with the built-in webserver (**developer**)
+
+There is an `npm start` script. Run in the package root directory:
+```bash
+npm start
+```
+Then use your browser to connect to http://localhost:9000
 
 ## Usage
 
