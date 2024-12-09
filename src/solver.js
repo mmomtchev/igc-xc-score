@@ -2,7 +2,7 @@
 /**
  * igc-xc-score Solver
  * scoring library for paragliding flights
- * 
+ *
  * @module igc-xc-score
  * @author Momtchil Momtchev <momtchil@momtchev.com>
  */
@@ -17,8 +17,8 @@ import scoringRules from '../scoring-rules.config.js';
  * This the solver
  * @param {IGCFile} flight flight track data in the igc_parser format
  * @param {object[]} [scoringTypes=undefined] undefined for FFVL or one of the elements of scoringRules
- * @param {object=} config optional config parameters
- * @param {number=} config.maxcycle maximum execution time of the solver in ms, each sucessive call will return a better solution, default undefined for unlimited
+ * @param {SolverConfig=} config optional config parameters
+ * @param {number=} config.maxcycle maximum execution time of the solver in ms, each successive call will return a better solution, default undefined for unlimited
  * @param {boolean=} config.noflight do not include the flight track data in the output GeoJSON, default false
  * @param {boolean=} config.invalid include invalid GPS fixes when evaluating the flight, default false
  * @param {boolean=} config.hp use high-precision distance calculation (Vincenty's), much slower for slightly higher precision, default false
@@ -115,7 +115,7 @@ export default function* solver(flight, _scoringTypes, _config) {
         }
 
         best.processed = processed;
-        const currentUpperBound = solutionQueue.findGreatest(); 
+        const currentUpperBound = solutionQueue.findGreatest();
         best.currentUpperBound = currentUpperBound ? currentUpperBound.value.bound : best.bound;
         tcum += Date.now() - tstart;
         best.time = tcum;
