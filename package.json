@@ -78,7 +78,7 @@
     "eslint-plugin-promise": "^6.1.1",
     "jquery": "^3.7.1",
     "jsdoc": "^4.0.2",
-    "nexe": "^4.0.0-rc.6",
+    "nexe": "^5.0.0-beta.4",
     "ol": "^10.2.0",
     "ol-layerswitcher": "^4.1.1",
     "rollup": "^4.22.4",
