@@ -54,28 +54,45 @@ interface Scoring {
 }
 
 interface Opt {
-	scoring: Scoring;
-	flight: IGCFile & {
-		/** Filtered GPS fixes when invalid=false, GPS fix number is relative to this array */
-		filtered: BRecord[];
-	};
-	/** launch and landing are the indices of the fixes identified as launch and landing **/
-	launch: number;
-	landing: number;
-	config: { [key: string]: any };
+  scoring: Scoring;
+  flight: IGCFile & {
+    /** Filtered GPS fixes when invalid=false, GPS fix number is relative to this array */
+    filtered: BRecord[];
+  };
+  /** launch and landing are the indices of the fixes identified as launch and landing **/
+  launch: number;
+  landing: number;
+  config: SolverConfig;
 }
 
 interface Solution {
-    bound: number;
-	currentUpperBound: number;
-	id: number | string;
-	opt: Opt;
-	optimal?: boolean;
-	processed?: number;
-	score?: number;
-	scoreInfo?: ScoreInfo;
-	time?: number;
+  bound: number;
+  currentUpperBound: number;
+  id: number | string;
+  opt: Opt;
+  optimal?: boolean;
+  processed?: number;
+  score?: number;
+  scoreInfo?: ScoreInfo;
+  time?: number;
 }
 
-export function solver(flight: IGCFile, scoringRules: object, config?: { [key: string]: any }) : Iterator<Solution, Solution>;
+interface SolverConfig {
+  /** maximum execution time of the solver in ms, each successive call will return a better solution, default undefined for unlimited */
+  maxcycle?: number;
+  /** do not include the flight track data in the output GeoJSON, default false */
+  noflight?: boolean;
+  /** include invalid GPS fixes when evaluating the flight, default false */
+  invalid?: boolean;
+  /** use high-precision distance calculation (Vincenty's), much slower for slightly higher precision, default false */
+  hp?: boolean;
+  /** automatically detect launch and landing and trim the flight track, default false */
+  trim?: boolean;
+}
+
+export function solver(
+  flight: IGCFile,
+  scoringRules: object,
+  config?: SolverConfig
+): Iterator<Solution, Solution>;
 export const scoringRules: { [key: string]: object[] };
