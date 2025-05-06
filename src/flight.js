@@ -127,7 +127,7 @@ export function analyze(flight, config) {
                     oR: i,
                 });
             }
-            return filtered
+            return filtered;
         }, []);
     } else {
         flight.filtered = flight.fixes.map((f, i) => ({...f, oR: i}));
