@@ -119,11 +119,19 @@ function detectLaunchLanding(fixes) {
 }
 
 export function analyze(flight, config) {
-    if (!config.invalid)
-        flight.filtered = flight.fixes.filter(x => x.valid)
-            .filter((x, i, a) => i == 0 || a[i-1].timestamp !== x.timestamp);
-    else
-        flight.filtered = flight.fixes.slice(0);
+    if (!config.invalid) {
+        flight.filtered = flight.fixes.reduce((filtered, fix, i, d) => {
+            if (fix.valid && (i === 0 || d[i - 1].timestamp !== fix.timestamp)) {
+                filtered.push({
+                    ...fix,
+                    oR: i,
+                });
+            }
+            return filtered;
+        }, []);
+    } else {
+        flight.filtered = flight.fixes.map((f, i) => ({...f, oR: i}));
+    }
     if (flight.filtered.length < 5)
         throw new Error('Flight must contain at least 5 valid GPS fixes, ' +
             `${flight.filtered.length} valid fixes found (out of ${flight.fixes.length})`);

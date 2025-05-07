@@ -53,11 +53,18 @@ interface Scoring {
 	closingDistanceRelative?: number;
 }
 
+/**
+ * A BRecord with an additional property `oR` that is the index of the GPS fix in the original (unfiltered) igc track.
+ */
+interface BRecordWithOr extends BRecord {
+	oR: number;
+}
+
 interface Opt {
 	scoring: Scoring;
 	flight: IGCFile & {
 		/** Filtered GPS fixes when invalid=false, GPS fix number is relative to this array */
-		filtered: BRecord[];
+		filtered: BRecordWithOr[];
 	};
 	/** launch and landing are the indices of the fixes identified as launch and landing **/
 	launch: number;
