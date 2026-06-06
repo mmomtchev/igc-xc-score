@@ -70,34 +70,48 @@ function prepare(fixes) {
 
 function detectFlight(fixes) {
     let start;
+    let end;
     for (let i = 0; i < fixes.length - 1; i++) {
         if (start === undefined && fixes[i].hma > definitionFlight.xt && fixes[i].vma > definitionFlight.zt)
             start = i;
         if (start !== undefined)
             if (fixes[i].hma > definitionFlight.x0 && fixes[i].vma > definitionFlight.z0) {
                 if (fixes[i].timestamp > fixes[start].timestamp + definitionFlight.t * 1000)
-                    for (let j = start; j <= i; j++)
-                        fixes[i].stateFlight = true;
+                    end = i;
             } else {
+                if (end !== undefined)
+                    for (let j = start; j <= end; j++)
+                        fixes[j].stateFlight = true;
                 start = undefined;
+                end = undefined;
             }
     }
+    if (start !== undefined && end !== undefined)
+        for (let j = start; j <= end; j++)
+            fixes[j].stateFlight = true;
 }
 
 function detectGround(fixes) {
     let start;
+    let end;
     for (let i = 0; i < fixes.length - 1; i++) {
         if (start === undefined && fixes[i].hma < definitionGround.xmax && fixes[i].vma < definitionGround.zmax)
             start = i;
         if (start !== undefined)
             if (fixes[i].hma < definitionGround.xmax && fixes[i].vma < definitionGround.zmax) {
                 if (fixes[i].timestamp > fixes[start].timestamp + definitionGround.t * 1000)
-                    for (let j = start; j <= i; j++)
-                        fixes[i].stateGround = true;
+                    end = i;
             } else {
+                if (end !== undefined)
+                    for (let j = start; j <= end; j++)
+                        fixes[j].stateGround = true;
                 start = undefined;
+                end = undefined;
             }
     }
+    if (start !== undefined && end !== undefined)
+        for (let j = start; j <= end; j++)
+            fixes[j].stateGround = true;
 }
 
 function detectLaunchLanding(fixes) {
